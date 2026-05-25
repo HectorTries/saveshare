@@ -28,7 +28,14 @@
         
         .deck { font-size: 1.1rem; color: #94a3b8; font-style: italic; margin-bottom: 30px; }
         
-        .byline { font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: #64748b; margin-bottom: 30px; }
+        .byline { font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: #64748b; margin-bottom: 20px; }
+        .byline .pipe { color: #334155; }
+        
+        .portfolio-card { display: flex; gap: 20px; background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 30px; }
+        .portfolio-item { flex: 1; text-align: center; }
+        .portfolio-item .label { display: block; font-family: 'Inter', sans-serif; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 4px; }
+        .portfolio-item .value { display: block; font-family: 'Inter', sans-serif; font-size: 1.4rem; font-weight: 700; color: #00d4aa; }
+        .portfolio-item .detail { display: block; font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #64748b; margin-top: 2px; }
         .byline .pipe { color: #334155; }
         
         .intro { font-size: 1.15rem; color: #e2e8f0; margin-bottom: 30px; padding-left: 20px; border-left: 3px solid #00d4aa; }
@@ -67,6 +74,19 @@
                 <span>By <span class="reporter">Tori</span></span>
                 <span class="pipe">|</span>
                 <span>May 25, 2026</span>
+            </div>
+            
+            <div class="portfolio-card">
+                <div class="portfolio-item">
+                    <span class="label">Portfolio</span>
+                    <span class="value">£200k</span>
+                    <span class="detail">in low-cost ETFs</span>
+                </div>
+                <div class="portfolio-item">
+                    <span class="label">Income</span>
+                    <span class="value">£30k+</span>
+                    <span class="detail">per month</span>
+                </div>
             </div>
         </div>
     </header>
