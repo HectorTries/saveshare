@@ -116,17 +116,22 @@
             padding-left: 30px;
         }
         .list-num li {
-            counter-increment: list-counter;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             position: relative;
         }
         .list-num li::before {
-            content: counter(list-counter);
-            position: absolute;
-            left: -30px;
             font-family: 'Inter', sans-serif;
             font-weight: 600;
             color: #f97316;
+            position: absolute;
+            left: -30px;
+        }
+        .list-num.multiple li::before {
+            content: counter(list-counter) ".";
+            counter-increment: list-counter;
+        }
+        .list-num.single li::before {
+            content: "•";
         }
         
         .sign-off {
@@ -194,7 +199,7 @@
             
             <h2>The University Question</h2>
             
-            <ol class="list-num">
+            <ol class="list-num multiple">
                 <li><strong>Choose an apprenticeship over university.</strong><br>"Now I'm saying this as someone that has benefited from my degree. I worked in fashion and it did open a lot of doors for me. But at the time, I didn't really know apprenticeships were a thing." She traces this back to her values: income, being high earning, developing experience on the ground, having zero student loan. "When I started off in my career, I knew people the same age as me — or younger — on literally double my salary."</li>
             </ol>
             
