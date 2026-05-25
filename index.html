@@ -1,251 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaveShare • UK Financial Influencers</title>
-    <meta name="description" content="Track UK financial influencers, their portfolios, and advice. All in one place.">
-    <meta name="theme-color" content="#0f172a">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #0f172a;
-            color: #f8fafc;
-            min-height: 100vh;
-        }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        header {
-            text-align: center;
-            padding: 60px 0 40px;
-            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-        }
-        header h1 {
-            font-size: 3rem;
-            font-weight: 800;
-            margin-bottom: 10px;
-        }
-        header h1 span { color: #00d4aa; }
-        header p {
-            color: #94a3b8;
-            font-size: 1.2rem;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        .filters {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-        .filter-btn {
-            background: #1e293b;
-            border: 1px solid #334155;
-            color: #94a3b8;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-        }
-        .filter-btn:hover, .filter-btn.active {
-            background: #00d4aa;
-            color: #0f172a;
-            border-color: #00d4aa;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 60px;
-        }
-        .card {
-            background: #1e293b;
-            border-radius: 16px;
-            padding: 24px;
-            border: 1px solid #334155;
-            transition: all 0.2s;
-            cursor: pointer;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-        }
-        .card:hover {
-            transform: translateY(-4px);
-            border-color: #00d4aa;
-            box-shadow: 0 8px 30px rgba(0, 212, 170, 0.15);
-        }
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-        .avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #00d4aa, #00b894);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #0f172a;
-        }
-        .card-header h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-        .card-header .handle {
-            color: #64748b;
-            font-size: 0.9rem;
-        }
-        .portfolio-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #00d4aa;
-            margin-bottom: 12px;
-        }
-        .tags {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-        .tag {
-            background: rgba(100, 116, 139, 0.2);
-            color: #94a3b8;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-        }
-        .stats-bar {
-            display: flex;
-            justify-content: space-around;
-            padding: 30px 0;
-            border-top: 1px solid #1e293b;
-            margin-top: 40px;
-        }
-        .stat-item { text-align: center; }
-        .stat-item .number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #00d4aa;
-        }
-        .stat-item .label {
-            color: #64748b;
-            font-size: 0.9rem;
-        }
-        footer {
-            text-align: center;
-            padding: 40px;
-            color: #64748b;
-            border-top: 1px solid #1e293b;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SaveShare • UK Financial Influencers</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#0f172a;color:#fff;min-height:100vh}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+header{padding:60px 0 40px;text-align:center}
+h1{font-size:3rem;margin-bottom:10px}h1 span{color:#00d4aa}p{color:#94a3b8;max-width:600px;margin:0 auto}
+.filters{display:flex;justify-content:center;gap:10px;margin:20px 0}
+.fil{background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:8px 16px;border-radius:20px;cursor:pointer}
+.fil:hover,.fil.active{background:#00d4aa;color:#0f172a}
+.card{background:#1e293b;border:1px solid #334155;border-radius:16px;margin:10px;padding:16px;display:inline-block;width:250px;text-decoration:none;color:inherit;transition:.2s}
+.card:hover{border-color:#00d4aa;transform:translateY(-4px)}
+.card-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.avatar{width:48px;height:48px;background:linear-gradient(135deg,#00d4aa,#00b894);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#0f172a;font-size:1.2rem}
+h2{margin:0;font-size:1.1rem}.handle{color:#64748b;font-size:0.9rem}
+.value{font-size:1.6rem;color:#00d4aa;font-weight:700;margin:8px 0}
+.tag{background:rgba(100,116,139,0.2);color:#94a3b8;padding:4px 8px;border-radius:12px;font-size:0.75rem;margin-right:4px}
+.stats-bar{display:flex;justify-content:center;gap:60px;padding:30px 0;border-top:1px solid #1e293b;margin-top:40px}
+.stat{text-align:center}.stat-num{font-size:2rem;font-weight:700;color:#00d4aa}.stat-label{color:#64748b}
+</style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Save<span>Share</span></h1>
-            <p>UK financial influencers – portfolios, insights & advice, all in one place.</p>
-        </div>
-    </header>
-    
-    <main class="container">
-        <div class="filters">
-            <button class="filter-btn active" data-filter="all">All</button>
-        </div>
-        
-        <div class="grid" id="influencerGrid">
-            <!-- Cards populated by JavaScript -->
-        </div>
-        
-        <div class="stats-bar">
-            <div class="stat-item">
-                <div class="number">16</div>
-                <div class="label">Influencers</div>
-            </div>
-            <div class="stat-item">
-                <div class="number">£1.4M</div>
-                <div class="label">Total Tracked</div>
-            </div>
-            <div class="stat-item">
-                <div class="number">0</div>
-                <div class="label">Articles</div>
-            </div>
-        </div>
-    </main>
-    
-    <footer>
-        <p>SaveShare • Data from public sources • Not financial advice</p>
-    </footer>
-    
-    <script src="data/influencers.json"></script>
-    <script>
-        // Loaded from JSON script above
-        const grid = document.getElementById('influencerGrid');
-        
-        function getInitials(name) {
-            return name.split(' ').map(n => n[0]).join('').substring(0, 2);
-        }
-        
-        function formatMoney(amount) {
-            if (amount >= 1000) {
-                return '£' + (amount / 1000).toFixed(0) + 'k';
-            }
-            return '£' + amount;
-        }
-        
-        function renderCards(filter = 'all') {
-            grid.innerHTML = '';
-            
-            const filtered = filter === 'all' 
-                ? inf.influencers 
-                : inf.influencers.filter(i => i.tags.includes(filter));
-            
-            filtered.forEach(inf => {
-                const card = document.createElement('a');
-                const articles = {
-  'mia-rose': ['blog/miarosemcgrath-if-i-was-18.html', 'blog/mia-rose-opportunity.html'],
-  'anna': 'blog/downgrading-my-bo-lifestyle.html'
-};
+<header class="container"><h1>Save<span>Share</span></h1><p>UK financial influencers – portfolios, insights & advice.</p></header>
+<main class="container">
+<div class="filters">
+<button class="fil active" data-f="all">All</button>
+</div>
+<div id="g"></div>
+</main>
+<footer class="container">
+<div class="stats-bar"><div class="stat"><span class="stat-num" id="ti">0</span><div class="stat-label">Influencers</div></div><div class="stat"><span class="stat-num" id="tw">£0</span><div class="stat-label">Total Net Worth</div></div></div>
+<p style="text-align:center;color:#475569;padding:20px">SaveShare • Not financial advice</p>
+</footer>
+<script>
+// INLINE DATA
+var data=[{id:"james-money-stocker",name:"James Money Stocker",handle:"@jamesmoneystocker",portfolio:{total:209000},tags:["stocks","lisa"]},{id:"trading-traveling",name:"Trading & Traveling",handle:"@tradingandtraveling",portfolio:{total:131000},tags:["stocks"]},{id:"neil-invests",name:"Neil Invests",handle:"@neilinvests",portfolio:{total:120000},tags:["stocks"]},{id:"dr-jubair",name:"Dr Jubair's Finance",handle:"@drjubairsfinance",portfolio:{total:114700},tags:["stocks"]},{id:"ben-finance",name:"BenFinance",handle:"@benfinance",portfolio:{total:109000},tags:["stocks"]},{id:"mia-rose",name:"Mia Rose",handle:"@miarosemcgrath",portfolio:{total:200000},tags:["stocks"]},{id:"seans-money",name:"Sean's Money",handle:"@seansmoney",portfolio:{total:122000},tags:["stocks","lisa"]}];
 
-function getArticleLink(id) {
-  return articles[id] || `#`;
-}
+function fm(a){return a>=1000?"£"+(a/1000).toFixed(0)+"k":"£"+a}
+function gi(n){return n.split(" ").map(w=>w[0]).join("").substring(0,2)}
 
-card.href = getArticleLink(inf.id);
-                card.className = 'card';
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div class="avatar">${getInitials(inf.name)}</div>
-                        <div>
-                            <h2>${inf.name}</h2>
-                            <div class="handle">${inf.handle}</div>
-                        </div>
-                    </div>
-                    <div class="portfolio-value">${formatMoney(inf.portfolio.total)}</div>
-                    <div class="tags">
-                        ${inf.tags.map(t => `<span class="tag">${t}</span>`).join('')}
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-        
-        // Filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                renderCards(btn.dataset.filter);
-            });
-        });
-        
-        renderCards();
-    </script>
+data.forEach(x=>{
+var el=document.createElement("a");
+el.href="blog/"+x.id+"-article.html";
+el.className="card";
+el.innerHTML='<div class="card-header"><div class="avatar">'+gi(x.name)+'</div><div><h2>'+x.name+'</h2><div class="handle">'+x.handle+'</div></div></div><div class="value">'+fm(x.portfolio.total)+'</div>';
+document.getElementById("g").appendChild(el);
+});
+var tot=data.reduce((a,b)=>a+(b.portfolio?b.portfolio.total:0),0);
+document.getElementById("ti").innerText=data.length;
+document.getElementById("tw").innerText=tot>=1000000?"£"+(tot/1000000).toFixed(1)+"M":"£"+(tot/1000).toFixed(0)+"k";
+</script>
 </body>
 </html>
