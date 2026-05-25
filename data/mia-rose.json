@@ -1,0 +1,13 @@
+{
+  "id": "mia-rose",
+  "name": "Mia Rose",
+  "handle": "@miarosemcgrath",
+  "bio": "UK investor sharing her journey",
+  "platform": "TikTok",
+  "portfolio": {
+    "stocks": 66940,
+    "total": 66940
+  },
+  "tags": ["stocks", "investing"],
+  "joined": "2024-01-01"
+}
