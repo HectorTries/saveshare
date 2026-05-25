@@ -176,6 +176,11 @@
         </div>
         
         <script>
+            const data = window.influencers?.influencers || [];
+            const total = data.reduce((sum, i) => sum + (i.portfolio?.total || 0), 0);
+            document.getElementById('totalInfluencers').textContent = data.length;
+            document.getElementById('totalNetWorth').textContent = total >= 1000000 ? '£' + (total/1000000).toFixed(1) + 'M' : '£' + (total/1000).toFixed(0) + 'k';
+        </script>
     </main>
     
     <footer>
@@ -184,13 +189,7 @@
     
     <script src="data/influencers.json"></script>
     <script>
-        // Load JSON first
-        const jsonLoaded = setInterval(() => {
-            if(window.influencers && window.influencers.influencers) {
-                clearInterval(jsonLoaded);
-                const influencers = window.influencers;
-                const grid = document.getElementById("influencerGrid");
-        console.log("Influencers loaded:", influencers);
+        const influencers = window.influencers || [];
         const grid = document.getElementById('influencerGrid');
         
         function getInitials(name) {
