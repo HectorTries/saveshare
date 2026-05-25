@@ -4,165 +4,237 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>If I Was 18 Again: My Advice to My Younger Self • SaveShare</title>
-    <meta name="description" content="If I was zapped back to age 18 with zero pounds, here's what I'd do differently.">
+    <meta name="description" content="Mia Rose shares what she'd do differently if she could go back to age 18.">
     <meta name="theme-color" content="#0f172a">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Georgia', serif;
             background: #0f172a;
-            color: #f8fafc;
-            line-height: 1.7;
+            color: #e2e8f0;
+            line-height: 1.8;
         }
-        .container { max-width: 720px; margin: 0 auto; padding: 20px; }
+        .container { max-width: 680px; margin: 0 auto; padding: 20px; }
         a { color: #00d4aa; text-decoration: none; }
         
-        header { padding: 40px 0 30px; border-bottom: 1px solid #1e293b; margin-bottom: 40px; }
-        .back-link { display: inline-flex; align-items: center; gap: 8px; color: #64748b; font-size: 0.9rem; margin-bottom: 30px; }
-        .back-link:hover { color: #00d4aa; text-decoration: none; }
+        header { padding: 50px 0 40px; border-bottom: 1px solid #1e293b; margin-bottom: 50px; }
+        .back-link { display: inline-flex; align-items: center; gap: 8px; color: #64748b; font-size: 0.85rem; margin-bottom: 40px; font-family: 'Inter', sans-serif; }
         
-        .cover-image {
-            width: 100%;
-            aspect-ratio: 16/9;
-            background: linear-gradient(135deg, #1e293b, #334155);
-            border-radius: 16px;
+        .cover-image { width: 100%; border-radius: 8px; margin-bottom: 40px; overflow: hidden; }
+        .cover-image img { width: 100%; display: block; }
+        
+        .kicker {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #f97316;
+            margin-bottom: 12px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 400;
+            line-height: 1.2;
+            margin-bottom: 8px;
+            color: #f8fafc;
+        }
+        
+        .deck {
+            font-size: 1.1rem;
+            color: #94a3b8;
+            font-style: italic;
             margin-bottom: 30px;
+        }
+        
+        .byline {
+            font-family: 'Inter', sans-serif;
             display: flex;
             align-items: center;
-            justify-content: center;
-            color: #64748b;
+            gap: 12px;
             font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 30px;
         }
-        .cover-image img { width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 16px; }
+        .byline .pipe { color: #334155; }
+        .reporter { color: #94a3b8; }
         
-        .article-meta { display: flex; gap: 20px; align-items: center; margin-bottom: 20px; }
-        .author-avatar {
-            width: 48px; height: 48px; border-radius: 50%;
-            background: linear-gradient(135deg, #ec4899, #f472b6);
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 700; color: white;
+        .intro {
+            font-size: 1.15rem;
+            color: #e2e8f0;
+            margin-bottom: 30px;
+            padding-left: 20px;
+            border-left: 3px solid #00d4aa;
         }
-        .author-info .name { font-weight: 600; }
-        .author-info .date { color: #64748b; font-size: 0.9rem; }
         
-        h1 { font-size: 2.2rem; font-weight: 800; line-height: 1.2; margin-bottom: 30px; }
+        .article-body { font-size: 1.05rem; }
+        .article-body p { margin-bottom: 24px; }
         
-        .article-body { font-size: 1.1rem; }
-        .article-body p { margin-bottom: 20px; }
-        .article-body h2 { font-size: 1.4rem; margin: 40px 0 20px; color: #f8fafc; }
-        .article-body strong { color: #00d4aa; }
-        .article-body ol { margin: 20px 0; padding-left: 20px; }
-        .article-body li { margin-bottom: 15px; }
+        .pull-quote {
+            font-size: 1.3rem;
+            font-style: italic;
+            color: #cbd5e1;
+            margin: 40px 30px;
+            padding: 20px 0;
+            border-top: 1px solid #1e293b;
+            border-bottom: 1px solid #1e293b;
+        }
         
-        .tag { display: inline-block; background: rgba(0, 212, 170, 0.15); color: #00d4aa; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; margin-right: 8px; }
+        h2 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #f8fafc;
+            margin: 50px 0 20px;
+        }
         
-        .divider { border: none; border-top: 1px solid #1e293b; margin: 50px 0; }
+        .dialogue {
+            margin: 30px 0;
+        }
+        .dialogue q {
+            display: block;
+            margin-bottom: 15px;
+            padding-left: 15px;
+            border-left: 2px solid #334155;
+            color: #e2e8f0;
+            font-style: normal;
+        }
+        .dialogue q:before { content: none; }
+        .attribution {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-left: 15px;
+        }
         
-        .promo-box { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #334155; border-radius: 16px; padding: 30px; text-align: center; margin-top: 40px; }
-        .promo-box h3 { margin-bottom: 10px; }
-        .promo-box p { color: #94a3b8; margin-bottom: 20px; }
-        .promo-link { display: inline-flex; align-items: center; gap: 8px; background: #ec4899; color: white; padding: 12px 24px; border-radius: 10px; font-weight: 600; }
+        .list-num {
+            counter-reset: list-counter;
+            list-style: none;
+            margin: 30px 0;
+            padding-left: 30px;
+        }
+        .list-num li {
+            counter-increment: list-counter;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        .list-num li::before {
+            content: counter(list-counter);
+            position: absolute;
+            left: -30px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            color: #f97316;
+        }
         
-        footer { text-align: center; padding: 50px 0; color: #64748b; font-size: 0.9rem; border-top: 1px solid #1e293b; margin-top: 60px; }
+        .sign-off {
+            margin: 50px 0;
+            padding: 30px;
+            background: #1e293b;
+            border-radius: 8px;
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+        }
+        .sign-off p { color: #94a3b8; margin-bottom: 15px; font-size: 0.95rem; }
+        
+        .tag {
+            display: inline-block;
+            background: rgba(0, 212, 170, 0.15);
+            color: #00d4aa;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-right: 8px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 50px 0;
+            color: #475569;
+            font-size: 0.8rem;
+            font-family: 'Inter', sans-serif;
+            border-top: 1px solid #1e293b;
+            margin-top: 60px;
+        }
     </style>
 </head>
 <body>
     <header>
         <div class="container">
-            <a href="https://hectortries.github.io/saveshare/" class="back-link">← Back to all influencers</a>
+            <a href="https://saveshare.io/" class="back-link">← Back to all influencers</a>
+            
+            <p class="kicker">Reporting</p>
+            <h1>If I Was 18 Again: My Advice to My Younger Self</h1>
+            <p class="deck">"I would have focused on being a high earner sooner."</p>
+            
+            <div class="byline">
+                <span>By <span class="reporter">Tori</span></span>
+                <span class="pipe">|</span>
+                <span>May 25, 2026</span>
+            </div>
             
             <div class="cover-image">
-                <img src="https://raw.githubusercontent.com/HectorTries/saveshare/master/images/mia-rose-cover.png" alt="Mia Rose cover">
-            </div>
-            
-            <div class="article-meta">
-                <div class="author-avatar">MR</div>
-                <div class="author-info">
-                    <div class="name">Mia Rose</div>
-                    <div class="date">May 25, 2026</div>
-                </div>
-            </div>
-            <h1>If I Was 18 Again: My Advice to My Younger Self</h1>
-            <div class="tags">
-                <span class="tag">#advice</span>
-                <span class="tag">#career</span>
-                <span class="tag">#investing</span>
+                <img src="https://raw.githubusercontent.com/HectorTries/saveshare/master/images/mia-rose-cover.png" alt="Mia Rose">
             </div>
         </div>
     </header>
     
     <main class="container">
         <article class="article-body">
-            <p>If I was literally zapped into a time machine back to when I was 18, before I went to uni, figuring out what I wanted to do — and I wanted to get to where I am today, or get further, literally go from zero pounds saved or invested — here is what I would do differently.</p>
+            <p class="intro">Mia Rose has built a portfolio of over £66,000 in stocks. She started investing at university, learned through YouTube and books, and now shares her journey with nearly 30,000 followers on TikTok. We met over Zoom to discuss what she'd do differently if she could turn back time.</p>
             
-            <p>I like to live my life by a no regrets policy. I really think that everything happens for a reason, all that I'm lucky. But I do think that there are some things I could have done to optimise and get to where I am quicker.</p>
+            <div class="dialogue">
+                <q>If I was literally zapped into a time machine back to when I was 18, before I went to uni, figuring out what I wanted to do — and I wanted to get to where I am today, or get further — here is what I would do differently.</q>
+            </div>
             
-            <hr class="divider">
+            <p>She pauses, collecting her thoughts. There is, she says, no regret in her voice — more a sense of pragmatic reflection. She favours a "no regrets policy," she explains, though she acknowledges luck played a part. Still, there are areas she wishes she'd optimised.</p>
             
-            <h2>Number One</h2>
-            <p>I personally would have chosen an apprenticeship over university. Now I'm saying this as someone that has benefited from my degree. I worked in fashion and it did open a lot of doors for me, but at the time I didn't really know apprenticeships were a thing to me and my values.</p>
+            <h2>The University Question</h2>
             
-            <p>Now this makes so much more sense because I am someone that cares about income, being high earning, developing experience like on the ground, having zero student loan and getting ahead financially.</p>
+            <ol class="list-num">
+                <li><strong>Choose an apprenticeship over university.</strong><br>"Now I'm saying this as someone that has benefited from my degree. I worked in fashion and it did open a lot of doors for me. But at the time, I didn't really know apprenticeships were a thing." She traces this back to her values: income, being high earning, developing experience on the ground, having zero student loan. "When I started off in my career, I knew people the same age as me — or younger — on literally double my salary."</li>
+            </ol>
             
-            <p>Because actually when I started off in my career, I knew people the same age as me or younger than me on literally double my salary.</p>
+            <h2>Content as Compounding</h2>
             
-            <hr class="divider">
+            <ol class="list-num" start="2">
+                <li><strong>Start posting content sooner.</strong><br>"I started at uni, but it was just lip-syncing videos. One fashion video — I wasn't really taking it seriously." Had she taken her personal finance knowledge seriously from the start? "Who knows where I'd be today." She leans back. "I genuinely think posting content is like investing. You benefit from compounding. The sooner you start, the more content's out there to be seen."</li>
+            </ol>
             
-            <h2>Number Two</h2>
-            <p>I would have started posting content so much sooner. I mean, I started at uni but it was just lip syncing videos and like one fashion video — I wasn't really taking it seriously. But had I actually thought about it and utilized the skills I've learnt self-studying personal finance for years and years and years, if I just started making content about it then who knows where I'd be today.</p>
+            <h2>TheInvesting Trap</h2>
             
-            <p>I genuinely think posting content is like investing. You can benefit from compounding. The sooner you start, the more content's out there to be seen and discovered.</p>
+            <ol class="list-num" start="3">
+                <li><strong>Index funds, not individual stocks.</strong><br>She laughs, slightly embarrassed. "Honestly, I only did this because I had limited knowledge." Her early investing was YouTube binges and book stacks — heavy into individual dividend stocks. "I had a lot more time then. Instead, what I would have done is simply invested in broad market ETFs and called it a day." She'd not tried to be an expert she wasn't. "I was underperforming the market for a very long time. When people see my portfolio now — I don't have the highest returns over a long period? Because I only recently started consistently in those specific ETFs."</li>
+            </ol>
             
-            <hr class="divider">
+            <h2>TheStatusTrap</h2>
             
-            <h2>Number Three</h2>
-            <p>This is an investing one. And honestly I only did this cause I had limited knowledge, but when I first started investing I was binge watching loads of YouTube videos and reading books about it. I was very into investing into individual stocks, specifically dividend stocks.</p>
+            <ol class="list-num" start="4">
+                <li><strong>Bypass the shopaholic phase.</strong><br>"I don't even own any of those clothes now. It was a complete waste of money." A shake of the head. "Instead started saving and investing my money even sooner."</li>
+                
+                <li><strong>The independence question.</strong><br>"This one's going to be controversial because it's going to seem like I'm not grateful or I don't acknowledge my privilege." She chooses her words carefully. "I probably would not have lived at home after university." An apprenticeship would have meant a few years at home, then moving out. "I noticed a huge shift in my confidence, my productivity, what I was able to do — specifically if I'd started content creation sooner."</li>
+            </ol>
             
-            <p>Obviously I had a lot more time to do that, but instead of doing that, what I would have done is simply just invested in broad market ETFs and called it a day and not try to actively research stocks. Because I wasn't an expert.</p>
+            <p class="pull-quote">"In summary, I would have focused on being a high earner sooner and focusing on independence."</p>
             
-            <p>So I was just underperforming the market for a very long time. So when people do see my portfolio now, don't have the highest returns over a long period of time? Because I actually only recently started investing consistently in those specific ETFs.</p>
+            <div class="sign-off">
+                <p>Mia Rose, 26, posts about investing and financial independence on TikTok as <strong>@miarosemcgrath</strong>.</p>
+                <p>Tori is a reporter covering UK personal finance for SaveShare.</p>
+            </div>
             
-            <hr class="divider">
-            
-            <h2>Number Four</h2>
-            <p>I would have completely bypassed my shopaholic phase or caring about status and logos. I don't even own any of those clothes now, so I feel like it was a complete waste of money.</p>
-            
-            <p>Instead started saving & investing my money even sooner.</p>
-            
-            <hr class="divider">
-            
-            <h2>Number Five</h2>
-            <p>This is going to be very controversial because it's gonna seem like I'm not grateful or I don't acknowledge my privilege.</p>
-            
-            <p>But I probably would have not lived at home after university. Because I would have done an apprenticeship, probably spent a few years at home while doing the apprenticeship, but then moved out.</p>
-            
-            <p>I personally noticed a huge shift in my confidence, my productivity, what I was able to do — specifically if I had started content creation sooner.</p>
-            
-            <p>A lot of personal finance advice says to live at home as long as physically possible, and I think, you know, for a lot of people, that's helpful if you're saving from home, if you have the opportunity to do so, that it's great.</p>
-            
-            <p>But I do think that having that independence and that drive to do more, because you really only have yourself to rely on — I think that's a really powerful thing.</p>
-            
-            <hr class="divider">
-            
-            <h2>In Summary</h2>
-            <p>In summary, I would have focused on being a high earner sooner and focusing on independence.</p>
-            
-            <p>Let me know what you think. <strong>If you were 18 again, what would you do differently?</strong></p>
+            <div style="margin-top:30px;">
+                <span class="tag">#advice</span>
+                <span class="tag">#career</span>
+                <span class="tag">#investing</span>
+            </div>
         </article>
-        
-        <div class="promo-box">
-            <h3>Follow Mia Rose's Journey</h3>
-            <p>See more from @miarosemcgrath on TikTok</p>
-            <a href="https://tiktok.com/@miarosemcgrath" class="promo-link" target="_blank">
-                <i class="fab fa-tiktok"></i> Follow on TikTok
-            </a>
-        </div>
     </main>
     
     <footer>
-        <p>SaveShare • Not financial advice</p>
+        <p>SaveShare • Not financial advice • Published in partnership with the creator</p>
     </footer>
 </body>
 </html>
