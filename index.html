@@ -184,7 +184,13 @@
     
     <script src="data/influencers.json"></script>
     <script>
-        const influencers = window.influencers || [];
+        // Load JSON first
+        const jsonLoaded = setInterval(() => {
+            if(window.influencers && window.influencers.influencers) {
+                clearInterval(jsonLoaded);
+                const influencers = window.influencers;
+                const grid = document.getElementById("influencerGrid");
+        console.log("Influencers loaded:", influencers);
         const grid = document.getElementById('influencerGrid');
         
         function getInitials(name) {
