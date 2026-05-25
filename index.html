@@ -212,7 +212,16 @@
             
             filtered.forEach(inf => {
                 const card = document.createElement('a');
-                card.href = `influencers/${inf.id}.html`;
+                const articles = {
+  'mia-rose': 'blog/miarosemcgrath-if-i-was-18.html',
+  'anna': 'blog/downgrading-my-bo-lifestyle.html'
+};
+
+function getArticleLink(id) {
+  return articles[id] || `#`;
+}
+
+card.href = getArticleLink(inf.id);
                 card.className = 'card';
                 card.innerHTML = `
                     <div class="card-header">
