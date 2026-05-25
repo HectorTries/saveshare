@@ -1,0 +1,209 @@
+window.influencers = {
+  "influencers": [
+    {
+      "id": "james-money-stocker",
+      "name": "James Money Stocker",
+      "handle": "@jamesmoneystocker",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 85000,
+        "lisa": 124000,
+        "total": 209000
+      },
+      "tags": ["stocks", "lisa"],
+      "joined": "2024-01-01"
+    },
+    {
+      "id": "trading-traveling",
+      "name": "Trading & Traveling",
+      "handle": "@tradingandtraveling",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 131000,
+        "total": 131000
+      },
+      "tags": ["stocks", "trading"],
+      "joined": "2024-02-01"
+    },
+    {
+      "id": "neil-invests",
+      "name": "Neil Invests",
+      "handle": "@neilinvests",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 120000,
+        "total": 120000
+      },
+      "tags": ["stocks", "investing"],
+      "joined": "2024-01-15"
+    },
+    {
+      "id": "dr-jubair",
+      "name": "Dr Jubair's Finance",
+      "handle": "@drjubairsfinance",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 114700,
+        "total": 114700
+      },
+      "tags": ["stocks", "doctor"],
+      "joined": "2024-03-01"
+    },
+    {
+      "id": "ben-finance",
+      "name": "BenFinance",
+      "handle": "@benfinance",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 109000,
+        "total": 109000
+      },
+      "tags": ["stocks"],
+      "joined": "2024-02-15"
+    },
+    {
+      "id": "mia-rose",
+      "name": "Mia Rose",
+      "handle": "@miarosemcgrath",
+      "followers": 550000,
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 200000,
+        "total": 200000
+      },
+      "tags": ["stocks", "investing"],
+      "joined": "2024-01-01"
+    },
+
+    {
+
+      "id": "seans-money",
+      "name": "Sean's Money",
+      "handle": "@seansmoney",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 100000,
+        "lisa": 22000,
+        "total": 122000
+      },
+      "tags": ["stocks", "lisa"],
+      "joined": "2024-02-01"
+    },
+    {
+      "id": "iains-money",
+      "name": "Iain's Money Insights",
+      "handle": "@iainsmoneyinsights",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 66324,
+        "total": 66324
+      },
+      "tags": ["stocks", "tips"],
+      "joined": "2024-03-15"
+    },
+    {
+      "id": "gabriella",
+      "name": "Gabriella Goddard",
+      "handle": "@gabriellagoddard",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 44250,
+        "total": 44250
+      },
+      "tags": ["stocks"],
+      "joined": "2024-04-01"
+    },
+    {
+      "id": "dant",
+      "name": "DanT",
+      "handle": "@dant",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 45000,
+        "total": 45000
+      },
+      "tags": ["stocks"],
+      "joined": "2024-03-01"
+    },
+    {
+      "id": "connie",
+      "name": "Connie",
+      "handle": "@connie",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 10000,
+        "total": 10000
+      },
+      "tags": ["stocks", "beginner"],
+      "joined": "2024-05-01"
+    },
+    {
+      "id": "will-gryba",
+      "name": "Will Gryba",
+      "handle": "@willgryba",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 17610,
+        "lisa": 2400,
+        "total": 20010
+      },
+      "tags": ["stocks", "lisa"],
+      "joined": "2024-04-15"
+    },
+    {
+      "id": "ellenor",
+      "name": "Ellenor",
+      "handle": "@ellenor",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 454,
+        "lisa": 11580,
+        "total": 12034
+      },
+      "tags": ["stocks", "lisa"],
+      "joined": "2024-05-15"
+    },
+    {
+      "id": "vini",
+      "name": "Vini Nadarajah",
+      "handle": "@vininadarajah",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 7900,
+        "lisa": 8200,
+        "total": 16100
+      },
+      "tags": ["stocks", "lisa"],
+      "joined": "2024-06-01"
+    },
+    {
+      "id": "ollie-invests",
+      "name": "Ollie Invests",
+      "handle": "@ollieinvests",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 4950,
+        "total": 4950
+      },
+      "tags": ["stocks", "beginner"],
+      "joined": "2024-06-15"
+    },
+    {
+      "id": "fw-invest",
+      "name": "FWInvest",
+      "handle": "@fwinvest",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 1666,
+        "total": 1666
+      },
+      "tags": ["stocks"],
+      "joined": "2024-07-01"
+    }
+  ],
+  "stats": {
+    "totalInfluencers": 16,
+    "totalPortfolio": 872974,
+    "lastUpdated": "2026-05-22"
+  }
+};
