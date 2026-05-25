@@ -248,13 +248,16 @@ card.href = getArticleLink(inf.id);
             });
         });
         
-        setTimeout(function(){
-const data = influencers.influencers || [];
-const total = data.reduce((sum,i)=>sum+(i.portfolio?.total||0),0);
-if(document.getElementById("totalInfluencers"))document.getElementById("totalInfluencers").innerText=data.length;
-if(document.getElementById("totalNetWorth"))document.getElementById("totalNetWorth").innerText=total>=1000000?"£"+(total/1000000).toFixed(1)+"M":"£"+(total/1000).toFixed(0)+"k";
-renderCards();
-}, 100);
+        if(influencers && influencers.influencers && influencers.influencers.length > 0) {
+    const data = influencers.influencers;
+    const total = data.reduce((sum,i)=>sum+(i.portfolio?.total||0),0);
+    if(document.getElementById("totalInfluencers"))document.getElementById("totalInfluencers").innerText=data.length;
+    if(document.getElementById("totalNetWorth"))document.getElementById("totalNetWorth").innerText=total>=1000000?"£"+(total/1000000).toFixed(1)+"M":"£"+(total/1000).toFixed(0)+"k";
+    renderCards();
+} else {
+    console.log("waiting for json...");
+    setTimeout(arguments.callee, 200);
+}
     </script>
 </body>
 </html>
