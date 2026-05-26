@@ -58,7 +58,7 @@ total+=d.networth;
 var v=d.networth>=1000?((d.networth)/1000).toFixed(0)+"K":"£"+d.networth;
 var tagsHtml=d.tags.map(function(t){return'<span class="tag">'+t+'</span>'}).join("");
 var flwTxt=d.followers>0?'<div style="color:#64748b;font-size:0.8rem">'+Math.round(d.followers/1000)+'K followers</div>':'';
-gridEl.innerHTML+='<a href="/influencer/'+d.id+'" class="card"><div class="rank">'+d.rank+'</div><div class="name">'+d.name+'</div><div class="handle">'+d.handle+'</div>'+flwTxt+'<div class="net">£'+v+'</div><div class="tags">'+tagsHtml+'</div><div class="power">Power: '+d.power.toLocaleString()+'</div></a>';
+gridEl.innerHTML+='<a href="/influencer/\.html'+d.id+'" class="card"><div class="rank">'+d.rank+'</div><div class="name">'+d.name+'</div><div class="handle">'+d.handle+'</div>'+flwTxt+'<div class="net">£'+v+'</div><div class="tags">'+tagsHtml+'</div><div class="power">Power: '+d.power.toLocaleString()+'</div></a>';
 });
 document.getElementById("totalInf").innerText=data.length;
 document.getElementById("totalNet").innerText="£"+(total>=1000000?(total/1000000).toFixed(1)+"M":"£"+(total/1000).toFixed(0)+"K");
