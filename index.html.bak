@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SaveShare - UK Financial Influencers</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*{box-sizing:border-box;}
+body{margin:0;padding:20px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#fff;}
+.container{max-width:900px;margin:0 auto;}
+h1{text-align:center;font-size:2.5rem;margin-bottom:5px;}
+h1 span{color:#00d4aa;}
+.subtitle{text-align:center;color:#64748b;margin-bottom:30px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px;}
+.card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:15px;text-decoration:none;color:#fff;display:block;transition:0.2s;}
+.card:hover{border-color:#00d4aa;transform:translateY(-2px);}
+.stats{display:flex;justify-content:center;gap:40px;padding:25px 0;border-top:1px solid #1e293b;margin-top:25px;}
+.statItem{text-align:center;}
+.statNum{font-size:1.8rem;color:#00d4aa;font-weight:bold;}
+.statLabel{font-size:0.8rem;color:#64748b;}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Save<span>Share</span></h1>
+<p class="subtitle">UK Financial Influencers</p>
+<div class="grid" id="grid"></div>
+<div class="stats">
+<div class="statItem"><div class="statNum" id="totalInf">0</div><div class="statLabel">Influencers</div></div>
+<div class="statItem"><div class="statNum" id="totalNet">£0</div><div class="statLabel">Total Net Worth</div></div>
+</div>
+</div>
+<script>
+var data=[
+{id:"mia-rose",name:"Mia Rose",handle:"@miarosemcgrath",networth:200000},
+{id:"sophie-blank",name:"Sophie Blank",handle:"@itssophieblank",networth:200000},
+{id:"james",name:"James Money Stocker",handle:"@jamesmoneystocker",networth:209000},
+{id:"trading",name:"Trading & Traveling",handle:"@tradingandtraveling",networth:131000},
+{id:"sean",name:"Sean",handle:"@seansmoney",networth:122000},
+{id:"neil",name:"Neil Invests",handle:"@neilinvests",networth:120000},
+{id:"hannah",name:"Hannah Bevington",handle:"@hannahbevington",networth:120000},
+{id:"drjubair",name:"Dr Jubair",handle:"@drjubairsfinance",networth:114700},
+{id:"ben",name:"BenFinance",handle:"@benfinance",networth:109000}
+];
+var total=0;
+var gridEl=document.getElementById("grid");
+data.forEach(function(d){total+=d.networth});
+document.getElementById("totalInf").innerText=data.length;
+document.getElementById("totalNet").innerText="£"+(total>=1000000?(total/1000000).toFixed(1)+"M":"£"+(total/1000).toFixed(0)+"K");
+data.forEach(function(d){
+var v=d.networth>=1000?((d.networth)/1000).toFixed(0)+"K":"£"+d.networth;
+gridEl.innerHTML+='<div class="card"><div style="font-weight:600">'+d.name+'</div><div style="color:#64748b;font-size:0.85rem">'+d.handle+'</div><div style="color:#00d4aa;font-size:1.2rem;margin-top:5px">£'+v+'</div></div>';
+});
+</script>
+</body>
+</html>
