@@ -66,12 +66,14 @@ el.href=x.article?"https://saveshare.io/"+x.article:"#";
 el.className="card";
 var flw=x.followers>0?'<div class="followers">'+fc(x.followers)+' followers</div>':'';
 var art=x.article?'<div class="articles">📄 View portfolio →</div>':'';
-el.innerHTML='<div class="card-header"><div class="avatar">'+gi(x.name)+'</div><div><h2>'+x.name+'</h2><div class="handle">'+x.handle+'</div></div></div>'+flw+'<div class="value">'+fm(x.total)+'</div><div class="tags">'+x.tags.map(t=>'<span class="tag">'+t+'</span>').join('')+'</div>'+art;
+var tagsHtml="";
+if(x.tags){x.tags.forEach(function(t){tagsHtml+='<span class="tag">'+t+"</span>"})}
+el.innerHTML='<div class="card-header"><div class="avatar">'+gi(x.name)+'</div><div><h2>'+x.name+'</h2><div class="handle">'+x.handle+'</div></div></div>'+flw+'<div class="value">'+fm(x.total)+'</div><div class="tags">'+tagsHtml+'</div>'+art;
 document.getElementById("g").appendChild(el);
 });
-var tot=data.reduce((a,b)=>a+b.total,0);
+var totalVal=0;for(var i=0;i<data.length;i++){totalVal+=data[i].total}
 document.getElementById("ti").innerText=data.length;
-document.getElementById("tw").innerText=tot>=1000000?"£"+(tot/1000000).toFixed(1)+"M":"£"+(tot/1000).toFixed(0)+"k";
+totalVal=totalVal>=1000000?"£"+(totalVal/1000000).toFixed(1)+"M":"£"+(totalVal/1000).toFixed(0)+"k";document.getElementById("tw").innerText=totalVal;
 </script>
 </body>
 </html>
