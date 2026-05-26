@@ -49,7 +49,7 @@ document.getElementById("totalInf").innerText=data.length;
 document.getElementById("totalNet").innerText="£"+(total>=1000000?(total/1000000).toFixed(1)+"M":"£"+(total/1000).toFixed(0)+"K");
 data.forEach(function(d){
 var v=d.networth>=1000?((d.networth)/1000).toFixed(0)+"K":"£"+d.networth;
-gridEl.innerHTML+='<div class="card"><div style="font-weight:600">'+d.name+'</div><div style="color:#64748b;font-size:0.85rem">'+d.handle+'</div><div style="color:#00d4aa;font-size:1.2rem;margin-top:5px">£'+v+'</div></div>';
+gridEl.innerHTML+='<a href="/influencer/'+d.id+'" class="card"><div style="font-weight:600">'+d.name+'</div><div style="color:#64748b;font-size:0.85rem">'+d.handle+'</div><div style="color:#00d4aa;font-size:1.2rem;margin-top:5px">£'+v+'</div></a>';
 });
 </script>
 </body>
