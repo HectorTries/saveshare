@@ -5,94 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SaveShare • UK Financial Influencers</title>
 <style>
-*{box-sizing:border-box}
-body{font-family:'Inter',sans-serif;background:#0f172a;color:#fff;margin:0;padding:0}
-a{color:#00d4aa;text-decoration:none}
-.c{max-width:1100px;margin:0 auto;padding:20px}
-h{text-align:center;padding:40px 0 30px}
-h span{color:#00d4aa}
-.d{display:flex;justify-content:center;gap:15px;margin-bottom:25px}
-.b{display:inline-block;background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:8px 16px;border-radius:20px;cursor:pointer}
-.b.on{background:#00d4aa;color:#0f172a}
-.card{background:#1e293b;border:1px solid #334155;border-radius:10px;margin:8px;padding:15px;display:inline-block;width:220px;text-decoration:none;color:#fff;vertical-align:top}
-.card:hover{border-color:#00d4aa;transform:translateY(-3px)}
-.av{width:40px;height:40px;background:linear-gradient(135deg,#00d4aa,#00b894);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#0f172a;font-size:0.9rem}
-.cv{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.n{font-size:0.95rem;margin:0}
-.h{color:#64748b;font-size:0.8rem}
-.v{font-size:1.3rem;color:#00d4aa;font-weight:700;margin:5px 0}
-.fl{font-size:0.75rem;color:#94a3b8;margin:5px 0}
-.t{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
-.ta{background:rgba(100,116,139,0.25);color:#94a3b8;padding:2px 6px;border-radius:8px;font-size:0.65rem}
-.at{font-size:0.75rem;color:#00d4aa;margin-top:5px}
-.s{display:flex;justify-content:center;gap:50px;padding:25px 0;border-top:1px solid #1e293b;margin-top:30px}
-.sa{text-align:center}
-.sn{font-size:1.8rem;font-weight:700;color:#00d4aa}
-.sl{color:#64748b;font-size:0.85rem}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#fff;padding:20px}
+.container{max-width:900px;margin:0 auto}
+h1{text-align:center;font-size:2.5rem;margin-bottom:5px}
+h1 span{color:#00d4aa}
+.subtitle{text-align:center;color:#64748b;margin-bottom:30px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:15px}
+.card-name{font-weight:600;margin-bottom:3px}
+.card-handle{color:#64748b;font-size:0.85rem}
+.card-value{color:#00d4aa;font-size:1.2rem;font-weight:bold;margin-top:5px}
+.stats{display:flex;justify-content:center;gap:40px;padding:25px 0;border-top:1px solid #334155;margin-top:25px}
+.stat-num{font-size:1.8rem;color:#00d4aa;font-weight:bold}
+.stat-label{font-size:0.8rem;color:#64748b}
 </style>
 </head>
 <body>
-<div class="c">
+<div class="container">
 <h1>Save<span>Share</span></h1>
-<p style="color:#94a3b8">UK financial influencers</p>
-
-<div class="d"><button class="b on">All</button></div>
-<div id="grid"></div>
-
-<div class="s">
-<div class="sa"><span class="sn" id="ti">0</span><div class="sl">Influencers</div></div>
-<div class="sa"><span class="sn" id="tw">£0</span><div class="sl">Total</div></div>
+<p class="subtitle">UK Financial Influencers</p>
+<div class="grid">
+<div class="card"><div class="card-name">Mia Rose</div><div class="card-handle">@miarosemcgrath</div><div class="card-value">£200K</div></div>
+<div class="card"><div class="card-name">Sophie Blank</div><div class="card-handle">@itssophieblank</div><div class="card-value">£200K</div></div>
+<div class="card"><div class="card-name">James Money Stocker</div><div class="card-handle">@jamesmoneystocker</div><div class="card-value">£209K</div></div>
+<div class="card"><div class="card-name">Trading & Traveling</div><div class="card-handle">@tradingandtraveling</div><div class="card-value">£131K</div></div>
+<div class="card"><div class="card-name">Sean's Money</div><div class="card-handle">@seansmoney</div><div class="card-value">£122K</div></div>
+<div class="card"><div class="card-name">Neil Invests</div><div class="card-handle">@neilinvests</div><div class="card-value">£120K</div></div>
+<div class="card"><div class="card-name">Hannah Bevington</div><div class="card-handle">@hannahbevington</div><div class="card-value">£120K</div></div>
+<div class="card"><div class="card-name">Dr Jubair</div><div class="card-handle">@drjubairsfinance</div><div class="card-value">£115K</div></div>
+<div class="card"><div class="card-name">BenFinance</div><div class="card-handle">@benfinance</div><div class="card-value">£109K</div></div>
+</div>
+<div class="stats">
+<div class="stat"><div class="stat-num">9</div><div class="stat-label">Influencers</div></div>
+<div class="stat"><div class="stat-num">£1.1M</div><div class="stat-label">Total Net Worth</div></div>
 </div>
 </div>
-
-<script>
-var data=[
-{id:"mia-rose",name:"Mia Rose",handle:"@miarosemcgrath",flw:550000,tot:200000,tg:["stocks"],"art":"blog/mia-rose-article.html"},
-{id:"james-money-stocker",name:"James Money Stocker",handle:"@jamesmoneystocker",flw:0,tot:209000,tg:["stocks","lisa"]},
-{id:"trading-traveling",name:"Trading & Traveling",handle:"@tradingandtraveling",flw:0,tot:131000,tg:["stocks"]},
-{id:"seans-money",name:"Sean's Money",handle:"@seansmoney",flw:0,tot:122000,tg:["stocks","lisa"]},
-{id:"neil-invests",name:"Neil Invests",handle:"@neilinvests",flw:0,tot:120000,tg:["stocks"]},
-{id:"hannah-bevington",name:"Hannah Bevington",handle:"@hannahbevington",flw:0,tot:120000,tg:["saving"],"art":"blog/hannah-bevington-how.html"},
-{id:"dr-jubair",name:"Dr Jubair's Finance",handle:"@drjubairsfinance",flw:0,tot:114700,tg:["stocks"]},
-{id:"ben-finance",name:"BenFinance",handle:"@benfinance",flw:0,tot:109000,tg:["stocks"]}
-];
-
-function G(id){return document.getElementById(id)}
-function Ini(s){
-return s.split(" ").map(function(w){return w[0]}).join("").substring(0,2)
-}
-function Fmt(v){
-return v>=1000?"£"+(v/1000).toFixed(0)+"k":"£"+v
-}
-function FmtFl(v){
-return v>=1000?"@"+(v/1000).toFixed(0)+"k":"@"+v
-}
-
-var TL = 0;
-for(var i=0;i<data.length;i++){
-var row = data[i];
-TL += row.tot;
-
-var a = document.createElement("a");
-a.href = row.art ? "https://saveshare.io/"+row.art : "#";
-a.className = "card";
-
-var tgs = "";
-for(var t=0;t<row.tg.length;t++){
-tgs += "<span class='ta'>"+row.tg[t]+"</span>";
-}
-
-var flwTxt = row.flw > 0 ? "<div class='fl'>"+FmtFl(row.flw)+" followers</div>" : "";
-var artTxt = row.art ? "<div class='at'>View portfolio →</div>" : "";
-
-a.innerHTML = "<div class='cv'><div class='av'>"+Ini(row.name)+"</div><div><div class='n'>"+row.name+"</div><div class='h'>"+row.handle+"</div></div></div>"+flwTxt+"<div class='v'>"+Fmt(row.tot)+"</div><div class='t'>"+tgs+"</div>"+artTxt;
-
-G("grid").appendChild(a);
-}
-
-var totTxt = TL >= 1000000 ? "£"+(TL/1000000).toFixed(1)+"M" : "£"+(TL/1000).toFixed(0)+"k";
-G("ti").innerText = data.length;
-G("tw").innerText = totTxt;
-</script>
 </body>
 </html>
