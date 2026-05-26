@@ -1,42 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>SaveShare</title>
+<title>SaveShare - UK Financial Influencers</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{background:#0f172a;color:#fff;font-family:sans-serif;margin:0;padding:20px}
-.c{max-width:800px;margin:0 auto}
-h1{text-align:center}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
-.card{background:#1e293b;padding:15px;border-radius:8px;border:1px solid #334155}
-.a{color:#00d4aa}
+*{box-sizing:border-box;}
+body{margin:0;padding:20px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#fff;}
+.container{max-width:900px;margin:0 auto;}
+h1{text-align:center;font-size:2.5rem;margin-bottom:5px;}
+h1 span{color:#00d4aa;}
+.subtitle{text-align:center;color:#64748b;margin-bottom:30px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px;}
+.card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:15px;text-decoration:none;color:#fff;transition:0.2s;}
+.card:hover{border-color:#00d4aa;transform:translateY(-2px);}
+.cardName{font-weight:600;margin-bottom:3px;}
+.cardHandle{color:#64748b;font-size:0.85rem;}
+.cardValue{font-size:1.2rem;color:#00d4aa;font-weight:bold;margin-top:8px;}
+.stats{display:flex;justify-content:center;gap:40px;padding:25px 0;border-top:1px solid #1e293b;margin-top:25px;}
+.statItem{text-align:center;}
+.statNum{font-size:1.8rem;color:#00d4aa;font-weight:bold;}
+.statLabel{font-size:0.8rem;color:#64748b;}
+@media (max-width:500px){.grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
-<div class="c">
-<h1>SaveShare <span class="a">UK Influencers</span></h1>
-<div class="grid" id="g"></div>
-<div class="stats" style="display:flex;justify-content:center;gap:30px;padding:20px">
-<span id="t">0</span>
-<span id="s">£0</span>
+<div class="container">
+<h1>Save<span>Share</span></h1>
+<p class="subtitle">UK Financial Influencers</p>
+
+<div class="grid" id="grid"></div>
+
+<div class="stats">
+<div class="statItem"><div class="statNum" id="totalInf">0</div><div class="statLabel">Influencers</div></div>
+<div class="statItem"><div class="statNum" id="totalNet">£0</div><div class="statLabel">Total Net Worth</div></div>
 </div>
 </div>
+
 <script>
-var d=[
-{n:"Mia Rose",h:"@miarosemcgrath",v:200000,u:"influencer/mia-rose.html"},
-{n:"Sophie Blank",h:"@itssophieblank",v:200000,u:"influencer/sophie-blank.html"},
-{n:"James Money Stocker",h:"@jamesmoneystocker",v:209000},
-{n:"Trading & Traveling",h:"@tradingandtraveling",v:131000},
-{n:"Sean's Money",h:"@seansmoney",v:122000},
-{n:"Neil Invests",h:"@neilinvests",v:120000},
-{n:"Hannah",h:"@hannahbevington",v:120000,u:"influencer/hannah-bevington.html"},
-{n:"Dr Jubair",h:"@drjubairsfinance",v:114700},
-{n:"BenFinance",h:"@benfinance",v:109000}
+var data=[
+{id:"mia-rose",name:"Mia Rose",handle:"@miarosemcgrath",networth:200000,articleURL:"influencer/mia-rose.html"},
+{id:"sophie-blank",name:"Sophie Blank",handle:"@itssophieblank",networth:200000,articleURL:"influencer/sophie-blank.html"},
+{id:"james",name:"James Money Stocker",handle:"@jamesmoneystocker",networth:209000},
+{id:"trading",name:"Trading & Traveling",handle:"@tradingandtraveling",networth:131000},
+{id:"sean",name:"Sean",handle:"@seansmoney",networth:122000},
+{id:"neil",name:"Neil Invests",handle:"@neilinvests",networth:120000},
+{id:"hannah",name:"Hannah Bevington",handle:"@hannahbevington",networth:120000,articleURL:"influencer/hannah-bevington.html"},
+{id:"drjubair",name:"Dr Jubair",handle:"@drjubairsfinance",networth:114700},
+{id:"ben",name:"BenFinance",handle:"@benfinance",networth:109000}
 ];
 var total=0;
-for(var i in d){total+=d[i].v;document.getElementById("g").innerHTML+='<div class="card"><b>'+d[i].n+'</b><br><small>'+d[i].h+'</small><br>£'+(d[i].v/1000).toFixed(0)+'K'+(d[i].u?' ↗':'')+'</div>'}
-document.getElementById("t").innerText=d.length;
-document.getElementById("s").innerText="£"+(total/1000).toFixed(0)+"K";
+var gridEl=document.getElementById("grid");
+data.forEach(function(item,index){
+total+=item.networth;
+var link=item.articleURL?item.articleURL:"#";
+var arrow=item.articleURL?" →":"";
+gridEl.innerHTML+='<a href="'+link+'" class="card"><div class="cardName">'+item.name+'</div><div class="cardHandle">'+item.handle+'</div><div class="cardValue">£'+(item.networth/1000).toFixed(0)+'K</div>'+arrow+'</a>';
+});
+document.getElementById("totalInf").innerText=data.length;
+document.getElementById("totalNet").innerText="£"+(total>=1000000?(total/1000000).toFixed(1)+"M":"£"+(total/1000).toFixed(0)+"K");
 </script>
 </body>
 </html>
