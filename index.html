@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SaveShare</title>
+<style>
+body{background:#0f172a;color:#fff;font-family:sans-serif;margin:0;padding:20px}
+.c{max-width:800px;margin:0 auto}
+h1{text-align:center}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+.card{background:#1e293b;padding:15px;border-radius:8px;border:1px solid #334155}
+.a{color:#00d4aa}
+</style>
+</head>
+<body>
+<div class="c">
+<h1>SaveShare <span class="a">UK Influencers</span></h1>
+<div class="grid" id="g"></div>
+<div class="stats" style="display:flex;justify-content:center;gap:30px;padding:20px">
+<span id="t">0</span>
+<span id="s">£0</span>
+</div>
+</div>
+<script>
+var d=[
+{n:"Mia Rose",h:"@miarosemcgrath",v:200000,u:"influencer/mia-rose.html"},
+{n:"Sophie Blank",h:"@itssophieblank",v:200000,u:"influencer/sophie-blank.html"},
+{n:"James Money Stocker",h:"@jamesmoneystocker",v:209000},
+{n:"Trading & Traveling",h:"@tradingandtraveling",v:131000},
+{n:"Sean's Money",h:"@seansmoney",v:122000},
+{n:"Neil Invests",h:"@neilinvests",v:120000},
+{n:"Hannah",h:"@hannahbevington",v:120000,u:"influencer/hannah-bevington.html"},
+{n:"Dr Jubair",h:"@drjubairsfinance",v:114700},
+{n:"BenFinance",h:"@benfinance",v:109000}
+];
+var total=0;
+for(var i in d){total+=d[i].v;document.getElementById("g").innerHTML+='<div class="card"><b>'+d[i].n+'</b><br><small>'+d[i].h+'</small><br>£'+(d[i].v/1000).toFixed(0)+'K'+(d[i].u?' ↗':'')+'</div>'}
+document.getElementById("t").innerText=d.length;
+document.getElementById("s").innerText="£"+(total/1000).toFixed(0)+"K";
+</script>
+</body>
+</html>
