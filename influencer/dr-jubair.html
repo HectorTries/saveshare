@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dr Jubair's Finance • SaveShare</title>
-    <meta name="description" content="Dr Jubair - 5+ years investing, £200K+ portfolio.">
+    <meta name="description" content="Dr Jubair - 5+ years investing, £200K+.">
     <meta name="theme-color" content="#0f172a">
     <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -14,7 +14,7 @@
     header{padding:40px 0;border-bottom:1px solid #1e293b;margin-bottom:40px}
     .ba{display:flex;align-items:center;gap:8px;color:#64748b;font-size:0.9rem}
     .hero{display:flex;gap:30px;align-items:center;flex-wrap:wrap;margin-bottom:30px}
-    .av{width:100px;height:100px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:#fff}
+    .av{width:100px;height:100px;border-radius:50%;object-fit:cover;margin-right:10px}
     .hi{margin-bottom:8px;font-size:2.2rem}
     .ha{color:#64748b;font-size:1rem}
     .bio{color:#94a3b8;max-width:500px;margin-bottom:20px}
@@ -23,6 +23,15 @@
     .stat-num{font-size:1.8rem;font-weight:700;color:#00d4aa}
     .stat-label{color:#64748b;font-size:0.85rem}
     .stats{display:flex;gap:15px;flex-wrap:wrap;margin:25px 0}
+    .pie-wrap{background:#1e293b;border-radius:12px;padding:25px;margin:25px 0}
+    .pie-wrap h3{color:#94a3b8;font-size:0.9rem;margin-bottom:20px}
+    .pie{width:180px;height:180px;border-radius:50%;margin:0 auto 20px;background:conic-gradient(#6366f1 0deg 180deg,#00d4aa 180deg 270deg,#f97316 270deg 360deg);position:relative}
+    .pie::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80px;height:80px;background:#1e293b;border-radius:50%}
+    .leg{display:flex;flex-wrap:wrap;gap:15px;justify-content:center}
+    .leg-it{display:flex;align-items:center;gap:8px;font-size:0.9rem}
+    .leg-dot{width:14px;height:14px;border-radius:3px}
+    .leg-name{color:#cbd5e1}
+    .leg-pct{color:#64748b}
     .sec{padding:25px;background:#1e293b;border-radius:12px;margin:25px 0}
     h2{font-size:1.1rem;color:#f8fafc;margin:35px 0 15px}
     </style>
@@ -38,7 +47,7 @@
 <div>
 <h1 class="hi">Dr Jubair's Finance</h1>
 <div class="ha">@drjubairsfinance • Age 35</div>
-<div class="bio">Medical doctor turned investor. 5+ years of consistent investing. Targeting long-term wealth through index funds.</div>
+<div class="bio">Medical doctor turned investor. 5+ years of consistent investing.</div>
 </div>
 </div>
 
@@ -53,11 +62,21 @@
 </div>
 </div>
 
-<div class="tip">💡 "Pay yourself first — invest at the start of each month before anything else. Consistent investing beats timing the market."</div>
+<div class="pie-wrap">
+<h3>Portfolio Allocation</h3>
+<div class="pie"></div>
+<div class="leg">
+<div class="leg-it"><div class="leg-dot" style="background:#6366f1"></div><span class="leg-name">Global ETFs</span><span class="leg-pct">50%</span></div>
+<div class="leg-it"><div class="leg-dot" style="background:#00d4aa"></div><span class="leg-name">Pensions</span><span class="leg-pct">25%</span></div>
+<div class="leg-it"><div class="leg-dot" style="background:#f97316"></div><span class="leg-name">Cash</span><span class="leg-pct">25%</span></div>
+</div>
+</div>
+
+<div class="tip">💡 "Pay yourself first — invest at the start of each month before anything else."</div>
 
 <div class="sec">
 <h2>About Dr Jubair</h2>
-<p style="color:#94a3b8">Medical professional who realised that wealth building requires consistent action. Believes in paying yourself first and letting compound growth work over decades.</p>
+<p style="color:#94a3b8">Medical professional who realised that wealth building requires consistent action. Believes in paying yourself first.</p>
 </div>
 
 <p style="text-align:center;color:#475569;padding:30px 0">SaveShare • Not financial advice</p>
