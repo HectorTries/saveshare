@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>James Money Stocker • SaveShare</title>
-    <meta name="description" content="James Money Stocker - UK finance creator targeting £1M by 45.">
+    <meta name="description" content="James Money Stocker - targeting £1M by 45.">
     <meta name="theme-color" content="#0f172a">
     <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -14,7 +14,7 @@
     header{padding:40px 0;border-bottom:1px solid #1e293b;margin-bottom:40px}
     .ba{display:flex;align-items:center;gap:8px;color:#64748b;font-size:0.9rem}
     .hero{display:flex;gap:30px;align-items:center;flex-wrap:wrap;margin-bottom:30px}
-    .av{width:100px;height:100px;background:linear-gradient(135deg,#10b981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:#fff}
+    .av{width:100px;height:100px;border-radius:50%;object-fit:cover;margin-right:10px}
     .hi{margin-bottom:8px;font-size:2.2rem}
     .ha{color:#64748b;font-size:1rem}
     .goal{background:#10b981;color:#0f172a;padding:8px 16px;border-radius:8px;font-weight:600;margin-top:10px;display:inline-block}
@@ -24,6 +24,15 @@
     .stat-label{color:#64748b;font-size:0.85rem}
     .stats{display:flex;gap:15px;flex-wrap:wrap;margin:25px 0}
     .gain{color:#10b981;font-size:0.9rem}
+    .pie-wrap{background:#1e293b;border-radius:12px;padding:25px;margin:25px 0}
+    .pie-wrap h3{color:#94a3b8;font-size:0.9rem;margin-bottom:20px}
+    .pie{width:180px;height:180px;border-radius:50%;margin:0 auto 20px;background:conic-gradient(#10b981 0deg 95deg,#6366f1 95deg 160deg,#f97316 160deg 200deg,#00d4aa 200deg 360deg);position:relative}
+    .pie::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80px;height:80px;background:#1e293b;border-radius:50%}
+    .leg{display:flex;flex-wrap:wrap;gap:15px;justify-content:center}
+    .leg-it{display:flex;align-items:center;gap:8px;font-size:0.9rem}
+    .leg-dot{width:14px;height:14px;border-radius:3px}
+    .leg-name{color:#cbd5e1}
+    .leg-pct{color:#64748b}
     .sec{padding:25px;background:#1e293b;border-radius:12px;margin:25px 0}
     h2{font-size:1.1rem;color:#f8fafc;margin:35px 0 15px}
     </style>
@@ -55,14 +64,19 @@
 </div>
 </div>
 
-<div class="sec">
-<h2>Portfolio Breakdown</h2>
-<p style="color:#94a3b8">Three SIPPs worth £245K total (workplace, personal, and limited company). Stocks & shares ISA. Plus £90K property equity (half-share with partner).</p>
+<div class="pie-wrap">
+<h3>Portfolio Allocation</h3>
+<div class="pie"></div>
+<div class="leg">
+<div class="leg-it"><div class="leg-dot" style="background:#10b981"></div><span class="leg-name">SIPPs</span><span class="leg-pct">53%</span></div>
+<div class="leg-it"><div class="leg-dot" style="background:#6366f1"></div><span class="leg-name">Stocks & ISA</span><span class="leg-pct">28%</span></div>
+<div class="leg-it"><div class="leg-dot" style="background:#f97316"></div><span class="leg-name">Property</span><span class="leg-pct">19%</span></div>
+</div>
 </div>
 
 <div class="sec">
 <h2>About James</h2>
-<p style="color:#94a3b8">Started investing during COVID. Uses Wealthlog to track everything. Believes in compound growth and diversified index funds.</p>
+<p style="color:#94a3b8">Started investing during COVID. Uses Wealthlog to track everything. Believes in compound growth and diversified index funds. Three SIPPs: workplace, personal, and limited company.</p>
 </div>
 
 <p style="text-align:center;color:#475569;padding:30px 0">SaveShare • Not financial advice</p>
