@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SaveShare Stats</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:20px;font-family:system-ui,Inter,sans-serif;background:#0f172a;color:#fff}
+.c{max-width:900px;margin:0 auto}
+h1{text-align:center;font-size:2.5rem;margin-bottom:5px}
+h1 span{color:#00d4aa}
+.subtitle{text-align:center;color:#64748b;margin-bottom:30px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:30px}
+.stat-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:25px;text-align:center}
+.stat-num{font-size:2rem;font-weight:700;color:#00d4aa}
+.stat-label{color:#64748b;font-size:0.9rem;margin-top:5px}
+h2{color:#fff;margin:30px 0 15px;font-size:1.3rem}
+h3{color:#94a3b8;font-size:1rem;margin:20px 0 10px}
+.bar-chart{display:flex;flex-direction:column;gap:12px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{width:140px;font-size:0.9rem;color:#cbd5e1}
+.bar-track{flex:1;height:24px;background:#1e293b;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;background:#00d4aa;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:0.8rem;font-weight:600;color:#0f172a}
+.bar-value{width:80px;text-align:right;font-weight:600}
+.table{display:grid;grid-template-columns:1fr 100px 100px 100px;gap:10px;background:#1e293b;border-radius:12px;padding:20px}
+.table-header{font-weight:600;color:#64748b;font-size:0.85rem;border-bottom:1px solid #334155;padding-bottom:10px}
+.table-row{display:contents}
+.table-cell{padding:10px 0;border-bottom:1px solid #1e293b}
+a{color:#00d4aa}
+nav{text-align:center;margin:30px 0}
+nav a{background:#1e293b;border:1px solid #334155;padding:12px 24px;border-radius:8px;margin:0 10px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="c">
+<h1>Save<span>Share</span></h1>
+<p class="subtitle">UK Financial Influencers • Stats</p>
+
+<div class="stat-grid">
+<div class="stat-card"><div class="stat-num" id="total-inf">0</div><div class="stat-label">Influencers</div></div>
+<div class="stat-card"><div class="stat-num" id="total-net">£0</div><div class="stat-label">Combined Net Worth</div></div>
+<div class="stat-card"><div class="stat-num" id="avg-net">£0</div><div class="stat-label">Average Net Worth</div></div>
+<div class="stat-card"><div class="stat-num" id="avg-age">0</div><div class="stat-label">Average Age</div></div>
+</div>
+
+<h2>Investment Vehicles</h2>
+<div class="bar-chart" id="vehicles"></div>
+
+<h2>Top Holdings</h2>
+<div class="bar-chart" id="holdings"></div>
+
+<h2>Leaderboard</h2>
+<div class="table">
+<div class="table-header">Name</div>
+<div class="table-header">Age</div>
+<div class="table-header">Net Worth</div>
+<div class="table-header">Power</div>
+<div id="leaderboard"></div>
+</div>
+
+<nav><a href="/">← Back to All</a></nav>
+</div>
+
+<script>
+var data=[
+{id:"mia-rose",name:"Mia Rose",age:25,networth:200000,power:603053,tags:["stocks","ISA","SIPP"],history:[{amount:50000},{amount:200000}]},
+{id:"james-money-stocker",name:"James Money Stocker",age:35,networth:465000,power:147045,tags:["SIPPs","ISA","property"],history:[{amount:280000},{amount:465000}]},
+{id:"dr-jubair",name:"Dr Jubair",age:35,networth:200000,power:64000,tags:["ETF","pension","cash"],history:[{amount:114700},{amount:200000}]},
+{id:"hannah-bevington",name:"Hannah Bevington",age:24,networth:120000,power:49873,tags:["stocks","ISA"],history:[{amount:10000},{amount:120000}]},
+{id:"sophie-blank",name:"Sophie Blank",age:28,networth:200000,power:75894,tags:["wealth"]},
+{id:"seans-money",name:"Sean's Money",age:26,networth:122000,power:48500,tags:["stocks","ISA"]},
+{id:"trading-traveling",name:"Trading & Traveling",age:32,networth:131000,power:44976,tags:["stocks","trading"]},
+{id:"neil-invests",name:"Neil Invests",age:29,networth:120000,power:44452,tags:["stocks","ISA"]},
+{id:"ben-finance",name:"BenFinance",age:27,networth:109000,power:42347,tags:["stocks"]}
+];
+
+// Calculate totals
+var total=data.reduce(function(s,d){return s+d.networth},0);
+var ages=data.reduce(function(s,d){return s+d.age},0)/data.length;
+document.getElementById("total-inf").innerText=data.length;
+document.getElementById("total-net").innerText="£"+(total/1000).toFixed(0)+"K";
+document.getElementById("avg-net").innerText="£"+(total/data.length/1000).toFixed(0)+"K";
+document.getElementById("avg-age").innerText=ages.toFixed(0);
+
+// Count vehicles
+var vehicles={};
+data.forEach(function(d){d.tags.forEach(function(t){vehicles[t]=(vehicles[t]||0)+1})});
+var vehHtml="",maxV=Math.max(...Object.values(vehicles));
+Object.keys(vehicles).sort(function(a,b){return vehicles[b]-vehicles[a]}).forEach(function(v){
+var pct=(vehicles[v]/maxV*100).toFixed(0);
+vehHtml+='<div class="bar-row"><div class="bar-label">'+v.toUpperCase()+'</div><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%">'+vehicles[v]+'</div></div></div>';
+});
+document.getElementById("vehicles").innerHTML=vehHtml;
+
+// Holdings breakdown
+var holdings={stocks:0,"SIPPs/pension":0,property:0,ISA:0,cash:0,ETF:0,wealth:0;
+data.forEach(function(d){d.tags.forEach(function(t){holdings[t]=(holdings[t]||0)+1})});
+var holdHtml="",maxH=Math.max(...Object.values(holdings).filter(function(x){return x>0}));
+Object.keys(holdings).filter(function(k){return holdings[k]>0}).sort(function(a,b){return holdings[b]-holdings[a]}).forEach(function(h){
+var pct=(holdings[h]/maxH*100).toFixed(0);
+holdHtml+='<div class="bar-row"><div class="bar-label">'+h+'</div><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%">'+holdings[h]+'</div></div></div>';
+});
+document.getElementById("holdings").innerHTML=holdHtml;
+
+// Leaderboard
+data.sort(function(a,b){return b.power-a.power});
+var lbHtml="";
+data.forEach(function(d,i){
+lbHtml+='<div class="table-row"><div class="table-cell">'+(i+1)+'. '+d.name+'</div><div class="table-cell">'+d.age+'</div><div class="table-cell">£'+(d.networth/1000).toFixed(0)+'K</div><div class="table-cell">'+d.power.toLocaleString()+'</div></div>';
+});
+document.getElementById("leaderboard").innerHTML=lbHtml;
+</script>
+</body>
+</html>
