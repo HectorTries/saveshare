@@ -11,45 +11,336 @@
     </script>
 
 <meta charset="UTF-8">
-<title>SaveShare - UK Financial Influencers</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="SaveShare — a directory of UK financial influencers, their portfolios and investment strategies.">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="SaveShare — UK Financial Influencers">
+<meta property="og:description" content="A directory of UK financial influencers, their portfolios and investment strategies.">
+<meta property="og:url" content="https://saveshare.io/">
+<meta property="og:image" content="https://saveshare.io/images/mia-rose-cover.png">
+<meta property="og:site_name" content="SaveShare">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SaveShare — UK Financial Influencers">
+<meta name="twitter:description" content="A directory of UK financial influencers, their portfolios and investment strategies.">
+<meta name="twitter:image" content="https://saveshare.io/images/mia-rose-cover.png">
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f172a'/><text x='16' y='22' font-family='Inter,sans-serif' font-size='18' font-weight='800' fill='%2300d4aa' text-anchor='middle'>£</text></svg>">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
-*{box-sizing:border-box}
-body{margin:0;padding:20px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#fff}
-.container{max-width:900px;margin:0 auto}
-h1{text-align:center;font-size:2.5rem;margin-bottom:5px}
-h1 span{color:#00d4aa}
-.subtitle{text-align:center;color:#64748b;margin-bottom:30px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px}
-.card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:15px;text-decoration:none;color:#fff;display:block;transition:0.2s}
-.card:hover{border-color:#00d4aa;transform:translateY(-2px)}
-.rank{background:#00d4aa;color:#0f172a;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;width:28px;height:28px;border-radius:50%;margin-bottom:8px}
-.img{width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:8px;background:#334155}
-.name{font-weight:600;margin-bottom:3px}
-.handle{color:#64748b;font-size:0.85rem}
-.net{color:#00d4aa;font-size:1.1rem;font-weight:600;margin:8px 0}
-.tags{display:flex;gap:5px;flex-wrap:wrap}
-.tag{background:#334155;color:#94a3b8;padding:2px 8px;border-radius:4px;font-size:0.75rem}
-.power{color:#f97316;font-size:0.8rem;margin-top:5px}
-.gain{color:#10b981;font-size:0.8rem}
-.trend{color:#10b981;font-size:0.75rem}
-.stats{display:flex;justify-content:center;gap:40px;padding:25px 0;border-top:1px solid #1e293b;margin-top:25px}
-.statItem{text-align:center}
-.statNum{font-size:1.8rem;color:#00d4aa;font-weight:bold}
-.statLabel{font-size:0.8rem;color:#64748b}
+:root {
+    --bg: #0f172a;
+    --bg-soft: #1e293b;
+    --border: #334155;
+    --text: #f8fafc;
+    --text-soft: #cbd5e1;
+    --text-muted: #64748b;
+    --teal: #00d4aa;
+    --teal-2: #00b894;
+    --orange: #f97316;
+    --green: #10b981;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Subtle background gradient */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0, 212, 170, 0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 100% 100%, rgba(249, 115, 22, 0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 64px 24px 32px;
+    position: relative;
+    z-index: 1;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+h1 {
+    font-size: clamp(2.2rem, 5vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 14px;
+    line-height: 1.1;
+}
+
+h1 span {
+    background: linear-gradient(135deg, var(--teal) 0%, var(--teal-2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: var(--teal);
+}
+
+.subtitle {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    margin-bottom: 6px;
+}
+
+.subtitle a {
+    color: var(--teal);
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-left: 6px;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.subtitle a:hover { border-bottom-color: var(--teal); }
+
+/* Grid */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 18px;
+    margin-bottom: 56px;
+}
+
+.card {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    text-decoration: none;
+    color: var(--text);
+    display: block;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s, box-shadow 0.25s;
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--teal), var(--orange));
+    opacity: 0;
+    transition: opacity 0.25s;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    border-color: var(--teal);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 212, 170, 0.25);
+}
+
+.card:hover::before { opacity: 1; }
+
+.rank {
+    background: var(--teal);
+    color: var(--bg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.85rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 10px rgba(0, 212, 170, 0.35);
+}
+
+.img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 12px;
+    background: var(--border);
+    border: 2px solid var(--border);
+}
+
+.name {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+}
+
+.handle {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+}
+
+.followers {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+}
+
+.net {
+    color: var(--teal);
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 10px 0 8px;
+    letter-spacing: -0.02em;
+}
+
+.tags {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin: 8px 0;
+}
+
+.tag {
+    background: rgba(51, 65, 85, 0.6);
+    color: var(--text-soft);
+    padding: 3px 9px;
+    border-radius: 5px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+}
+
+.power {
+    color: var(--orange);
+    font-size: 0.78rem;
+    margin-top: 8px;
+    font-weight: 600;
+}
+
+.gain {
+    color: var(--green);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.trend {
+    color: var(--green);
+    font-size: 0.72rem;
+    opacity: 0.8;
+}
+
+/* Stats Banner */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+}
+
+.statItem {
+    text-align: center;
+    padding: 24px 20px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.statNum {
+    font-size: 2.2rem;
+    color: var(--teal);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+    line-height: 1;
+}
+
+.statLabel {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 32px 20px 40px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+    margin-top: 24px;
+    position: relative;
+    z-index: 1;
+}
+
+footer p { margin-bottom: 6px; }
+
+footer a {
+    color: var(--teal);
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+footer a:hover { opacity: 0.7; }
+
+/* Mobile */
+@media (max-width: 600px) {
+    .container { padding: 40px 16px 24px; }
+    .header { margin-bottom: 36px; }
+    .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .statItem { padding: 18px 12px; }
+    .statNum { font-size: 1.7rem; }
+    .statLabel { font-size: 0.7rem; }
+}
 </style>
 </head>
 <body>
 <div class="container">
-<h1>Save<span>Share</span></h1>
-<p class="subtitle"><nav><a href="/stats.html" style="color:#64748b;font-size:0.9rem;margin-bottom:20px">View Stats</a></nav>
-<p class="subtitle">UK Financial Influencers <a href="/stats.html" style="color:#00d4aa;font-size:0.9rem">[View Stats]</a></p>
-<div class="grid" id="grid"></div>
-<div class="stats">
-<div class="statItem"><div class="statNum" id="totalInf">0</div><div class="statLabel">Influencers</div></div>
-<div class="statItem"><div class="statNum" id="totalNet">£0</div><div class="statLabel">Total Net Worth</div></div>
+    <div class="header">
+        <h1>Save<span>Share</span></h1>
+        <p class="subtitle">UK Financial Influencers <a href="/stats.html">View Stats →</a></p>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="stats">
+        <div class="statItem"><div class="statNum" id="totalInf">0</div><div class="statLabel">Influencers</div></div>
+        <div class="statItem"><div class="statNum" id="totalNet">£0</div><div class="statLabel">Total Net Worth</div></div>
+    </div>
 </div>
-</div>
+
+<footer>
+    <p>SaveShare • Not financial advice</p>
+    <p>A directory of UK personal finance creators and their portfolios.</p>
+</footer>
+
 <script>
 var data=[
 {id:"mia-rose",name:"Mia Rose",handle:"@miarosemcgrath",followers:550000,age:25,networth:200000,power:603053,tags:["stocks"],image:"images/mia-rose-cover.png",history:[
@@ -93,7 +384,7 @@ data.forEach(function(d){
 total+=d.networth;
 var v=d.networth>=1000?((d.networth)/1000).toFixed(0)+"K":"£"+d.networth;
 var tagsHtml=d.tags.map(function(t){return'<span class="tag">'+t+'</span>'}).join("");
-var flwTxt=d.followers>0?'<div style="color:#64748b;font-size:0.8rem">'+Math.round(d.followers/1000)+'K followers</div>':'';
+var flwTxt=d.followers>0?'<div class="followers">'+Math.round(d.followers/1000)+'K followers</div>':'';
 var imgHtml=d.image?'<img src="'+d.image+'" class="img" alt="'+d.name+'">':'<div class="rank">'+d.rank+'</div>';
 var gainTxt=d.gain?'<div class="gain">+£'+(d.gain.gain/1000).toFixed(0)+'K ↑'+d.gain.pct+'%</div><div class="trend">since '+d.gain.months+'mo</div>':'';
 gridEl.innerHTML+='<a href="/influencer/'+d.id+'.html" class="card">'+imgHtml+'<div class="name">'+d.name+'</div><div class="handle">'+d.handle+'</div>'+flwTxt+'<div class="net">£'+v+'</div><div class="tags">'+tagsHtml+'</div>'+gainTxt+'</a>';

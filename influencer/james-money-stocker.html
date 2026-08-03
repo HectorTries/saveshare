@@ -10,85 +10,333 @@
       gtag('config', 'G-3T9QS61KD0');
     </script>
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>James Money Stocker • SaveShare</title>
-    <meta name="description" content="James Money Stocker - targeting £1M by 45.">
-    <meta name="theme-color" content="#0f172a">
-    <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Inter',sans-serif;background:#0f172a;color:#fff;line-height:1.7}
-    .c{max-width:900px;margin:0 auto;padding:20px}
-    a{color:#00d4aa;text-decoration:none}
-    header{padding:40px 0;border-bottom:1px solid #1e293b;margin-bottom:40px}
-    .ba{display:flex;align-items:center;gap:8px;color:#64748b;font-size:0.9rem}
-    .hero{display:flex;gap:30px;align-items:center;flex-wrap:wrap;margin-bottom:30px}
-    .av{width:100px;height:100px;border-radius:50%;object-fit:cover;margin-right:10px}
-    .hi{margin-bottom:8px;font-size:2.2rem}
-    .ha{color:#64748b;font-size:1rem}
-    .goal{background:#10b981;color:#0f172a;padding:8px 16px;border-radius:8px;font-weight:600;margin-top:10px;display:inline-block}
-    .bio{color:#94a3b8;max-width:500px;margin-bottom:20px}
-    .stat-box{background:#1e293b;border-radius:12px;padding:25px;text-align:center;flex:1;min-width:140px}
-    .stat-num{font-size:1.8rem;font-weight:700;color:#00d4aa}
-    .stat-label{color:#64748b;font-size:0.85rem}
-    .stats{display:flex;gap:15px;flex-wrap:wrap;margin:25px 0}
-    .gain{color:#10b981;font-size:0.9rem}
-    .pie-wrap{background:#1e293b;border-radius:12px;padding:25px;margin:25px 0}
-    .pie-wrap h3{color:#94a3b8;font-size:0.9rem;margin-bottom:20px}
-    .pie{width:180px;height:180px;border-radius:50%;margin:0 auto 20px;background:conic-gradient(#10b981 0deg 95deg,#6366f1 95deg 160deg,#f97316 160deg 200deg,#00d4aa 200deg 360deg);position:relative}
-    .pie::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80px;height:80px;background:#1e293b;border-radius:50%}
-    .leg{display:flex;flex-wrap:wrap;gap:15px;justify-content:center}
-    .leg-it{display:flex;align-items:center;gap:8px;font-size:0.9rem}
-    .leg-dot{width:14px;height:14px;border-radius:3px}
-    .leg-name{color:#cbd5e1}
-    .leg-pct{color:#64748b}
-    .sec{padding:25px;background:#1e293b;border-radius:12px;margin:25px 0}
-    h2{font-size:1.1rem;color:#f8fafc;margin:35px 0 15px}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="James Money Stocker — targeting £1M by 45, currently £465K (35% to goal). Documenting the journey.">
+
+<!-- Open Graph -->
+<meta property="og:type" content="profile">
+<meta property="og:title" content="James Money Stocker • SaveShare">
+<meta property="og:description" content="Targeting £1M invested in the stock market by age 45. Currently 35% of the way there.">
+<meta property="og:url" content="https://saveshare.io/influencer/james-money-stocker.html">
+<meta property="og:image" content="https://saveshare.io/images/james.png">
+<meta property="og:site_name" content="SaveShare">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="James Money Stocker • SaveShare">
+<meta name="twitter:description" content="Targeting £1M invested in the stock market by age 45. Currently 35% of the way there.">
+<meta name="twitter:image" content="https://saveshare.io/images/james.png">
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f172a'/><text x='16' y='22' font-family='Inter,sans-serif' font-size='18' font-weight='800' fill='%2300d4aa' text-anchor='middle'>£</text></svg>">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg: #0f172a;
+    --bg-soft: #1e293b;
+    --border: #334155;
+    --text: #f8fafc;
+    --text-soft: #cbd5e1;
+    --text-muted: #64748b;
+    --teal: #00d4aa;
+    --teal-2: #00b894;
+    --orange: #f97316;
+    --green: #10b981;
+    --indigo: #6366f1;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+    position: relative;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 50% at 50% 0%, rgba(16, 185, 129, 0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 100% 100%, rgba(249, 115, 22, 0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.c {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 40px 24px 32px;
+    position: relative;
+    z-index: 1;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-bottom: 32px;
+    transition: color 0.2s;
+}
+
+.back-link:hover { color: var(--teal); }
+
+.profile-header {
+    display: flex;
+    gap: 28px;
+    align-items: center;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.avatar {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--green), #34d399);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+    flex-shrink: 0;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-info h1 {
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+    line-height: 1.1;
+}
+
+.handle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.bio {
+    color: var(--text-soft);
+    max-width: 520px;
+    margin-top: 10px;
+    font-size: 1rem;
+}
+
+.goal {
+    display: inline-block;
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--green);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 700;
+    margin-top: 12px;
+    font-size: 0.9rem;
+}
+
+.section {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.section h2 {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section h2::before {
+    content: '';
+    width: 4px;
+    height: 16px;
+    background: var(--green);
+    border-radius: 2px;
+}
+
+.stat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.stat-box {
+    background: var(--bg);
+    padding: 20px 18px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid var(--border);
+    flex: 1;
+    min-width: 130px;
+}
+
+.stat-box .num {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--teal);
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+}
+
+.stat-box .num.gain {
+    color: var(--green);
+}
+
+.stat-box .label {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+}
+
+.pie {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    margin: 0 auto 24px;
+    background: conic-gradient(var(--green) 0deg 191deg, var(--indigo) 191deg 292deg, var(--orange) 292deg 360deg);
+    position: relative;
+}
+
+.pie::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 110px;
+    height: 110px;
+    background: var(--bg-soft);
+    border-radius: 50%;
+}
+
+.leg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+}
+
+.leg-it {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.leg-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+}
+
+.leg-name {
+    color: var(--text-soft);
+}
+
+.leg-pct {
+    color: var(--text-muted);
+    margin-left: 4px;
+    font-weight: 600;
+}
+
+footer {
+    text-align: center;
+    padding: 32px 20px 40px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+    position: relative;
+    z-index: 1;
+}
+
+footer p { margin-bottom: 4px; }
+
+@media (max-width: 600px) {
+    .c { padding: 28px 16px 24px; }
+    .profile-header { gap: 16px; margin-bottom: 28px; }
+    .avatar { width: 80px; height: 80px; }
+    .stat-row { gap: 10px; }
+    .pie { width: 170px; height: 170px; }
+    .pie::after { width: 90px; height: 90px; }
+}
+</style>
 </head>
 <body>
 <div class="c">
-<header>
-<a href="https://saveshare.io/" class="ba">← Back to all influencers</a>
-</header>
+    <a href="https://saveshare.io/" class="back-link">← Back to all influencers</a>
 
-<div class="hero">
-<img src="/images/james.png" class="av" alt="James">
-<div>
-<h1 class="hi">James Money Stocker</h1>
-<div class="ha">@jamesmoneystocker • Age 35</div>
-<div class="bio">Targeting £1M invested in the stock market by age 45. Currently 35% of the way there. Documenting the journey.</div>
-<div class="goal">£465K • 35% to £1M goal</div>
-</div>
+    <div class="profile-header">
+        <div class="avatar"><img src="/images/james.png" alt="James Money Stocker"></div>
+        <div class="profile-info">
+            <h1>James Money Stocker</h1>
+            <div class="handle">@jamesmoneystocker • Age 35</div>
+            <div class="bio">Targeting £1M invested in the stock market by age 45. Currently 35% of the way there. Documenting the journey.</div>
+            <div class="goal">£465K • 35% to £1M goal</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Key Stats</h2>
+        <div class="stat-row">
+            <div class="stat-box">
+                <div class="num">£465K</div>
+                <div class="label">Net Worth</div>
+            </div>
+            <div class="stat-box">
+                <div class="num gain">+£28.5K</div>
+                <div class="label">Last 30 Days</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Portfolio Allocation</h2>
+        <div class="pie"></div>
+        <div class="leg">
+            <div class="leg-it"><div class="leg-dot" style="background:#10b981"></div><span class="leg-name">SIPPs</span><span class="leg-pct">53%</span></div>
+            <div class="leg-it"><div class="leg-dot" style="background:#6366f1"></div><span class="leg-name">Stocks & ISA</span><span class="leg-pct">28%</span></div>
+            <div class="leg-it"><div class="leg-dot" style="background:#f97316"></div><span class="leg-name">Property</span><span class="leg-pct">19%</span></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>About James</h2>
+        <p style="color:var(--text-soft)">Started investing during COVID. Uses Wealthlog to track everything. Believes in compound growth and diversified index funds. Three SIPPs: workplace, personal, and limited company.</p>
+    </div>
 </div>
 
-<div class="stats">
-<div class="stat-box">
-<div class="stat-num">£465K</div>
-<div class="stat-label">Net Worth</div>
-</div>
-<div class="stat-box">
-<div class="stat-num">+£28.5K</div>
-<div class="stat-label">Last 30 Days</div>
-</div>
-</div>
-
-<div class="pie-wrap">
-<h3>Portfolio Allocation</h3>
-<div class="pie"></div>
-<div class="leg">
-<div class="leg-it"><div class="leg-dot" style="background:#10b981"></div><span class="leg-name">SIPPs</span><span class="leg-pct">53%</span></div>
-<div class="leg-it"><div class="leg-dot" style="background:#6366f1"></div><span class="leg-name">Stocks & ISA</span><span class="leg-pct">28%</span></div>
-<div class="leg-it"><div class="leg-dot" style="background:#f97316"></div><span class="leg-name">Property</span><span class="leg-pct">19%</span></div>
-</div>
-</div>
-
-<div class="sec">
-<h2>About James</h2>
-<p style="color:#94a3b8">Started investing during COVID. Uses Wealthlog to track everything. Believes in compound growth and diversified index funds. Three SIPPs: workplace, personal, and limited company.</p>
-</div>
-
-<p style="text-align:center;color:#475569;padding:30px 0">SaveShare • Not financial advice</p>
-</div>
+<footer>
+    <p>SaveShare • Not financial advice</p>
+</footer>
 </body>
 </html>

@@ -10,117 +10,423 @@
       gtag('config', 'G-3T9QS61KD0');
     </script>
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mia Rose • SaveShare</title>
-    <meta name="description" content="Mia Rose - UK finance creator with £200K+ portfolio. Learn her journey.">
-    <meta name="theme-color" content="#0f172a">
-    <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Inter',sans-serif;background:#0f172a;color:#fff;line-height:1.7}
-    .c{max-width:900px;margin:0 auto;padding:20px}
-    a{color:#00d4aa;text-decoration:none}
-    header{padding:40px 0;border-bottom:1px solid #1e293b;margin-bottom:40px}
-    .ba{display:flex;align-items:center;gap:8px;color:#64748b;font-size:0.9rem}
-    .hero{display:flex;gap:30px;align-items:center;flex-wrap:wrap;margin-bottom:30px}
-    .av{width:100px;height:100px;background:linear-gradient(135deg,#00d4aa,#00b894);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:#0f172a}
-    .hi{margin-bottom:8px;font-size:2.2rem}
-    .ha{color:#64748b;font-size:1rem}
-    .bio{color:#94a3b8;max-width:500px;margin-bottom:20px}
-    .tk{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:15px 20px;display:inline-flex;align-items:center;gap:10px}
-    .tk-n{font-weight:600}
-    .stat-box{background:#1e293b;border-radius:12px;padding:25px;text-align:center;flex:1;min-width:140px}
-    .stat-num{font-size:1.8rem;font-weight:700;color:#00d4aa}
-    .stat-label{color:#64748b;font-size:0.85rem}
-    .stats{display:flex;gap:15px;flex-wrap:wrap;margin:25px 0}
-    .pie-wrap{background:#1e293b;border-radius:12px;padding:25px;margin:25px 0}
-    .pie-wrap h3{color:#94a3b8;font-size:0.9rem;margin-bottom:20px}
-    .pie{width:180px;height:180px;border-radius:50%;margin:0 auto 20px;background:conic-gradient(#00d4aa 0deg 115deg,#f97316 115deg 181deg,#8b5cf6 181deg 209deg,#10b981 209deg 225deg,#ec4899 225deg 360deg);position:relative}
-    .pie::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80px;height:80px;background:#1e293b;border-radius:50%}
-    .leg{display:flex;flex-wrap:wrap;gap:15px;justify-content:center}
-    .leg-it{display:flex;align-items:center;gap:8px;font-size:0.9rem}
-    .leg-dot{width:14px;height:14px;border-radius:3px}
-    .leg-name{color:#cbd5e1}
-    .leg-pct{color:#64748b}
-    h2{font-size:1.1rem;color:#f8fafc;margin:35px 0 15px}
-    .art-list{display:flex;flex-direction:column;gap:12px}
-    .art{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:15px 20px;display:block;color:inherit;text-decoration:none;transition:0.2s}
-    .art:hover{border-color:#00d4aa;transform:translateX(5px)}
-    .art-d{color:#64748b;font-size:0.8rem}
-    .art-t{color:#00d4aa;font-size:0.85rem;margin-top:5px}
-    .sec{padding:25px;background:#1e293b;border-radius:12px;margin:25px 0}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<meta name="description" content="Mia Rose — UK finance creator with £200K+ portfolio and 550K followers. Real numbers, real sacrifices.">
+
+<!-- Open Graph -->
+<meta property="og:type" content="profile">
+<meta property="og:title" content="Mia Rose • SaveShare">
+<meta property="og:description" content="UK finance content creator documenting her journey from £50K to £200K+. 550K followers.">
+<meta property="og:url" content="https://saveshare.io/influencer/mia-rose.html">
+<meta property="og:image" content="https://saveshare.io/images/mia-rose-cover.png">
+<meta property="og:site_name" content="SaveShare">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mia Rose • SaveShare">
+<meta name="twitter:description" content="UK finance content creator documenting her journey from £50K to £200K+. 550K followers.">
+<meta name="twitter:image" content="https://saveshare.io/images/mia-rose-cover.png">
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230f172a'/><text x='16' y='22' font-family='Inter,sans-serif' font-size='18' font-weight='800' fill='%2300d4aa' text-anchor='middle'>£</text></svg>">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg: #0f172a;
+    --bg-soft: #1e293b;
+    --border: #334155;
+    --text: #f8fafc;
+    --text-soft: #cbd5e1;
+    --text-muted: #64748b;
+    --teal: #00d4aa;
+    --teal-2: #00b894;
+    --orange: #f97316;
+    --green: #10b981;
+    --indigo: #6366f1;
+    --purple: #8b5cf6;
+    --pink: #ec4899;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+    position: relative;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0, 212, 170, 0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 100% 100%, rgba(236, 72, 153, 0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.c {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 40px 24px 32px;
+    position: relative;
+    z-index: 1;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-bottom: 32px;
+    transition: color 0.2s;
+}
+
+.back-link:hover { color: var(--teal); }
+
+.profile-header {
+    display: flex;
+    gap: 28px;
+    align-items: center;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.avatar {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal), var(--teal-2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--bg);
+    box-shadow: 0 8px 24px rgba(0, 212, 170, 0.3);
+    flex-shrink: 0;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-info h1 {
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+    line-height: 1.1;
+}
+
+.handle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.bio {
+    color: var(--text-soft);
+    max-width: 520px;
+    margin-top: 10px;
+    font-size: 1rem;
+}
+
+.tk-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin-top: 14px;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: border-color 0.2s, transform 0.2s;
+}
+
+.tk-link:hover {
+    border-color: var(--teal);
+    transform: translateY(-1px);
+}
+
+.tk-link svg {
+    flex-shrink: 0;
+}
+
+.section {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.section h2 {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section h2::before {
+    content: '';
+    width: 4px;
+    height: 16px;
+    background: var(--teal);
+    border-radius: 2px;
+}
+
+.stat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.stat-box {
+    background: var(--bg);
+    padding: 20px 18px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid var(--border);
+    flex: 1;
+    min-width: 130px;
+}
+
+.stat-box .num {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--teal);
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+}
+
+.stat-box .label {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+}
+
+.pie {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    margin: 0 auto 24px;
+    background: conic-gradient(
+        var(--teal) 0deg 184deg,
+        var(--orange) 184deg 278deg,
+        var(--purple) 278deg 325deg,
+        var(--green) 325deg 350deg,
+        var(--pink) 350deg 360deg
+    );
+    position: relative;
+}
+
+.pie::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 110px;
+    height: 110px;
+    background: var(--bg-soft);
+    border-radius: 50%;
+}
+
+.leg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: center;
+}
+
+.leg-it {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.leg-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+.leg-name {
+    color: var(--text-soft);
+}
+
+.leg-pct {
+    color: var(--text-muted);
+    margin-left: 2px;
+    font-weight: 600;
+}
+
+.articles {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.article {
+    background: var(--bg);
+    padding: 16px 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    border: 1px solid var(--border);
+    transition: border-color 0.2s, transform 0.2s;
+}
+
+.article:hover {
+    border-color: var(--teal);
+    transform: translateX(4px);
+}
+
+.article-title {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    font-size: 1rem;
+}
+
+.article-meta {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+}
+
+.article-cta {
+    color: var(--teal);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+footer {
+    text-align: center;
+    padding: 32px 20px 40px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+    position: relative;
+    z-index: 1;
+}
+
+footer p { margin-bottom: 4px; }
+
+@media (max-width: 600px) {
+    .c { padding: 28px 16px 24px; }
+    .profile-header { gap: 16px; margin-bottom: 28px; }
+    .avatar { width: 80px; height: 80px; font-size: 1.8rem; }
+    .stat-row { gap: 10px; }
+    .pie { width: 180px; height: 180px; }
+    .pie::after { width: 100px; height: 100px; }
+}
+</style>
 </head>
 <body>
 <div class="c">
-<header>
-<a href="https://saveshare.io/" class="ba">← Back to all influencers</a>
-</header>
+    <a href="https://saveshare.io/" class="back-link">← Back to all influencers</a>
 
-<div class="hero">
-<div class="av">MR</div>
-<div>
-<h1 class="hi">Mia Rose</h1>
-<div class="ha">@miarosemcgrath • Age 25</div>
-<div class="bio">UK finance content creator documenting her journey from £50K to £200K+. Sharing real numbers, real sacrifices, and what's actually worked.</div>
-<a href="https://tiktok.com/@miarosemcgrath" class="tk" target="_blank">
-<svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.92a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 12.89V19h3.45v-8.56a4.85 4.85 0 013.2 1.61 4.83 4.83 0 01-1.06 6.52z"/></svg>
-<span class="tk-n">@miarosemcgrath</span>
-</a>
-</div>
+    <div class="profile-header">
+        <div class="avatar">MR</div>
+        <div class="profile-info">
+            <h1>Mia Rose</h1>
+            <div class="handle">@miarosemcgrath • Age 25</div>
+            <div class="bio">UK finance content creator documenting her journey from £50K to £200K+. Sharing real numbers, real sacrifices, and what's actually worked.</div>
+            <a href="https://tiktok.com/@miarosemcgrath" class="tk-link" target="_blank" rel="noopener">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.92a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 12.89V19h3.45v-8.56a4.85 4.85 0 013.2 1.61 4.83 4.83 0 01-1.06 6.52z"/></svg>
+                <span>@miarosemcgrath</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Key Stats</h2>
+        <div class="stat-row">
+            <div class="stat-box">
+                <div class="num">550K</div>
+                <div class="label">Followers</div>
+            </div>
+            <div class="stat-box">
+                <div class="num">3</div>
+                <div class="label">Articles</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Portfolio Allocation</h2>
+        <div class="pie"></div>
+        <div class="leg">
+            <div class="leg-it"><div class="leg-dot" style="background:#00d4aa"></div><span class="leg-name">Stocks & Shares ISA</span><span class="leg-pct">51%</span></div>
+            <div class="leg-it"><div class="leg-dot" style="background:#f97316"></div><span class="leg-name">General Investment</span><span class="leg-pct">26%</span></div>
+            <div class="leg-it"><div class="leg-dot" style="background:#8b5cf6"></div><span class="leg-name">Lifetime ISA</span><span class="leg-pct">13%</span></div>
+            <div class="leg-it"><div class="leg-dot" style="background:#10b981"></div><span class="leg-name">SIPP</span><span class="leg-pct">7%</span></div>
+            <div class="leg-it"><div class="leg-dot" style="background:#ec4899"></div><span class="leg-name">Workplace Pension</span><span class="leg-pct">3%</span></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>About Mia</h2>
+        <p style="color:var(--text-soft)">Started content creation June 2025 with £50K savings. By November 2025 hit £157,969 and decided to be fully transparent about her finances. Now runs content creation as full-time job while continuing to invest aggressively.</p>
+    </div>
+
+    <div class="section">
+        <h2>Articles</h2>
+        <div class="articles">
+            <a href="https://saveshare.io/blog/mia-rose-article.html" class="article">
+                <div class="article-title">How I Built a £200K+ Portfolio by 24</div>
+                <div class="article-meta">May 2026 • £200K+ net worth</div>
+                <div class="article-cta">View article →</div>
+            </a>
+            <a href="https://saveshare.io/blog/mia-rose-opportunity.html" class="article">
+                <div class="article-title">The Opportunity I Took to Hit £200K</div>
+                <div class="article-meta">April 2026 • My biggest win</div>
+                <div class="article-cta">View article →</div>
+            </a>
+            <a href="https://saveshare.io/blog/miarosemcgrath-if-i-was-18.html" class="article">
+                <div class="article-title">If I Started Investing at 18...</div>
+                <div class="article-meta">March 2026 • What I'd do differently</div>
+                <div class="article-cta">View article →</div>
+            </a>
+        </div>
+    </div>
 </div>
 
-<div class="stats">
-<div class="stat-box">
-<div class="stat-num">550K</div>
-<div class="stat-label">Followers</div>
-</div>
-<div class="stat-box">
-<div class="stat-num">3</div>
-<div class="stat-label">Articles</div>
-</div>
-</div>
-
-<div class="pie-wrap">
-<h3>Portfolio Allocation</h3>
-<div class="pie"></div>
-<div class="leg">
-<div class="leg-it"><div class="leg-dot" style="background:#00d4aa"></div><span class="leg-name">Stocks & Shares ISA</span><span class="leg-pct">51%</span></div>
-<div class="leg-it"><div class="leg-dot" style="background:#f97316"></div><span class="leg-name">General Investment</span><span class="leg-pct">26%</span></div>
-<div class="leg-it"><div class="leg-dot" style="background:#8b5cf6"></div><span class="leg-name">Lifetime ISA</span><span class="leg-pct">13%</span></div>
-<div class="leg-it"><div class="leg-dot" style="background:#10b981"></div><span class="leg-name">SIPP</span><span class="leg-pct">7%</span></div>
-<div class="leg-it"><div class="leg-dot" style="background:#ec4899"></div><span class="leg-name">Workplace Pension</span><span class="leg-pct">3%</span></div>
-</div>
-</div>
-
-<div class="sec">
-<h2>About Mia</h2>
-<p style="color:#94a3b8">Started content creation June 2025 with £50K savings. By November 2025 hit £157,969 and decided to be fully transparent about her finances. Now runs content creation as full-time job while continuing to invest aggressively.</p>
-</div>
-
-<h2>Articles</h2>
-<div class="art-list">
-<a href="https://saveshare.io/blog/mia-rose-article.html" class="art">
-<div>How I Built a £200K+ Portfolio by 24</div>
-<div class="art-d">May 2026 • £200K+ net worth</div>
-<div class="art-t">View article →</div>
-</a>
-<a href="https://saveshare.io/blog/mia-rose-opportunity.html" class="art">
-<div>The Opportunity I Took to Hit £200K</div>
-<div class="art-d">April 2026 • My biggest win</div>
-<div class="art-t">View article →</div>
-</a>
-<a href="https://saveshare.io/blog/miarosemcgrath-if-i-was-18.html" class="art">
-<div>If I Started Investing at 18...</div>
-<div class="art-d">March 2026 • What I'd do differently</div>
-<div class="art-t">View article →</div>
-</a>
-</div>
-
-</div>
-</div>
-
-<p style="text-align:center;color:#475569;padding:30px 0">SaveShare • Not financial advice</p>
-</div>
+<footer>
+    <p>SaveShare • Not financial advice</p>
+</footer>
 </body>
 </html>
