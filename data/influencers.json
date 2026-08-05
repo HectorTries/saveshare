@@ -199,11 +199,23 @@
       },
       "tags": ["stocks"],
       "joined": "2024-07-01"
+    },
+    {
+      "id": "sophie-blank",
+      "name": "Sophie Blank",
+      "handle": "@itssophieblank",
+      "platform": "TikTok",
+      "portfolio": {
+        "stocks": 9200,
+        "total": 9200
+      },
+      "tags": ["stocks", "ISA", "budgeting", "net-worth"],
+      "joined": "2026-01-01"
     }
   ],
   "stats": {
-    "totalInfluencers": 16,
-    "totalPortfolio": 872974,
-    "lastUpdated": "2026-05-22"
+    "totalInfluencers": 17,
+    "totalPortfolio": 882174,
+    "lastUpdated": "2026-08-05"
   }
 }
