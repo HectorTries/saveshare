@@ -206,16 +206,22 @@ window.influencers = {
       "handle": "@itssophieblank",
       "platform": "TikTok",
       "portfolio": {
-        "stocks": 9200,
-        "total": 9200
+        "total": 200000,
+        "total_disclosed": 9200,
+        "wrappers": [
+          { "provider": "trading-212", "type": "ISA", "value": 9200, "disclosed": true },
+          { "provider": null, "type": "LISA", "value": null, "disclosed": false },
+          { "provider": null, "type": "ISA", "value": null, "disclosed": false }
+        ]
       },
+      "providers": ["trading-212"],
       "tags": ["stocks", "ISA", "budgeting", "net-worth"],
       "joined": "2026-01-01"
     }
   ],
   "stats": {
     "totalInfluencers": 17,
-    "totalPortfolio": 882174,
+    "totalPortfolio": 1072974,
     "lastUpdated": "2026-08-05"
   }
 };

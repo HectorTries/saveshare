@@ -259,6 +259,71 @@ footer p { margin-bottom: 4px; }
     .avatar { width: 80px; height: 80px; font-size: 1.8rem; }
     .portfolio-grid, .stat-row { grid-template-columns: 1fr 1fr; }
 }
+
+/* Wrapper card (per-platform breakdown) */
+.wrapper-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.wrapper-block {
+    background: var(--bg);
+    padding: 18px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--teal);
+}
+
+.wrapper-block.undisclosed {
+    border-left-color: var(--text-muted);
+}
+
+.wrapper-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.wrapper-name {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+.wrapper-badge {
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 10px;
+    background: rgba(0, 212, 170, 0.15);
+    color: var(--teal);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: 'Inter', sans-serif;
+}
+
+.wrapper-badge.muted {
+    background: rgba(148, 163, 184, 0.12);
+    color: var(--text-muted);
+}
+
+.wrapper-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--teal);
+    font-family: 'Inter', sans-serif;
+    margin-bottom: 4px;
+}
+
+.wrapper-value.muted {
+    color: var(--text-muted);
+}
 </style>
 </head>
 <body>
@@ -281,40 +346,67 @@ footer p { margin-bottom: 4px; }
                 <div class="label">Across all wrappers</div>
                 <div class="value">£200K</div>
             </div>
+            <div class="portfolio-item">
+                <div class="label">Disclosed</div>
+                <div class="value">£9,200</div>
+            </div>
         </div>
     </div>
 
     <div class="section">
-        <h2>Trading 212 ISA (disclosed)</h2>
-        <div class="stat-row" style="margin-bottom: 18px;">
-            <div class="stat-box">
-                <div class="num">£9,200</div>
-                <div class="label">Pot size</div>
+        <h2>Wrappers</h2>
+        <div class="wrapper-list">
+            <div class="wrapper-block">
+                <div class="wrapper-head">
+                    <span class="wrapper-name">Trading 212 · ISA</span>
+                    <span class="wrapper-badge">Disclosed</span>
+                </div>
+                <div class="wrapper-value">£9,200</div>
+                <div class="stat-row" style="margin-top: 16px;">
+                    <div class="stat-box">
+                        <div class="num">+39%</div>
+                        <div class="label">5-mo ROI</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="num">+£706.60</div>
+                        <div class="label">Profit</div>
+                    </div>
+                </div>
+                <div class="portfolio-grid" style="margin-top: 16px;">
+                    <div class="portfolio-item">
+                        <div class="label">VWRL · All-World</div>
+                        <div class="value">88%</div>
+                    </div>
+                    <div class="portfolio-item">
+                        <div class="label">VFEG · Emerging Mkts</div>
+                        <div class="value">6%</div>
+                    </div>
+                    <div class="portfolio-item">
+                        <div class="label">SGLN · Gold ETC</div>
+                        <div class="value">5.3%</div>
+                    </div>
+                </div>
+                <p style="color:var(--text-muted); font-size:0.85rem; margin-top:16px;">Started at the beginning of tax year 2026/27. Three-fund core: 88% global equity, 6% emerging markets, 5.3% gold.</p>
             </div>
-            <div class="stat-box">
-                <div class="num">+39%</div>
-                <div class="label">5-month ROI</div>
+
+            <div class="wrapper-block undisclosed">
+                <div class="wrapper-head">
+                    <span class="wrapper-name">LISA</span>
+                    <span class="wrapper-badge muted">Undisclosed</span>
+                </div>
+                <div class="wrapper-value muted">Undisclosed</div>
+                <p style="color:var(--text-muted); font-size:0.85rem; margin-top:12px;">Sophie holds a LISA but hasn't disclosed the provider or the value.</p>
             </div>
-            <div class="stat-box">
-                <div class="num">+£706.60</div>
-                <div class="label">Profit</div>
+
+            <div class="wrapper-block undisclosed">
+                <div class="wrapper-head">
+                    <span class="wrapper-name">Second stocks-and-shares ISA</span>
+                    <span class="wrapper-badge muted">Undisclosed</span>
+                </div>
+                <div class="wrapper-value muted">Undisclosed</div>
+                <p style="color:var(--text-muted); font-size:0.85rem; margin-top:12px;">Sophie holds a second S&amp;S ISA with a different provider — neither disclosed.</p>
             </div>
         </div>
-        <div class="portfolio-grid">
-            <div class="portfolio-item">
-                <div class="label">VWRL · All-World</div>
-                <div class="value">88%</div>
-            </div>
-            <div class="portfolio-item">
-                <div class="label">VFEG · Emerging Mkts</div>
-                <div class="value">6%</div>
-            </div>
-            <div class="portfolio-item">
-                <div class="label">SGLN · Gold ETC</div>
-                <div class="value">5.3%</div>
-            </div>
-        </div>
-        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:16px;">Started at the beginning of tax year 2026/27. Also holds a LISA and a second S&amp;S ISA with another provider (figures undisclosed).</p>
     </div>
 
     <div class="section">
