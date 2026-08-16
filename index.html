@@ -1,20 +1,633 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SaveShare</title>
-  <!-- Google tag (gtag.js) - preserved for rebuild -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-3T9QS61KD0"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-3T9QS61KD0');
-  </script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3T9QS61KD0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-3T9QS61KD0');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snowball — bury your debt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  @property --sky-top   { syntax: '<color>'; inherits: true; initial-value: #4A5A72; }
+  @property --sky-mid   { syntax: '<color>'; inherits: true; initial-value: #7C93AC; }
+  @property --sky-bottom{ syntax: '<color>'; inherits: true; initial-value: #E4EFF5; }
+
+  :root{
+    --snow-panel:#FFFFFF;
+    --frost-blue:#3E92CC;
+    --frost-blue-deep:#2A6FA0;
+    --deep-navy:#16283D;
+    --navy-soft:#4A6178;
+    --mint-melt:#5FC9A8;
+    --ember:#FF6B4A;
+    --ember-deep:#E5502F;
+    --gold:#F2B84B;
+    --frost-line:#D3E4EE;
+    --frost-line-soft:#E4EFF5;
+    --radius:20px;
+    --sky-top:#4A5A72; --sky-mid:#7C93AC; --sky-bottom:#E4EFF5;
+    transition: --sky-top .9s ease, --sky-mid .9s ease, --sky-bottom .9s ease;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{min-height:100vh; color:var(--deep-navy); font-family:'Manrope',sans-serif; position:relative; overflow-x:hidden;}
+  #sky{position:fixed; inset:0; z-index:-3; background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-bottom) 100%);}
+  #mountains{position:fixed; left:0; right:0; bottom:0; z-index:-2; width:100%; height:38vh; min-height:220px; pointer-events:none;}
+  #snowCanvas{position:fixed; inset:0; z-index:-1; pointer-events:none;}
+  #aurora{
+    position:fixed; top:0; left:0; right:0; height:40vh; z-index:-1; pointer-events:none; opacity:0; mix-blend-mode:screen;
+    background:linear-gradient(120deg, rgba(95,201,168,.5), rgba(62,146,204,.35), rgba(255,182,140,.4));
+    filter:blur(30px); transition:opacity 1.2s ease;
+  }
+  #aurora.show{opacity:.55; animation:auroraDrift 3.5s ease-in-out;}
+  @keyframes auroraDrift{0%{transform:translateY(-12px) scale(.96);}50%{transform:translateY(4px) scale(1.02);}100%{transform:translateY(0) scale(1);}}
+
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 90px;position:relative;transition:transform .12s ease;}
+  .wrap.shake{animation:pageShake .32s ease;}
+  @keyframes pageShake{0%,100%{transform:translateX(0);}25%{transform:translateX(-3px);}50%{transform:translateX(3px);}75%{transform:translateX(-2px);}}
+
+  .brand{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
+  .mark{width:36px;height:36px;position:relative;flex-shrink:0;}
+  .mark span{position:absolute;border-radius:50%;background:linear-gradient(160deg,#fff,var(--frost-blue));box-shadow:inset -2px -3px 4px rgba(42,111,160,.35);}
+  .mark span:nth-child(1){width:36px;height:36px;bottom:0;left:0;}
+  .mark span:nth-child(2){width:25px;height:25px;bottom:21px;left:5.5px;}
+  .mark span:nth-child(3){width:14px;height:14px;bottom:38px;left:11px;}
+  h1{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:29px;margin:0;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.15);}
+  .tagline{color:rgba(255,255,255,.85);font-size:15px;margin:2px 0 0;text-shadow:0 1px 2px rgba(0,0,0,.1);}
+  .forecast{display:inline-flex;align-items:center;gap:6px;margin-top:14px;background:rgba(255,255,255,.85);backdrop-filter:blur(6px);border-radius:20px;padding:6px 14px;font-size:12.5px;font-weight:700;color:var(--frost-blue-deep);border:1px solid rgba(255,255,255,.6);}
+
+  .hero{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0 30px;}
+  @media(max-width:760px){.hero{grid-template-columns:1fr 1fr;}}
+  .stat{background:rgba(255,255,255,.9);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.7);border-radius:var(--radius);padding:16px 18px;}
+  .stat-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--navy-soft);font-weight:700;margin-bottom:7px;}
+  .stat-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:23px;color:var(--deep-navy);}
+  .stat-value.ember{color:var(--ember-deep);}
+  .stat-value.mint{color:var(--mint-melt);filter:brightness(.8);}
+  .stat-value.gold{color:#B5842A;}
+  .stat-sub{font-size:12px;color:var(--navy-soft);margin-top:4px;}
+
+  .section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:6px;}
+  .section-head h2{font-family:'Baloo 2',sans-serif;font-size:19px;margin:0;color:var(--deep-navy);}
+  .section-head p{margin:0;font-size:13px;color:var(--navy-soft);}
+
+  /* ---------- setup panel ---------- */
+  .setup-panel{background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.7);border-radius:var(--radius);padding:20px 22px;margin-bottom:32px;}
+  .setup-panel h3{font-family:'Baloo 2',sans-serif;font-size:17px;margin:0 0 4px;}
+  .setup-panel .hint{font-size:13px;color:var(--navy-soft);margin:0 0 16px;line-height:1.5;}
+  .setup-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr auto;gap:10px;align-items:end;}
+  @media(max-width:780px){.setup-grid{grid-template-columns:1fr 1fr;}}
+  .field label{display:block;font-size:11.5px;font-weight:700;color:var(--navy-soft);margin-bottom:5px;}
+  .field input{width:100%;font-family:'Manrope',sans-serif;font-size:14px;border:1.5px solid var(--frost-line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--deep-navy);}
+  .field input:focus{outline:2px solid var(--frost-blue);outline-offset:1px;border-color:var(--frost-blue);}
+  .add-btn{background:var(--frost-blue);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Manrope',sans-serif;box-shadow:0 3px 0 var(--frost-blue-deep);white-space:nowrap;height:38px;}
+  .add-btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--frost-blue-deep);}
+  .setup-foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:8px;}
+  .clear-link{background:none;border:none;color:var(--navy-soft);font-size:12.5px;text-decoration:underline;cursor:pointer;font-family:'Manrope',sans-serif;padding:0;}
+  .clear-link:hover{color:var(--ember-deep);}
+  .demo-tag{font-size:11.5px;background:var(--frost-line-soft);color:var(--frost-blue-deep);border-radius:20px;padding:4px 10px;font-weight:700;}
+
+  /* ---------- iceberg cards ---------- */
+  .line{display:flex;flex-direction:column;gap:16px;margin-bottom:38px;}
+  .empty-state{background:rgba(255,255,255,.85);border:1.5px dashed rgba(74,97,120,.35);border-radius:var(--radius);padding:28px 22px;text-align:center;color:var(--navy-soft);font-size:14px;}
+  .debt-card{position:relative; padding:18px 22px; overflow:visible; transition:transform .18s ease;}
+  .debt-card .berg-bg{position:absolute; inset:0; border-radius:var(--radius); background:linear-gradient(160deg,#ffffff 0%, #EAF6FB 55%, #DCEEF6 100%); clip-path:polygon(2% 14%, 13% 2%, 87% 0%, 98% 11%, 100% 48%, 96% 89%, 85% 100%, 13% 97%, 0% 86%); box-shadow:0 6px 18px rgba(30,70,110,.10), inset 0 0 0 1px rgba(255,255,255,.6);}
+  .debt-card .shimmer{position:absolute; inset:0; border-radius:var(--radius); clip-path:inherit; background:linear-gradient(115deg, transparent 40%, rgba(255,255,255,.65) 50%, transparent 60%); background-size:250% 250%; animation:shimmer 7s ease-in-out infinite; opacity:.7; mix-blend-mode:screen; pointer-events:none;}
+  .debt-card.paid .berg-bg{background:linear-gradient(160deg,#EAFBF6,#D7F3E9);}
+  @keyframes shimmer{0%{background-position:-40% -40%;}50%{background-position:140% 140%;}100%{background-position:-40% -40%;}}
+  .cracks{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .cracks path{fill:none; stroke:rgba(74,97,120,.55); stroke-width:1.4; stroke-linecap:round; stroke-dasharray:100 100; transition:stroke-dashoffset .7s cubic-bezier(.2,.7,.3,1);}
+
+  .remove-btn{
+    position:absolute; top:10px; right:14px; z-index:2; width:22px;height:22px;border-radius:50%;
+    background:rgba(74,97,120,.1); border:none; color:var(--navy-soft); font-size:13px; font-weight:700;
+    cursor:pointer; display:flex;align-items:center;justify-content:center;line-height:1;
+  }
+  .remove-btn:hover{background:rgba(229,80,47,.15); color:var(--ember-deep);}
+
+  .card-inner{position:relative;z-index:1;display:grid;grid-template-columns:34px 1fr auto auto;align-items:center;gap:16px;}
+  .ordinal{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(62,146,204,.12);color:var(--frost-blue-deep);}
+  .debt-info .name{font-weight:700;font-size:15.5px;}
+  .debt-info .meta{font-size:12px;color:var(--navy-soft);margin-top:2px;}
+  .ice-bar{position:relative;height:8px;border-radius:6px;background:rgba(74,97,120,.12);overflow:hidden;margin-top:9px;width:100%;}
+  .ice-bar-fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:linear-gradient(90deg,var(--mint-melt),#8fe0c4);transition:width .6s cubic-bezier(.2,.8,.2,1);}
+  .balance{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;text-align:right;min-width:88px;}
+  .throw-btn{font-family:'Manrope',sans-serif;font-weight:700;font-size:13px;background:var(--ember);color:#fff;border:none;border-radius:12px;padding:9px 14px;cursor:pointer;white-space:nowrap;box-shadow:0 3px 0 var(--ember-deep);transition:transform .08s ease, box-shadow .08s ease;}
+  .throw-btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ember-deep);}
+  .throw-btn:disabled{background:rgba(74,97,120,.15);color:var(--navy-soft);box-shadow:none;cursor:not-allowed;}
+  .melted-badge{font-size:12px;font-weight:700;color:var(--mint-melt);filter:brightness(.75);background:#EAFBF4;border:1px solid #CDEFE2;border-radius:20px;padding:5px 10px;}
+
+  .debt-card.hit .berg-bg{animation:jolt .38s ease;}
+  @keyframes jolt{0%,100%{transform:translate(0,0) rotate(0);}20%{transform:translate(-3px,1px) rotate(-.3deg);}45%{transform:translate(3px,-1px) rotate(.3deg);}70%{transform:translate(-2px,0) rotate(-.15deg);}}
+  .debt-card.paid{opacity:.7;}
+
+  .actions{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;}
+  @media(max-width:680px){.actions{grid-template-columns:1fr;}}
+  .panel{background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.7);border-radius:var(--radius);padding:20px;}
+  .panel h3{font-family:'Baloo 2',sans-serif;font-size:16px;margin:0 0 4px;}
+  .panel .hint{font-size:12.5px;color:var(--navy-soft);margin:0 0 16px;}
+  label{display:block;font-size:12.5px;font-weight:700;color:var(--navy-soft);margin-bottom:6px;}
+  select, input[type=number]{width:100%;font-family:'Manrope',sans-serif;font-size:14.5px;border:1.5px solid var(--frost-line);border-radius:10px;padding:10px 12px;margin-bottom:14px;background:#fff;color:var(--deep-navy);}
+  select:focus, input:focus{outline:2px solid var(--frost-blue);outline-offset:1px;border-color:var(--frost-blue);}
+  select:disabled{opacity:.6;}
+  .log-btn{width:100%;background:var(--frost-blue);color:#fff;border:none;border-radius:12px;padding:12px;font-weight:700;font-size:14.5px;cursor:pointer;font-family:'Manrope',sans-serif;box-shadow:0 3px 0 var(--frost-blue-deep);}
+  .log-btn:disabled{background:rgba(74,97,120,.2);box-shadow:none;cursor:not-allowed;}
+  .log-btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--frost-blue-deep);}
+
+  .pile-area{position:relative;min-height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .pile-count{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:38px;color:var(--frost-blue-deep);}
+  .pile-caption{font-size:12.5px;color:var(--navy-soft);margin-top:2px;text-align:center;}
+  .pile-icons{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;justify-content:center;max-width:220px;}
+  .mini-ball{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #fff, var(--frost-blue) 75%);box-shadow:inset -1px -2px 2px rgba(42,111,160,.4);}
+
+  .flying-ball{position:fixed;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #fff, var(--frost-blue) 75%);box-shadow:inset -2px -3px 3px rgba(42,111,160,.45), 0 3px 8px rgba(0,0,0,.18);pointer-events:none;z-index:999;}
+  .sparkle{position:fixed;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 6px 1px rgba(255,255,255,.8);pointer-events:none;z-index:998;}
+  .shard{position:fixed;pointer-events:none;z-index:997;background:linear-gradient(160deg,#fff,#BEE0EF);clip-path:polygon(50% 0%,0% 100%,100% 100%);box-shadow:0 2px 5px rgba(30,70,110,.15);}
+  .confetti{position:fixed;pointer-events:none;z-index:997;border-radius:1px;}
+  .saved-label{
+    position:fixed;pointer-events:none;z-index:1000;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;
+    color:#B5842A; text-shadow:0 1px 0 rgba(255,255,255,.9), 0 0 6px rgba(255,255,255,.7); white-space:nowrap;
+  }
+
+  footer{margin-top:34px;font-size:12.5px;color:var(--navy-soft);line-height:1.6;border-top:1px solid rgba(74,97,120,.2);padding-top:16px;}
+  footer b{color:var(--deep-navy);}
+
+  @media (prefers-reduced-motion: reduce){
+    .debt-card.hit .berg-bg{animation:none;}
+    .shimmer{animation:none;}
+    .wrap.shake{animation:none;}
+    #aurora.show{animation:none;}
+  }
+</style>
 </head>
 <body>
-  <h1>SaveShare</h1>
-  <p>Repo reset. Analytics tag preserved above.</p>
+<div id="sky"></div>
+<svg id="mountains" viewBox="0 0 1000 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="0,300 0,190 120,110 230,175 340,90 460,180 560,120 680,200 800,130 900,190 1000,150 1000,300" fill="#9FB7CC" opacity=".55"/>
+  <polygon points="0,300 0,230 100,170 210,220 330,150 440,215 540,165 650,225 760,175 880,230 1000,190 1000,300" fill="#6E88A2" opacity=".65"/>
+</svg>
+<canvas id="snowCanvas"></canvas>
+<div id="aurora"></div>
+
+<div class="wrap" id="pageWrap">
+
+  <div class="brand">
+    <div class="mark"><span></span><span></span><span></span></div>
+    <div>
+      <h1>Snowball</h1>
+      <p class="tagline">Bury your debt, one throw at a time.</p>
+    </div>
+  </div>
+  <div class="forecast" id="forecast">❄️ Forecast: —</div>
+
+  <div class="hero">
+    <div class="stat">
+      <div class="stat-label">Total remaining</div>
+      <div class="stat-value" id="statTotal">£0</div>
+      <div class="stat-sub" id="statTotalSub">across 0 debts</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Snowballs ready</div>
+      <div class="stat-value ember" id="statCharges">0</div>
+      <div class="stat-sub">1 per £5 paid</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Interest saved</div>
+      <div class="stat-value gold" id="statSaved">£0.00</div>
+      <div class="stat-sub">from early throws</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Debts crushed</div>
+      <div class="stat-value mint" id="statCrushed">0</div>
+      <div class="stat-sub" id="statCrushedSub">keep going</div>
+    </div>
+  </div>
+
+  <div class="setup-panel">
+    <h3>Build your own snowball</h3>
+    <p class="hint">This starts with example debts so you can see how it works. Add your own below — balance, interest rate and months remaining — and your line re-sorts smallest to largest automatically.</p>
+    <div class="setup-grid">
+      <div class="field"><label for="inName">Debt name</label><input type="text" id="inName" placeholder="e.g. Credit Card"></div>
+      <div class="field"><label for="inBalance">Balance (£)</label><input type="number" id="inBalance" min="1" step="1" placeholder="1200"></div>
+      <div class="field"><label for="inRate">Interest rate (APR %)</label><input type="number" id="inRate" min="0" step="0.1" placeholder="22.9"></div>
+      <div class="field"><label for="inTerm">Months remaining</label><input type="number" id="inTerm" min="1" step="1" placeholder="24"></div>
+      <button class="add-btn" id="addDebtBtn">+ Add debt</button>
+    </div>
+    <div class="setup-foot">
+      <span class="demo-tag" id="demoTag">Showing example debts</span>
+      <button class="clear-link" id="clearBtn">Clear everything &amp; start fresh</button>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <h2>Your snowball line</h2>
+    <p>Smallest → largest</p>
+  </div>
+  <div class="line" id="debtLine"></div>
+
+  <div class="actions">
+    <div class="panel">
+      <h3>Log a payment</h3>
+      <p class="hint">Every £5 you log earns one snowball to throw.</p>
+      <label for="debtSelect">Which debt</label>
+      <select id="debtSelect"></select>
+      <label for="amountInput">Amount paid (£)</label>
+      <input type="number" id="amountInput" min="1" step="1" placeholder="e.g. 25">
+      <button class="log-btn" id="logBtn">Log payment</button>
+    </div>
+
+    <div class="panel pile-area">
+      <div class="pile-count" id="pileCount">0</div>
+      <div class="pile-caption">snowballs packed and ready<br>tap "Throw" on any debt above</div>
+      <div class="pile-icons" id="pileIcons"></div>
+    </div>
+  </div>
+
+  <footer>
+    <b>Prototype note:</b> "interest saved" is an estimate — chip amount × monthly rate × months remaining on that debt — a simplified stand-in for a full amortization schedule, close enough to feel rewarding without pretending to be financial advice. The sky, snowfall and each iceberg's cracks are driven by your real numbers. Everything here lives in memory for the preview; the real build would keep this in on-device storage plus an export/import backup file.
+  </footer>
+
+</div>
+
+<script>
+  const fmt = n => '£' + n.toLocaleString('en-GB', {maximumFractionDigits:0});
+  const fmt2 = n => '£' + n.toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  let debts = [
+    { id:1, name:'Store Card',   balance:320,   original:500,   rate:24.9, termMonths:14 },
+    { id:2, name:'Overdraft',    balance:850,   original:850,   rate:39.9, termMonths:10 },
+    { id:3, name:'Car Loan',     balance:4200,  original:4200,  rate:7.9,  termMonths:36 },
+    { id:4, name:'Student Loan', balance:11500, original:11500, rate:5.5,  termMonths:96 },
+  ];
+  let nextId = 5;
+  let banked = 3;
+  let charges = 1;
+  let crushed = 0;
+  let totalSaved = 0;
+  let isDemo = true;
+
+  const lineEl = document.getElementById('debtLine');
+  const selectEl = document.getElementById('debtSelect');
+  const amountEl = document.getElementById('amountInput');
+  const logBtn = document.getElementById('logBtn');
+  const wrapEl = document.getElementById('pageWrap');
+  const auroraEl = document.getElementById('aurora');
+  const forecastEl = document.getElementById('forecast');
+  const demoTag = document.getElementById('demoTag');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const CRACK_VARIANTS = [
+    ['M50 0 L46 30 M50 0 L60 22', 'M0 50 L28 46 M0 50 L24 60', 'M100 55 L72 50 M100 55 L76 62', 'M40 100 L44 72 M40 100 L54 78'],
+    ['M20 0 L30 26 M20 0 L10 20', 'M100 30 L70 34 M100 30 L74 44', 'M60 100 L56 70 M60 100 L46 80', 'M0 70 L26 66 M0 70 L22 80'],
+    ['M50 0 L50 24 M50 0 L34 16', 'M100 20 L74 26 M100 20 L80 10', 'M90 100 L70 82 M90 100 L82 90', 'M0 40 L22 38 M0 40 L18 26']
+  ];
+  const CONFETTI_COLORS = ['#F2B84B','#5FC9A8','#3E92CC','#FF6B4A','#FFFFFF'];
+
+  function svgNS(tag){ return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+  function buildCracks(id){
+    const svg = svgNS('svg');
+    svg.setAttribute('viewBox','0 0 100 100');
+    svg.setAttribute('preserveAspectRatio','none');
+    svg.classList.add('cracks');
+    const variant = CRACK_VARIANTS[id % CRACK_VARIANTS.length];
+    variant.forEach(d=>{
+      const p = svgNS('path'); p.setAttribute('d', d); p.setAttribute('pathLength','100');
+      svg.appendChild(p);
+    });
+    return svg;
+  }
+
+  function sortDebts(){ debts.sort((a,b)=> a.balance - b.balance || a.original - b.original); }
+
+  function weatherLabel(pctPaid){
+    if(pctPaid>=100) return '☀️ Forecast: endless summer';
+    if(pctPaid>=90) return '🌤️ Forecast: clear skies';
+    if(pctPaid>=65) return '⛅ Forecast: mostly clear';
+    if(pctPaid>=35) return '🌥️ Forecast: clearing up';
+    if(pctPaid>=12) return '🌨️ Forecast: snow flurries';
+    return '❄️ Forecast: heavy blizzard';
+  }
+
+  function lerpColor(a,b,t){
+    const ah=a.match(/\w\w/g).map(x=>parseInt(x,16));
+    const bh=b.match(/\w\w/g).map(x=>parseInt(x,16));
+    const rh=ah.map((v,i)=>Math.round(v+(bh[i]-v)*t));
+    return '#'+rh.map(v=>v.toString(16).padStart(2,'0')).join('');
+  }
+
+  function updateSky(pctPaid){
+    const t = Math.max(0, Math.min(1, pctPaid/100));
+    document.documentElement.style.setProperty('--sky-top', lerpColor('4A5A72','8EC5E8', t));
+    document.documentElement.style.setProperty('--sky-mid', lerpColor('7C93AC','BFE0EE', t));
+    document.documentElement.style.setProperty('--sky-bottom', lerpColor('E4EFF5','FDF3E0', t));
+  }
+
+  // ---------- ambient snowfall ----------
+  const canvas = document.getElementById('snowCanvas');
+  const ctx = canvas.getContext('2d');
+  let W,H,flakes=[];
+  function resizeCanvas(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+  function makeFlake(){ return {x:Math.random()*W, y:Math.random()*-H, r:Math.random()*2.2+1, spd:Math.random()*0.6+0.3, drift:Math.random()*0.6-0.3, o:Math.random()*0.5+0.3}; }
+  function setSnowIntensity(pctRemaining){
+    const target = Math.round(18 + (pctRemaining/100)*90);
+    if(target > flakes.length){ while(flakes.length<target) flakes.push(makeFlake()); }
+    else { flakes.length = Math.max(8,target); }
+  }
+  for(let i=0;i<40;i++) flakes.push(makeFlake());
+  function tickSnow(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='rgba(255,255,255,0.9)';
+    flakes.forEach(f=>{
+      f.y+=f.spd; f.x+=f.drift;
+      if(f.y>H){ f.y=-4; f.x=Math.random()*W; }
+      ctx.globalAlpha=f.o;
+      ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha=1;
+    requestAnimationFrame(tickSnow);
+  }
+  if(!reducedMotion) tickSnow(); else { ctx.clearRect(0,0,W,H); }
+
+  // ---------- render ----------
+  function render(){
+    sortDebts();
+    const remaining = debts.filter(d=>d.balance>0);
+    const totalRemaining = debts.reduce((s,d)=>s+d.balance,0);
+    const totalOriginal = debts.reduce((s,d)=>s+d.original,0);
+    const pctPaid = totalOriginal>0 ? (1 - totalRemaining/totalOriginal)*100 : 0;
+    const pctRemaining = 100 - pctPaid;
+
+    document.getElementById('statTotal').textContent = fmt(totalRemaining);
+    document.getElementById('statTotalSub').textContent = remaining.length + (remaining.length===1 ? ' debt left' : ' debts left');
+    document.getElementById('statCharges').textContent = charges;
+    document.getElementById('statSaved').textContent = fmt2(totalSaved);
+    document.getElementById('statCrushed').textContent = crushed;
+    document.getElementById('statCrushedSub').textContent = crushed===0 ? 'keep going' : 'nicely melted';
+    document.getElementById('pileCount').textContent = charges;
+    forecastEl.textContent = debts.length ? weatherLabel(pctPaid) : '❄️ Forecast: add a debt to begin';
+    demoTag.textContent = isDemo ? 'Showing example debts' : 'Your own debts';
+    demoTag.style.display = debts.length ? 'inline-block' : 'none';
+
+    updateSky(debts.length ? pctPaid : 0);
+    setSnowIntensity(debts.length ? pctRemaining : 100);
+
+    const pileIcons = document.getElementById('pileIcons');
+    pileIcons.innerHTML = '';
+    for(let i=0;i<Math.min(charges,12);i++){
+      const b = document.createElement('div'); b.className='mini-ball'; pileIcons.appendChild(b);
+    }
+
+    selectEl.innerHTML = '';
+    if(remaining.length===0){
+      const opt = document.createElement('option'); opt.textContent='No debts yet'; opt.disabled=true; opt.selected=true;
+      selectEl.appendChild(opt);
+      selectEl.disabled = true; logBtn.disabled = true;
+    } else {
+      selectEl.disabled = false; logBtn.disabled = false;
+      remaining.forEach(d=>{
+        const opt = document.createElement('option'); opt.value=d.id; opt.textContent=d.name;
+        selectEl.appendChild(opt);
+      });
+    }
+
+    lineEl.innerHTML = '';
+    if(debts.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'No debts yet — add your first one above to build your snowball line.';
+      lineEl.appendChild(empty);
+      return;
+    }
+
+    debts.forEach((d,i)=>{
+      const pct = Math.max(0, Math.min(100, (d.balance/d.original)*100));
+      const paidPct = 100-pct;
+      const paidOff = d.balance <= 0;
+      const card = document.createElement('div');
+      card.className = 'debt-card' + (paidOff ? ' paid' : '');
+      card.id = 'card-' + d.id;
+
+      const bergBg = document.createElement('div'); bergBg.className='berg-bg';
+      const shimmer = document.createElement('div'); shimmer.className='shimmer';
+      const cracks = buildCracks(d.id);
+      cracks.querySelectorAll('path').forEach(p=>{ p.style.strokeDashoffset = paidOff ? 0 : (100 - paidPct); });
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className='remove-btn'; removeBtn.setAttribute('aria-label','Remove '+d.name);
+      removeBtn.textContent = '×';
+      removeBtn.addEventListener('click', ()=>{ debts = debts.filter(x=>x.id!==d.id); render(); });
+
+      const inner = document.createElement('div'); inner.className='card-inner';
+      inner.innerHTML = `
+        <div class="ordinal">${paidOff ? '✓' : i+1}</div>
+        <div class="debt-info">
+          <div class="name">${d.name}</div>
+          <div class="meta">${paidOff ? 'Paid off' : fmt(d.original) + ' original · ' + d.rate + '% APR · ' + d.termMonths + 'mo left'}</div>
+          <div class="ice-bar"><div class="ice-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="balance">${paidOff ? '£0' : fmt(d.balance)}</div>
+        ${paidOff
+          ? `<span class="melted-badge">melted ❄️</span>`
+          : `<button class="throw-btn" data-id="${d.id}" ${charges<=0?'disabled':''}>Throw ❄️</button>`}
+      `;
+
+      card.appendChild(bergBg);
+      card.appendChild(shimmer);
+      card.appendChild(cracks);
+      card.appendChild(removeBtn);
+      card.appendChild(inner);
+      lineEl.appendChild(card);
+    });
+
+    lineEl.querySelectorAll('.throw-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=> throwSnowball(Number(btn.dataset.id)));
+    });
+  }
+
+  // ---------- particle helpers ----------
+  function spawnShards(x,y,count){
+    for(let i=0;i<count;i++){
+      const s = document.createElement('div'); s.className = 'shard';
+      const size = 6 + Math.random()*10;
+      s.style.width = size+'px'; s.style.height = size+'px';
+      s.style.left = (x-size/2)+'px'; s.style.top = (y-size/2)+'px';
+      document.body.appendChild(s);
+      const angle = Math.random()*Math.PI*2, dist = 30 + Math.random()*70;
+      const dx = Math.cos(angle)*dist, dy = Math.sin(angle)*dist - 20;
+      const anim = s.animate([
+        { transform:'translate(0,0) rotate(0deg)', opacity:1 },
+        { transform:`translate(${dx}px, ${dy+90}px) rotate(${(Math.random()*360)|0}deg)`, opacity:0 }
+      ], { duration:650+Math.random()*300, easing:'cubic-bezier(.2,.7,.3,1)' });
+      anim.onfinish = ()=> s.remove();
+    }
+  }
+  function spawnConfetti(x,y,count){
+    for(let i=0;i<count;i++){
+      const c = document.createElement('div'); c.className='confetti';
+      const w = 4+Math.random()*3, h = 7+Math.random()*5;
+      c.style.width=w+'px'; c.style.height=h+'px';
+      c.style.background = CONFETTI_COLORS[(Math.random()*CONFETTI_COLORS.length)|0];
+      c.style.left=x+'px'; c.style.top=y+'px';
+      document.body.appendChild(c);
+      const angle = Math.random()*Math.PI - Math.PI/2 - Math.PI/2*Math.random();
+      const power = 60+Math.random()*90;
+      const dx = Math.cos(angle)*power, upY = -60-Math.random()*60;
+      const rot = (Math.random()*720-360)|0;
+      const anim = c.animate([
+        { transform:'translate(0,0) rotate(0deg)', opacity:1, offset:0 },
+        { transform:`translate(${dx*0.6}px, ${upY}px) rotate(${rot*0.5}deg)`, opacity:1, offset:.45 },
+        { transform:`translate(${dx}px, ${upY+140}px) rotate(${rot}deg)`, opacity:0, offset:1 }
+      ], { duration:850+Math.random()*350, easing:'cubic-bezier(.25,.6,.3,1)' });
+      anim.onfinish = ()=> c.remove();
+    }
+  }
+  function spawnSavedLabel(x,y,amount){
+    const lbl = document.createElement('div');
+    lbl.className='saved-label';
+    lbl.textContent = '+' + fmt2(amount) + ' interest saved';
+    lbl.style.left = x+'px'; lbl.style.top = y+'px';
+    document.body.appendChild(lbl);
+    const anim = lbl.animate([
+      { transform:'translate(-50%,-10px) scale(.9)', opacity:0, offset:0 },
+      { transform:'translate(-50%,-34px) scale(1)', opacity:1, offset:.25 },
+      { transform:'translate(-50%,-64px) scale(1)', opacity:1, offset:.7 },
+      { transform:'translate(-50%,-84px) scale(.96)', opacity:0, offset:1 }
+    ], { duration:1200, easing:'ease-out' });
+    anim.onfinish = ()=> lbl.remove();
+  }
+  function spawnSparkle(x,y){
+    const sp = document.createElement('div'); sp.className='sparkle';
+    sp.style.left=(x-3)+'px'; sp.style.top=(y-3)+'px';
+    document.body.appendChild(sp);
+    const anim = sp.animate([{opacity:1, transform:'scale(1)'},{opacity:0, transform:'scale(.3)'}], {duration:380, easing:'ease-out'});
+    anim.onfinish = ()=> sp.remove();
+  }
+  function pageShake(){
+    if(reducedMotion) return;
+    wrapEl.classList.add('shake');
+    setTimeout(()=>wrapEl.classList.remove('shake'), 340);
+  }
+  function celebrate(){
+    auroraEl.classList.add('show');
+    setTimeout(()=> auroraEl.classList.remove('show'), 3500);
+  }
+
+  function throwSnowball(debtId){
+    if(charges<=0) return;
+    const card = document.getElementById('card-'+debtId);
+    const pileArea = document.querySelector('.pile-area');
+    if(!card || !pileArea) return;
+
+    const applyResult = () => {
+      charges -= 1;
+      const debt = debts.find(d=>d.id===debtId);
+      const chip = Math.min(15, debt.balance);
+      debt.balance = Math.max(0, debt.balance - chip);
+      const monthlyRate = (debt.rate/100)/12;
+      const interestSaved = chip * monthlyRate * debt.termMonths;
+      totalSaved += interestSaved;
+      const justCrushed = debt.balance === 0;
+      if(justCrushed) crushed += 1;
+      return { justCrushed, interestSaved };
+    };
+
+    if(reducedMotion){
+      const end = card.getBoundingClientRect();
+      const { justCrushed, interestSaved } = applyResult();
+      render();
+      pageShake();
+      spawnConfetti(end.left+end.width*.7, end.top+end.height/2, 10);
+      spawnSavedLabel(end.left+end.width*.7, end.top+end.height/2, interestSaved);
+      if(justCrushed) { celebrate(); spawnShards(end.left+end.width*.7, end.top+end.height/2, 10); }
+      return;
+    }
+
+    const start = pileArea.getBoundingClientRect();
+    const end = card.getBoundingClientRect();
+    const ball = document.createElement('div'); ball.className = 'flying-ball';
+    const sx = start.left+start.width/2, sy = start.top+18;
+    const tx = end.left + end.width*0.72, ty = end.top + end.height/2;
+    ball.style.left = (sx-11)+'px'; ball.style.top = (sy-11)+'px';
+    document.body.appendChild(ball);
+
+    const midX = sx + (tx-sx)*0.5, midY = Math.min(sy,ty) - 90;
+
+    const anim = ball.animate([
+      { transform:'translate(0,0) rotate(0deg) scale(1)', offset:0 },
+      { transform:`translate(${midX-sx}px, ${midY-sy}px) rotate(260deg) scale(1)`, offset:.5 },
+      { transform:`translate(${tx-sx}px, ${ty-sy}px) rotate(520deg) scale(.75)`, offset:1 }
+    ], { duration:560, easing:'cubic-bezier(.32,.6,.35,1)' });
+
+    [0.32,0.62,0.85].forEach(t=>{
+      setTimeout(()=>{
+        const bx = ball.getBoundingClientRect();
+        spawnSparkle(bx.left+11, bx.top+11);
+      }, 560*t);
+    });
+
+    anim.onfinish = () => {
+      ball.remove();
+      const { justCrushed, interestSaved } = applyResult();
+      render();
+      const freshCard = document.getElementById('card-'+debtId);
+      if(freshCard){
+        freshCard.classList.add('hit');
+        setTimeout(()=> freshCard.classList.remove('hit'), 420);
+      }
+      pageShake();
+      spawnShards(tx, ty, justCrushed ? 14 : 6);
+      spawnConfetti(tx, ty, justCrushed ? 20 : 12);
+      spawnSavedLabel(tx, ty, interestSaved);
+      if(justCrushed) celebrate();
+    };
+  }
+
+  document.getElementById('logBtn').addEventListener('click', ()=>{
+    const id = Number(selectEl.value);
+    const amt = Math.max(0, Math.floor(Number(amountEl.value) || 0));
+    if(!id || amt<=0) return;
+    const debt = debts.find(d=>d.id===id);
+    if(!debt) return;
+    const wasAlive = debt.balance > 0;
+    debt.balance = Math.max(0, debt.balance - amt);
+    if(wasAlive && debt.balance === 0) crushed += 1;
+    banked += amt;
+    while(banked >= 5){ banked -= 5; charges += 1; }
+    amountEl.value = '';
+    render();
+  });
+
+  document.getElementById('addDebtBtn').addEventListener('click', ()=>{
+    const nameEl = document.getElementById('inName');
+    const balEl = document.getElementById('inBalance');
+    const rateEl = document.getElementById('inRate');
+    const termEl = document.getElementById('inTerm');
+    const name = nameEl.value.trim();
+    const balance = Math.round(Number(balEl.value));
+    const rate = Number(rateEl.value);
+    const term = Math.round(Number(termEl.value));
+    if(!name || !(balance>0) || isNaN(rate) || rate<0 || !(term>0)) return;
+    debts.push({ id: nextId++, name, balance, original: balance, rate, termMonths: term });
+    nameEl.value=''; balEl.value=''; rateEl.value=''; termEl.value='';
+    render();
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    if(!confirm('Clear all debts and stats to start fresh?')) return;
+    debts = []; banked = 0; charges = 0; crushed = 0; totalSaved = 0; isDemo = false;
+    render();
+  });
+
+  render();
+</script>
 </body>
 </html>
