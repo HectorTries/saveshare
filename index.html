@@ -258,6 +258,13 @@
 <script>
   const fmt = n => '£' + n.toLocaleString('en-GB', {maximumFractionDigits:0});
   const fmt2 = n => '£' + n.toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
+  function saveToStorage() {
+    localStorage.setItem('snowball_debts', JSON.stringify(debts));
+    localStorage.setItem('snowball_banked', banked);
+    localStorage.setItem('snowball_charges', charges);
+    localStorage.setItem('snowball_crushed', crushed);
+    localStorage.setItem('snowball_totalSaved', totalSaved);
+  }
 
   // Load from localStorage or use demo data
   let debts = JSON.parse(localStorage.getItem('snowball_debts')) || [
