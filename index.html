@@ -259,18 +259,19 @@
   const fmt = n => '£' + n.toLocaleString('en-GB', {maximumFractionDigits:0});
   const fmt2 = n => '£' + n.toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
 
-  let debts = [
+  // Load from localStorage or use demo data
+  let debts = JSON.parse(localStorage.getItem('snowball_debts')) || [
     { id:1, name:'Store Card',   balance:320,   original:500,   rate:24.9, termMonths:14 },
     { id:2, name:'Overdraft',    balance:850,   original:850,   rate:39.9, termMonths:10 },
     { id:3, name:'Car Loan',     balance:4200,  original:4200,  rate:7.9,  termMonths:36 },
     { id:4, name:'Student Loan', balance:11500, original:11500, rate:5.5,  termMonths:96 },
   ];
-  let nextId = 5;
-  let banked = 3;
-  let charges = 1;
-  let crushed = 0;
-  let totalSaved = 0;
-  let isDemo = true;
+  let nextId = Math.max(5, ...debts.map(d => d.id + 1));
+  let banked = parseInt(localStorage.getItem('snowball_banked')) || 3;
+  let charges = parseInt(localStorage.getItem('snowball_charges')) || 1;
+  let crushed = parseInt(localStorage.getItem('snowball_crushed')) || 0;
+  let totalSaved = parseFloat(localStorage.getItem('snowball_totalSaved')) || 0;
+  let isDemo = !localStorage.getItem('snowball_debts');
 
   const lineEl = document.getElementById('debtLine');
   const selectEl = document.getElementById('debtSelect');
