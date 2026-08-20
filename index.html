@@ -53,7 +53,7 @@
     </div>
   </div>
   <div class="game-container">
-    <canvas id="game" width="720" height="620"></canvas>
+    <canvas id="game" width="780" height="620"></canvas>
   </div>
 </div>
 
@@ -88,9 +88,13 @@ const ctx = canvas.getContext('2d',{alpha:true});
 
 let goal=0,melted=0,shots=0,startTime=0,timerInterval=null;
 let blocks=[],projectiles=[];
-let isDragging=false,dragStart={x:0,y:0},currentDrag={x:0,y:0};
+let isDragging=false,currentDrag={x:0,y:0};
 
-const SLING_X=140,SLING_Y=520,MAX_PULL=105;
+// Classic Angry Birds layout
+const SLING_X = 95;        // Far left
+const SLING_Y = 505;
+const MAX_PULL = 105;
+const TOWER_START_X = 380; // Good gap from slingshot
 
 const BLOCK_TYPES={
   ice:{value:4,color:'#A8D5E5',hp:1,density:0.7},
@@ -100,8 +104,7 @@ const BLOCK_TYPES={
 
 function createTower(amount){
   blocks=[];goal=amount;melted=0;
-  const startX=canvas.width/2-120;
-  const baseY=canvas.height-70;
+  const baseY=canvas.height-68;
   const rows=Math.max(6,Math.min(10,Math.floor(amount/16)+5));
   let y=baseY;
   for(let r=0;r<rows;r++){
@@ -114,7 +117,7 @@ function createTower(amount){
       else if(r<4)type='wood';
       else type='ice';
       blocks.push({
-        x:startX+off+c*52,y:y,w:48,h:34,type,
+        x:TOWER_START_X+off+c*52,y:y,w:48,h:34,type,
         hp:BLOCK_TYPES[type].hp,
         vx:0,vy:0,angle:0,angular:0,
         density:BLOCK_TYPES[type].density
@@ -205,7 +208,6 @@ function resolveBlockCollisions(){
 
 function physicsStep(){
   const g=0.32,friction=0.978;
-  // Projectiles
   for(let i=projectiles.length-1;i>=0;i--){
     const p=projectiles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=g;p.vx*=0.992;
     for(let j=blocks.length-1;j>=0;j--){
@@ -223,7 +225,6 @@ function physicsStep(){
     }
     if(p.y>canvas.height+60)projectiles.splice(i,1);
   }
-  // Blocks
   blocks.forEach(b=>{
     if(b.hp<=0)return;
     b.x+=b.vx;b.y+=b.vy;b.vy+=g;b.vx*=friction;b.vy*=friction*0.985;
