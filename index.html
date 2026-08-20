@@ -27,15 +27,7 @@
   .progress { flex:1; max-width:420px; height:10px; background:rgba(255,255,255,.15); border-radius:999px; overflow:hidden; margin:0 20px; }
   .progress-bar { height:100%; background:linear-gradient(90deg,#5FC9A8,#F2B84B); transition:width .1s linear; }
   .game-container { flex:1; position:relative; display:flex; align-items:center; justify-content:center; }
-  #game { border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.5); background:rgba(255,255,255,.03); }
-  .slingshot-area { height:140px; background:rgba(22,40,61,.9); display:flex; align-items:center; justify-content:center; border-top:1px solid rgba(255,255,255,.1); z-index:10; }
-  .slingshot { width:120px; height:80px; position:relative; }
-  .slingshot .band { position:absolute; top:32px; height:4px; background:#8B6F47; }
-  .slingshot .left { left:0; width:38px; }
-  .slingshot .right { right:0; width:38px; }
-  .slingshot .pouch { position:absolute; left:50%; top:18px; width:32px; height:32px; background:#3E92CC; border-radius:50%; transform:translateX(-50%); box-shadow:inset -4px -4px 6px rgba(0,0,0,.3), 0 4px 12px rgba(0,0,0,.3); cursor:grab; }
-  .slingshot .pouch:active { cursor:grabbing; }
-
+  #game { border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.5); background:rgba(255,255,255,.03); cursor:crosshair; }
   .overlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(15,26,46,.92); z-index:20; }
   .overlay.show { display:flex; }
   .modal { background:#1a2a45; border-radius:20px; padding:32px 40px; text-align:center; max-width:420px; box-shadow:0 30px 80px rgba(0,0,0,.6); }
@@ -69,14 +61,6 @@
 
   <div class="game-container">
     <canvas id="game" width="720" height="620"></canvas>
-  </div>
-
-  <div class="slingshot-area">
-    <div class="slingshot" id="slingshot">
-      <div class="band left"></div>
-      <div class="band right"></div>
-      <div class="pouch" id="pouch"></div>
-    </div>
   </div>
 </div>
 
@@ -129,8 +113,13 @@ let timerInterval = null;
 let blocks = [];
 let projectiles = [];
 let isDragging = false;
-let dragStart = {x:0,y:0};
-let pouch = document.getElementById('pouch');
+let dragStart = {x:0, y:0};
+let currentDrag = {x:0, y:0};
+
+// Angry Birds style slingshot position (bottom left)
+const SLING_X = 140;
+const SLING_Y = 520;
+const MAX_PULL = 95;
 
 const BLOCK_TYPES = {
   ice:   { value: 3, color: '#A8D5E5', hp: 1, name: 'Ice' },
@@ -143,12 +132,11 @@ function createTower(amount) {
   goal = amount;
   melted = 0;
   const towerWidth = 280;
-  const startX = canvas.width/2 - towerWidth/2;
-  const baseY = canvas.height - 80;
-  const blockH = 38;
-  const blockW = 56;
+  const startX = canvas.width/2 - towerWidth/2 + 40;
+  const baseY = canvas.height - 90;
+  const blockH = 36;
+  const blockW = 54;
 
-  // Build a satisfying tower (mix of materials)
   const rows = Math.max(5, Math.min(9, Math.floor(amount / 18) + 4));
   let currentY = baseY;
 
@@ -159,15 +147,15 @@ function createTower(amount) {
 
     for (let c = 0; c < rowWidth; c++) {
       let type = 'ice';
-      if (r < 2) type = 'tnt';           // Top = high interest
-      else if (r < 4) type = 'wood';     // Middle = medium
-      else type = 'ice';                 // Bottom = easy
+      if (r < 2) type = 'tnt';
+      else if (r < 4) type = 'wood';
+      else type = 'ice';
 
       blocks.push({
         x: startX + offset + c * blockW,
         y: currentY,
-        w: blockW - 4,
-        h: blockH - 4,
+        w: blockW - 3,
+        h: blockH - 3,
         type,
         hp: BLOCK_TYPES[type].hp,
         vx: 0, vy: 0,
@@ -175,7 +163,7 @@ function createTower(amount) {
         angular: 0
       });
     }
-    currentY -= blockH - 6;
+    currentY -= blockH - 5;
   }
 }
 
@@ -200,12 +188,85 @@ function updateShots() {
   document.getElementById('shots').textContent = `Shots: ${shots}`;
 }
 
+function drawSlingshot() {
+  // Wooden posts
+  ctx.fillStyle = '#5C4033';
+  ctx.fillRect(SLING_X - 8, SLING_Y - 60, 16, 70);
+  ctx.fillRect(SLING_X + 38, SLING_Y - 60, 16, 70);
+
+  // Top bar
+  ctx.fillStyle = '#4A2F1F';
+  ctx.fillRect(SLING_X - 6, SLING_Y - 62, 58, 8);
+
+  // Rubber bands
+  if (isDragging) {
+    const pullX = currentDrag.x;
+    const pullY = currentDrag.y;
+    ctx.strokeStyle = '#8B6F47';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(SLING_X, SLING_Y - 40);
+    ctx.lineTo(pullX, pullY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(SLING_X + 46, SLING_Y - 40);
+    ctx.lineTo(pullX, pullY);
+    ctx.stroke();
+  } else {
+    // Resting bands
+    ctx.strokeStyle = '#8B6F47';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(SLING_X, SLING_Y - 40);
+    ctx.lineTo(SLING_X + 22, SLING_Y - 32);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(SLING_X + 46, SLING_Y - 40);
+    ctx.lineTo(SLING_X + 22, SLING_Y - 32);
+    ctx.stroke();
+  }
+}
+
+function drawTrajectory() {
+  if (!isDragging) return;
+
+  const dx = SLING_X + 22 - currentDrag.x;
+  const dy = SLING_Y - 32 - currentDrag.y;
+  const power = Math.min(17, Math.sqrt(dx*dx + dy*dy) * 0.095);
+
+  const angle = Math.atan2(dy, dx);
+  let vx = Math.cos(angle) * power * 1.15;
+  let vy = Math.sin(angle) * power * 1.15;
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 6]);
+
+  let x = currentDrag.x;
+  let y = currentDrag.y;
+  const g = 0.28;
+
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+
+  for (let i = 0; i < 22; i++) {
+    x += vx;
+    y += vy;
+    vy += g;
+    vx *= 0.985;
+    ctx.lineTo(x, y);
+    if (y > canvas.height - 50) break;
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
 function draw() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   // Ground
   ctx.fillStyle = '#2A3F5F';
-  ctx.fillRect(0, canvas.height-60, canvas.width, 80);
+  ctx.fillRect(0, canvas.height-55, canvas.width, 80);
 
   // Draw blocks
   blocks.forEach(b => {
@@ -218,13 +279,11 @@ function draw() {
     ctx.fillStyle = t.color;
     ctx.fillRect(-b.w/2, -b.h/2, b.w, b.h);
 
-    // Highlight
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.fillRect(-b.w/2 + 4, -b.h/2 + 4, b.w - 8, 8);
+    ctx.fillRect(-b.w/2 + 3, -b.h/2 + 3, b.w - 6, 7);
 
-    // Cracks for damaged blocks
     if (b.hp < t.hp) {
-      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.45)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(-b.w/4, -b.h/4);
@@ -232,45 +291,41 @@ function draw() {
       ctx.stroke();
     }
 
-    // TNT label
     if (b.type === 'tnt') {
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 11px JetBrains Mono';
-      ctx.fillText('TNT', -12, 4);
+      ctx.font = 'bold 10px JetBrains Mono';
+      ctx.fillText('TNT', -11, 4);
     }
 
     ctx.restore();
   });
 
-  // Draw projectiles
+  // Draw projectiles (snowballs)
   ctx.fillStyle = '#fff';
   projectiles.forEach(p => {
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
     ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
     ctx.beginPath();
-    ctx.arc(p.x-3, p.y-3, p.r*0.4, 0, Math.PI*2);
+    ctx.arc(p.x-3, p.y-3, p.r*0.38, 0, Math.PI*2);
     ctx.fill();
     ctx.fillStyle = '#fff';
   });
 
-  // Slingshot rubber bands
-  if (isDragging) {
-    const pouchRect = pouch.getBoundingClientRect();
-    const gameRect = canvas.getBoundingClientRect();
-    const sx = pouchRect.left + 16 - gameRect.left;
-    const sy = pouchRect.top + 16 - gameRect.top;
-    ctx.strokeStyle = '#8B6F47';
-    ctx.lineWidth = 3;
+  drawSlingshot();
+  drawTrajectory();
+
+  // Snowball in pouch when not dragging
+  if (!isDragging) {
+    ctx.fillStyle = '#fff';
     ctx.beginPath();
-    ctx.moveTo(280, 560);
-    ctx.lineTo(sx, sy);
-    ctx.stroke();
+    ctx.arc(SLING_X + 22, SLING_Y - 32, 11, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.beginPath();
-    ctx.moveTo(440, 560);
-    ctx.lineTo(sx, sy);
-    ctx.stroke();
+    ctx.arc(SLING_X + 19, SLING_Y - 35, 4, 0, Math.PI*2);
+    ctx.fill();
   }
 }
 
@@ -286,22 +341,19 @@ function physicsStep() {
     p.vy += gravity;
     p.vx *= friction;
 
-    // Collision with blocks
     for (let j = blocks.length-1; j>=0; j--) {
       const b = blocks[j];
       if (b.hp <= 0) continue;
       if (p.x > b.x && p.x < b.x + b.w && p.y > b.y && p.y < b.y + b.h) {
-        // Hit!
         b.hp -= 1;
-        b.vx += p.vx * 0.6;
-        b.vy += p.vy * 0.6;
-        b.angular += (p.vx - p.vy) * 0.02;
+        b.vx += p.vx * 0.65;
+        b.vy += p.vy * 0.65;
+        b.angular += (p.vx - p.vy) * 0.025;
 
         const value = BLOCK_TYPES[b.type].value;
         melted += value;
         updateProgress();
 
-        // Explosive TNT
         if (b.type === 'tnt' && b.hp <= 0) {
           explode(b);
         }
@@ -311,7 +363,7 @@ function physicsStep() {
       }
     }
 
-    if (p.y > canvas.height + 40) projectiles.splice(i,1);
+    if (p.y > canvas.height + 50) projectiles.splice(i,1);
   }
 
   // Block physics
@@ -325,11 +377,10 @@ function physicsStep() {
     b.angle += b.angular;
     b.angular *= 0.92;
 
-    // Floor collision
-    if (b.y + b.h > canvas.height - 60) {
-      b.y = canvas.height - 60 - b.h;
-      b.vy = -b.vy * 0.35;
-      b.vx *= 0.7;
+    if (b.y + b.h > canvas.height - 55) {
+      b.y = canvas.height - 55 - b.h;
+      b.vy = -b.vy * 0.32;
+      b.vx *= 0.68;
     }
   });
 }
@@ -343,10 +394,10 @@ function explode(centerBlock) {
     const dx = (b.x + b.w/2) - cx;
     const dy = (b.y + b.h/2) - cy;
     const dist = Math.sqrt(dx*dx + dy*dy) || 1;
-    if (dist < 180) {
-      b.vx += (dx/dist) * 9;
-      b.vy += (dy/dist) * 9 - 3;
-      b.angular += (Math.random()-0.5)*0.3;
+    if (dist < 190) {
+      b.vx += (dx/dist) * 10;
+      b.vy += (dy/dist) * 10 - 4;
+      b.angular += (Math.random()-0.5)*0.35;
       if (b.type !== 'tnt') b.hp = Math.max(0, b.hp - 1);
     }
   });
@@ -395,18 +446,18 @@ function restartGame() {
 }
 
 function launchSnowball(sx, sy, ex, ey) {
-  const dx = ex - sx;
-  const dy = ey - sy;
-  const power = Math.min(18, Math.sqrt(dx*dx + dy*dy) * 0.09);
+  const dx = sx - ex;
+  const dy = sy - ey;
+  const power = Math.min(17, Math.sqrt(dx*dx + dy*dy) * 0.095);
 
   const angle = Math.atan2(dy, dx);
-  const vx = Math.cos(angle) * power * -1.2;
-  const vy = Math.sin(angle) * power * -1.2;
+  const vx = Math.cos(angle) * power * 1.15;
+  const vy = Math.sin(angle) * power * 1.15;
 
   projectiles.push({
-    x: sx,
-    y: sy,
-    r: 9,
+    x: ex,
+    y: ey,
+    r: 11,
     vx: vx,
     vy: vy
   });
@@ -417,93 +468,96 @@ function launchSnowball(sx, sy, ex, ey) {
   if (!startTime) startTimer();
 }
 
-// Mouse / Touch controls for slingshot
-const pouchEl = document.getElementById('pouch');
-let startDragX = 0, startDragY = 0;
-
-function getGameCoords(clientX, clientY) {
+// Mouse controls - proper Angry Birds style
+canvas.addEventListener('mousedown', (e) => {
   const rect = canvas.getBoundingClientRect();
-  return {
-    x: clientX - rect.left,
-    y: clientY - rect.top
-  };
-}
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
 
-pouchEl.addEventListener('mousedown', (e) => {
-  isDragging = true;
-  const rect = pouchEl.getBoundingClientRect();
-  startDragX = rect.left + 16;
-  startDragY = rect.top + 16;
-  pouchEl.style.transition = 'none';
+  const dist = Math.hypot(mx - (SLING_X + 22), my - (SLING_Y - 32));
+  if (dist < 55) {
+    isDragging = true;
+    dragStart.x = mx;
+    dragStart.y = my;
+    currentDrag.x = mx;
+    currentDrag.y = my;
+  }
 });
 
-document.addEventListener('mousemove', (e) => {
+canvas.addEventListener('mousemove', (e) => {
   if (!isDragging) return;
-  const gameRect = canvas.getBoundingClientRect();
-  const pouchRect = pouchEl.getBoundingClientRect();
-  const currentX = e.clientX;
-  const currentY = e.clientY;
+  const rect = canvas.getBoundingClientRect();
+  let mx = e.clientX - rect.left;
+  let my = e.clientY - rect.top;
 
-  // Limit drag distance
-  const maxPull = 90;
-  const dx = currentX - startDragX;
-  const dy = currentY - startDragY;
-  const dist = Math.sqrt(dx*dx + dy*dy);
-  const scale = dist > maxPull ? maxPull / dist : 1;
+  // Limit pull distance
+  const dx = mx - SLING_X - 22;
+  const dy = my - SLING_Y + 32;
+  const dist = Math.hypot(dx, dy);
+  if (dist > MAX_PULL) {
+    const scale = MAX_PULL / dist;
+    mx = SLING_X + 22 + dx * scale;
+    my = SLING_Y - 32 + dy * scale;
+  }
 
-  const newX = startDragX + dx * scale - (pouchRect.width/2);
-  const newY = startDragY + dy * scale - (pouchRect.height/2);
-
-  pouchEl.style.left = (newX - gameRect.left) + 'px';
-  pouchEl.style.top = (newY - gameRect.top) + 'px';
+  currentDrag.x = mx;
+  currentDrag.y = my;
 });
 
-document.addEventListener('mouseup', (e) => {
+canvas.addEventListener('mouseup', (e) => {
   if (!isDragging) return;
   isDragging = false;
 
-  const gameRect = canvas.getBoundingClientRect();
-  const pouchRect = pouchEl.getBoundingClientRect();
-  const endX = pouchRect.left + 16 - gameRect.left;
-  const endY = pouchRect.top + 16 - gameRect.top;
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
 
-  // Reset pouch
-  pouchEl.style.transition = 'all 0.2s cubic-bezier(0.2,0.8,0.2,1)';
-  pouchEl.style.left = '50%';
-  pouchEl.style.top = '18px';
-
-  // Launch
-  const startX = 360;
-  const startY = 540;
-  launchSnowball(startX, startY, endX, endY);
+  launchSnowball(SLING_X + 22, SLING_Y - 32, currentDrag.x, currentDrag.y);
 });
 
 // Touch support
-pouchEl.addEventListener('touchstart', (e) => {
-  isDragging = true;
-  const rect = pouchEl.getBoundingClientRect();
-  startDragX = rect.left + 16;
-  startDragY = rect.top + 16;
+canvas.addEventListener('touchstart', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.touches[0].clientX - rect.left;
+  const my = e.touches[0].clientY - rect.top;
+
+  const dist = Math.hypot(mx - (SLING_X + 22), my - (SLING_Y - 32));
+  if (dist < 55) {
+    isDragging = true;
+    currentDrag.x = mx;
+    currentDrag.y = my;
+  }
   e.preventDefault();
 });
 
-document.addEventListener('touchend', (e) => {
+canvas.addEventListener('touchmove', (e) => {
+  if (!isDragging) return;
+  const rect = canvas.getBoundingClientRect();
+  let mx = e.touches[0].clientX - rect.left;
+  let my = e.touches[0].clientY - rect.top;
+
+  const dx = mx - SLING_X - 22;
+  const dy = my - SLING_Y + 32;
+  const dist = Math.hypot(dx, dy);
+  if (dist > MAX_PULL) {
+    const scale = MAX_PULL / dist;
+    mx = SLING_X + 22 + dx * scale;
+    my = SLING_Y - 32 + dy * scale;
+  }
+
+  currentDrag.x = mx;
+  currentDrag.y = my;
+  e.preventDefault();
+});
+
+canvas.addEventListener('touchend', (e) => {
   if (!isDragging) return;
   isDragging = false;
-  const gameRect = canvas.getBoundingClientRect();
-  const pouchRect = pouchEl.getBoundingClientRect();
-  const endX = pouchRect.left + 16 - gameRect.left;
-  const endY = pouchRect.top + 16 - gameRect.top;
-
-  pouchEl.style.transition = 'all 0.2s cubic-bezier(0.2,0.8,0.2,1)';
-  pouchEl.style.left = '50%';
-  pouchEl.style.top = '18px';
-
-  launchSnowball(360, 540, endX, endY);
+  launchSnowball(SLING_X + 22, SLING_Y - 32, currentDrag.x, currentDrag.y);
   e.preventDefault();
 });
 
-// Keyboard: space to restart
+// Keyboard
 document.addEventListener('keydown', (e) => {
   if (e.key === ' ' && document.getElementById('winOverlay').classList.contains('show')) {
     e.preventDefault();
@@ -517,12 +571,11 @@ function init() {
   updateProgress();
   gameLoop();
 
-  // Auto-start hint
   setTimeout(() => {
     if (!startTime) {
       document.getElementById('goalText').textContent = 'Goal: £0 / £85  •  Drag the snowball!';
     }
-  }, 1800);
+  }, 1600);
 }
 
 init();
