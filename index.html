@@ -7,25 +7,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Manrope:wght@500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --sky-top:#4A5A72; --sky-mid:#7C93AC; --sky-bottom:#E4EFF5;
-    --deep-navy:#16283D; --frost-blue:#3E92CC; --mint-melt:#5FC9A8;
-    --ember:#FF6B4A; --gold:#F2B84B; --wood:#C17A4A;
-  }
+  :root { --sky-top:#4A5A72; --sky-mid:#7C93AC; --sky-bottom:#E4EFF5; --deep-navy:#16283D; --frost-blue:#3E92CC; --mint-melt:#5FC9A8; --ember:#FF6B4A; --gold:#F2B84B; }
   * { box-sizing: border-box; }
   html, body { margin:0; padding:0; background:#0f1a2e; color:#fff; font-family:'Manrope',sans-serif; overflow:hidden; }
   #sky { position:fixed; inset:0; background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-bottom) 100%); z-index:-3; }
   #mountains { position:fixed; bottom:0; left:0; right:0; width:100%; height:38vh; z-index:-2; opacity:0.65; }
   #snowCanvas { position:fixed; inset:0; z-index:-1; pointer-events:none; }
   #aurora { position:fixed; top:0; left:0; right:0; height:40vh; z-index:-1; opacity:0; background:linear-gradient(120deg, rgba(95,201,168,.45), rgba(62,146,204,.35), rgba(255,182,140,.35)); filter:blur(40px); mix-blend-mode:screen; }
-
   .wrap { position:relative; height:100vh; display:flex; flex-direction:column; }
   .topbar { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; background:rgba(22,40,61,.85); backdrop-filter:blur(12px); border-bottom:1px solid rgba(255,255,255,.1); z-index:10; }
-  .topbar .left { display:flex; align-items:center; gap:16px; }
   .logo { font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:800; letter-spacing:-0.5px; }
   .stat { font-family:'JetBrains Mono',monospace; font-size:13px; background:rgba(255,255,255,.1); padding:4px 12px; border-radius:999px; }
   .progress { flex:1; max-width:420px; height:10px; background:rgba(255,255,255,.15); border-radius:999px; overflow:hidden; margin:0 20px; }
-  .progress-bar { height:100%; background:linear-gradient(90deg,#5FC9A8,#F2B84B); transition:width .1s linear; }
+  .progress-bar { height:100%; background:linear-gradient(90deg,#5FC9A8,#F2B84B); transition:width .08s linear; }
   .game-container { flex:1; position:relative; display:flex; align-items:center; justify-content:center; }
   #game { border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.5); background:rgba(255,255,255,.03); cursor:crosshair; }
   .overlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(15,26,46,.92); z-index:20; }
@@ -58,7 +52,6 @@
       <div class="stat" id="shots">Shots: 0</div>
     </div>
   </div>
-
   <div class="game-container">
     <canvas id="game" width="720" height="620"></canvas>
   </div>
@@ -78,506 +71,219 @@
 </div>
 
 <script>
-// ===== Snowfall =====
+// Snowfall
 const snowCanvas = document.getElementById('snowCanvas');
 const sctx = snowCanvas.getContext('2d');
 let W = window.innerWidth, H = window.innerHeight;
 snowCanvas.width = W; snowCanvas.height = H;
 let flakes = [];
-function makeFlake() { return {x:Math.random()*W, y:Math.random()*-H, r:Math.random()*2+1, spd:Math.random()*0.7+0.3, drift:Math.random()*0.5-0.25, o:Math.random()*0.5+0.3}; }
-for(let i=0;i<80;i++) flakes.push(makeFlake());
-function tickSnow() {
-  sctx.clearRect(0,0,W,H);
-  sctx.fillStyle = 'rgba(255,255,255,0.9)';
-  flakes.forEach(f => {
-    f.y += f.spd; f.x += f.drift;
-    if(f.y > H) { f.y = -4; f.x = Math.random()*W; }
-    sctx.globalAlpha = f.o;
-    sctx.beginPath(); sctx.arc(f.x,f.y,f.r,0,Math.PI*2); sctx.fill();
-  });
-  sctx.globalAlpha = 1;
-  requestAnimationFrame(tickSnow);
-}
-tickSnow();
-window.addEventListener('resize', () => { W=window.innerWidth; H=window.innerHeight; snowCanvas.width=W; snowCanvas.height=H; });
+function makeFlake(){return{x:Math.random()*W,y:Math.random()*-H,r:Math.random()*2+1,spd:Math.random()*0.7+0.3,drift:Math.random()*0.5-0.25,o:Math.random()*0.5+0.3}}
+for(let i=0;i<80;i++)flakes.push(makeFlake());
+function tickSnow(){sctx.clearRect(0,0,W,H);sctx.fillStyle='rgba(255,255,255,0.9)';flakes.forEach(f=>{f.y+=f.spd;f.x+=f.drift;if(f.y>H){f.y=-4;f.x=Math.random()*W}sctx.globalAlpha=f.o;sctx.beginPath();sctx.arc(f.x,f.y,f.r,0,Math.PI*2);sctx.fill()});sctx.globalAlpha=1;requestAnimationFrame(tickSnow)}tickSnow();
+window.addEventListener('resize',()=>{W=window.innerWidth;H=window.innerHeight;snowCanvas.width=W;snowCanvas.height=H});
 
-// ===== Game =====
+// Game
 const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d', { alpha: true });
+const ctx = canvas.getContext('2d',{alpha:true});
 
-let goal = 0;
-let melted = 0;
-let shots = 0;
-let startTime = 0;
-let timerInterval = null;
-let blocks = [];
-let projectiles = [];
-let isDragging = false;
-let dragStart = {x:0, y:0};
-let currentDrag = {x:0, y:0};
+let goal=0,melted=0,shots=0,startTime=0,timerInterval=null;
+let blocks=[],projectiles=[];
+let isDragging=false,dragStart={x:0,y:0},currentDrag={x:0,y:0};
 
-// Angry Birds style slingshot position (bottom left)
-const SLING_X = 140;
-const SLING_Y = 520;
-const MAX_PULL = 95;
+const SLING_X=140,SLING_Y=520,MAX_PULL=105;
 
-const BLOCK_TYPES = {
-  ice:   { value: 3, color: '#A8D5E5', hp: 1, name: 'Ice' },
-  wood:  { value: 7, color: '#C17A4A', hp: 2, name: 'Wood' },
-  tnt:   { value: 14, color: '#FF6B4A', hp: 1, name: 'TNT', explosive: true }
+const BLOCK_TYPES={
+  ice:{value:4,color:'#A8D5E5',hp:1,density:0.7},
+  wood:{value:9,color:'#C17A4A',hp:3,density:1.1},
+  tnt:{value:18,color:'#FF6B4A',hp:1,density:0.9,explosive:true}
 };
 
-function createTower(amount) {
-  blocks = [];
-  goal = amount;
-  melted = 0;
-  const towerWidth = 280;
-  const startX = canvas.width/2 - towerWidth/2 + 40;
-  const baseY = canvas.height - 90;
-  const blockH = 36;
-  const blockW = 54;
-
-  const rows = Math.max(5, Math.min(9, Math.floor(amount / 18) + 4));
-  let currentY = baseY;
-
-  for (let r = 0; r < rows; r++) {
-    const isEven = r % 2 === 0;
-    const rowWidth = isEven ? 5 : 4;
-    const offset = isEven ? 0 : blockW * 0.5;
-
-    for (let c = 0; c < rowWidth; c++) {
-      let type = 'ice';
-      if (r < 2) type = 'tnt';
-      else if (r < 4) type = 'wood';
-      else type = 'ice';
-
+function createTower(amount){
+  blocks=[];goal=amount;melted=0;
+  const startX=canvas.width/2-120;
+  const baseY=canvas.height-70;
+  const rows=Math.max(6,Math.min(10,Math.floor(amount/16)+5));
+  let y=baseY;
+  for(let r=0;r<rows;r++){
+    const even=r%2===0;
+    const cols=even?5:4;
+    const off=even?0:26;
+    for(let c=0;c<cols;c++){
+      let type='ice';
+      if(r<2)type='tnt';
+      else if(r<4)type='wood';
+      else type='ice';
       blocks.push({
-        x: startX + offset + c * blockW,
-        y: currentY,
-        w: blockW - 3,
-        h: blockH - 3,
-        type,
-        hp: BLOCK_TYPES[type].hp,
-        vx: 0, vy: 0,
-        angle: 0,
-        angular: 0
+        x:startX+off+c*52,y:y,w:48,h:34,type,
+        hp:BLOCK_TYPES[type].hp,
+        vx:0,vy:0,angle:0,angular:0,
+        density:BLOCK_TYPES[type].density
       });
     }
-    currentY -= blockH - 5;
+    y-=32;
   }
 }
 
-function updateProgress() {
-  const pct = goal > 0 ? Math.min(100, (melted / goal) * 100) : 0;
-  document.getElementById('progressBar').style.width = pct + '%';
-  document.getElementById('goalText').textContent = `Goal: £${melted} / £${goal}`;
-  if (melted >= goal && !document.getElementById('winOverlay').classList.contains('show')) {
-    endRun();
+function updateProgress(){
+  const pct=goal>0?Math.min(100,(melted/goal)*100):0;
+  document.getElementById('progressBar').style.width=pct+'%';
+  document.getElementById('goalText').textContent=`Goal: £${melted} / £${goal}`;
+  if(melted>=goal&&!document.getElementById('winOverlay').classList.contains('show'))endRun();
+}
+function updateTimer(){if(!startTime)return;const e=Math.floor((Date.now()-startTime)/1000);document.getElementById('timer').textContent=`${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`;}
+function updateShots(){document.getElementById('shots').textContent=`Shots: ${shots}`;}
+
+function drawSlingshot(){
+  ctx.fillStyle='#5C4033';ctx.fillRect(SLING_X-9,SLING_Y-65,18,75);ctx.fillRect(SLING_X+40,SLING_Y-65,18,75);
+  ctx.fillStyle='#3F2A1F';ctx.fillRect(SLING_X-7,SLING_Y-68,56,9);
+  if(isDragging){
+    ctx.strokeStyle='#8B6F47';ctx.lineWidth=5;
+    ctx.beginPath();ctx.moveTo(SLING_X,SLING_Y-42);ctx.lineTo(currentDrag.x,currentDrag.y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(SLING_X+49,SLING_Y-42);ctx.lineTo(currentDrag.x,currentDrag.y);ctx.stroke();
+  }else{
+    ctx.strokeStyle='#8B6F47';ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(SLING_X,SLING_Y-42);ctx.lineTo(SLING_X+24,SLING_Y-35);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(SLING_X+49,SLING_Y-42);ctx.lineTo(SLING_X+24,SLING_Y-35);ctx.stroke();
   }
 }
 
-function updateTimer() {
-  if (!startTime) return;
-  const elapsed = Math.floor((Date.now() - startTime) / 1000);
-  const min = String(Math.floor(elapsed / 60)).padStart(2,'0');
-  const sec = String(elapsed % 60).padStart(2,'0');
-  document.getElementById('timer').textContent = `${min}:${sec}`;
+function drawTrajectory(){
+  if(!isDragging)return;
+  const dx=SLING_X+24-currentDrag.x,dy=SLING_Y-35-currentDrag.y;
+  const power=Math.min(18,Math.hypot(dx,dy)*0.1);
+  const ang=Math.atan2(dy,dx);
+  let vx=Math.cos(ang)*power*1.2,vy=Math.sin(ang)*power*1.2;
+  ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=2;ctx.setLineDash([5,7]);
+  let x=currentDrag.x,y=currentDrag.y;const g=0.32;
+  ctx.beginPath();ctx.moveTo(x,y);
+  for(let i=0;i<26;i++){x+=vx;y+=vy;vy+=g;vx*=0.985;ctx.lineTo(x,y);if(y>canvas.height-60)break;}
+  ctx.stroke();ctx.setLineDash([]);
 }
 
-function updateShots() {
-  document.getElementById('shots').textContent = `Shots: ${shots}`;
-}
-
-function drawSlingshot() {
-  // Wooden posts
-  ctx.fillStyle = '#5C4033';
-  ctx.fillRect(SLING_X - 8, SLING_Y - 60, 16, 70);
-  ctx.fillRect(SLING_X + 38, SLING_Y - 60, 16, 70);
-
-  // Top bar
-  ctx.fillStyle = '#4A2F1F';
-  ctx.fillRect(SLING_X - 6, SLING_Y - 62, 58, 8);
-
-  // Rubber bands
-  if (isDragging) {
-    const pullX = currentDrag.x;
-    const pullY = currentDrag.y;
-    ctx.strokeStyle = '#8B6F47';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(SLING_X, SLING_Y - 40);
-    ctx.lineTo(pullX, pullY);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(SLING_X + 46, SLING_Y - 40);
-    ctx.lineTo(pullX, pullY);
-    ctx.stroke();
-  } else {
-    // Resting bands
-    ctx.strokeStyle = '#8B6F47';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(SLING_X, SLING_Y - 40);
-    ctx.lineTo(SLING_X + 22, SLING_Y - 32);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(SLING_X + 46, SLING_Y - 40);
-    ctx.lineTo(SLING_X + 22, SLING_Y - 32);
-    ctx.stroke();
-  }
-}
-
-function drawTrajectory() {
-  if (!isDragging) return;
-
-  const dx = SLING_X + 22 - currentDrag.x;
-  const dy = SLING_Y - 32 - currentDrag.y;
-  const power = Math.min(17, Math.sqrt(dx*dx + dy*dy) * 0.095);
-
-  const angle = Math.atan2(dy, dx);
-  let vx = Math.cos(angle) * power * 1.15;
-  let vy = Math.sin(angle) * power * 1.15;
-
-  ctx.strokeStyle = 'rgba(255,255,255,0.45)';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([4, 6]);
-
-  let x = currentDrag.x;
-  let y = currentDrag.y;
-  const g = 0.28;
-
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-
-  for (let i = 0; i < 22; i++) {
-    x += vx;
-    y += vy;
-    vy += g;
-    vx *= 0.985;
-    ctx.lineTo(x, y);
-    if (y > canvas.height - 50) break;
-  }
-  ctx.stroke();
-  ctx.setLineDash([]);
-}
-
-function draw() {
+function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#2A3F5F';ctx.fillRect(0,canvas.height-50,canvas.width,70);
 
-  // Ground
-  ctx.fillStyle = '#2A3F5F';
-  ctx.fillRect(0, canvas.height-55, canvas.width, 80);
-
-  // Draw blocks
-  blocks.forEach(b => {
-    if (b.hp <= 0) return;
-    const t = BLOCK_TYPES[b.type];
-    ctx.save();
-    ctx.translate(b.x + b.w/2, b.y + b.h/2);
-    ctx.rotate(b.angle);
-
-    ctx.fillStyle = t.color;
-    ctx.fillRect(-b.w/2, -b.h/2, b.w, b.h);
-
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.fillRect(-b.w/2 + 3, -b.h/2 + 3, b.w - 6, 7);
-
-    if (b.hp < t.hp) {
-      ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(-b.w/4, -b.h/4);
-      ctx.lineTo(b.w/5, b.h/5);
-      ctx.stroke();
-    }
-
-    if (b.type === 'tnt') {
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 10px JetBrains Mono';
-      ctx.fillText('TNT', -11, 4);
-    }
-
+  blocks.forEach(b=>{
+    if(b.hp<=0)return;
+    const t=BLOCK_TYPES[b.type];
+    ctx.save();ctx.translate(b.x+b.w/2,b.y+b.h/2);ctx.rotate(b.angle);
+    ctx.fillStyle=t.color;ctx.fillRect(-b.w/2,-b.h/2,b.w,b.h);
+    ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fillRect(-b.w/2+3,-b.h/2+3,b.w-6,6);
+    if(b.hp<t.hp){ctx.strokeStyle='rgba(0,0,0,0.5)';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(-b.w/3,-b.h/4);ctx.lineTo(b.w/4,b.h/5);ctx.stroke();}
+    if(b.type==='tnt'){ctx.fillStyle='#fff';ctx.font='bold 10px JetBrains Mono';ctx.fillText('TNT',-11,4);}
     ctx.restore();
   });
 
-  // Draw projectiles (snowballs)
-  ctx.fillStyle = '#fff';
-  projectiles.forEach(p => {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.beginPath();
-    ctx.arc(p.x-3, p.y-3, p.r*0.38, 0, Math.PI*2);
-    ctx.fill();
-    ctx.fillStyle = '#fff';
-  });
+  ctx.fillStyle='#fff';
+  projectiles.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,0.5)';ctx.beginPath();ctx.arc(p.x-3,p.y-3,p.r*0.4,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';});
 
   drawSlingshot();
   drawTrajectory();
-
-  // Snowball in pouch when not dragging
-  if (!isDragging) {
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(SLING_X + 22, SLING_Y - 32, 11, 0, Math.PI*2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.beginPath();
-    ctx.arc(SLING_X + 19, SLING_Y - 35, 4, 0, Math.PI*2);
-    ctx.fill();
-  }
+  if(!isDragging){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(SLING_X+24,SLING_Y-35,12,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,0.55)';ctx.beginPath();ctx.arc(SLING_X+21,SLING_Y-38,5,0,Math.PI*2);ctx.fill();}
 }
 
-function physicsStep() {
-  const gravity = 0.28;
-  const friction = 0.985;
-
-  // Projectiles
-  for (let i = projectiles.length-1; i>=0; i--) {
-    const p = projectiles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += gravity;
-    p.vx *= friction;
-
-    for (let j = blocks.length-1; j>=0; j--) {
-      const b = blocks[j];
-      if (b.hp <= 0) continue;
-      if (p.x > b.x && p.x < b.x + b.w && p.y > b.y && p.y < b.y + b.h) {
-        b.hp -= 1;
-        b.vx += p.vx * 0.65;
-        b.vy += p.vy * 0.65;
-        b.angular += (p.vx - p.vy) * 0.025;
-
-        const value = BLOCK_TYPES[b.type].value;
-        melted += value;
-        updateProgress();
-
-        if (b.type === 'tnt' && b.hp <= 0) {
-          explode(b);
-        }
-
-        projectiles.splice(i,1);
-        break;
+function resolveBlockCollisions(){
+  for(let i=0;i<blocks.length;i++){
+    for(let j=i+1;j<blocks.length;j++){
+      const a=blocks[i],b=blocks[j];
+      if(a.hp<=0||b.hp<=0)continue;
+      const ax=a.x+a.w/2,ay=a.y+a.h/2,bx=b.x+b.w/2,by=b.y+b.h/2;
+      const dx=bx-ax,dy=by-ay;const dist=Math.hypot(dx,dy)||1;
+      const minDist=(a.w+b.w)*0.48;
+      if(dist<minDist){
+        const overlap=minDist-dist;const nx=dx/dist,ny=dy/dist;
+        const ma=a.density||1,mb=b.density||1;
+        const impulse=(overlap*0.6)/(ma+mb);
+        a.vx-=(nx*impulse*mb);a.vy-=(ny*impulse*mb);
+        b.vx+=(nx*impulse*ma);b.vy+=(ny*impulse*ma);
+        a.angular+=(Math.random()-0.5)*0.08;b.angular+=(Math.random()-0.5)*0.08;
       }
     }
-
-    if (p.y > canvas.height + 50) projectiles.splice(i,1);
   }
+}
 
-  // Block physics
-  blocks.forEach(b => {
-    if (b.hp <= 0) return;
-    b.x += b.vx;
-    b.y += b.vy;
-    b.vy += 0.18;
-    b.vx *= 0.96;
-    b.vy *= 0.96;
-    b.angle += b.angular;
-    b.angular *= 0.92;
+function physicsStep(){
+  const g=0.32,friction=0.978;
+  // Projectiles
+  for(let i=projectiles.length-1;i>=0;i--){
+    const p=projectiles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=g;p.vx*=0.992;
+    for(let j=blocks.length-1;j>=0;j--){
+      const b=blocks[j];if(b.hp<=0)continue;
+      if(p.x>b.x&&p.x<b.x+b.w&&p.y>b.y&&p.y<b.y+b.h){
+        const t=BLOCK_TYPES[b.type];
+        b.hp-=1;
+        const mass=p.r*0.8;
+        b.vx+=p.vx*0.75*mass;b.vy+=p.vy*0.75*mass;
+        b.angular+=(p.vx-p.vy)*0.03;
+        melted+=t.value;updateProgress();
+        if(b.type==='tnt'&&b.hp<=0)explode(b);
+        projectiles.splice(i,1);break;
+      }
+    }
+    if(p.y>canvas.height+60)projectiles.splice(i,1);
+  }
+  // Blocks
+  blocks.forEach(b=>{
+    if(b.hp<=0)return;
+    b.x+=b.vx;b.y+=b.vy;b.vy+=g;b.vx*=friction;b.vy*=friction*0.985;
+    b.angle+=b.angular;b.angular*=0.91;
+    if(b.y+b.h>canvas.height-50){b.y=canvas.height-50-b.h;b.vy=-b.vy*0.38;b.vx*=0.72;}
+    if(b.x<0){b.x=0;b.vx=Math.abs(b.vx)*0.6;}if(b.x+b.w>canvas.width){b.x=canvas.width-b.w;b.vx=-Math.abs(b.vx)*0.6;}
+  });
+  resolveBlockCollisions();
+}
 
-    if (b.y + b.h > canvas.height - 55) {
-      b.y = canvas.height - 55 - b.h;
-      b.vy = -b.vy * 0.32;
-      b.vx *= 0.68;
+function explode(center){
+  const cx=center.x+center.w/2,cy=center.y+center.h/2;
+  blocks.forEach(b=>{
+    if(b.hp<=0)return;
+    const dx=(b.x+b.w/2)-cx,dy=(b.y+b.h/2)-cy;const d=Math.hypot(dx,dy)||1;
+    if(d<210){
+      const force=11*(1-d/210);
+      b.vx+=(dx/d)*force;b.vy+=(dy/d)*force-4;b.angular+=(Math.random()-0.5)*0.4;
+      if(b.type!=='tnt')b.hp=Math.max(0,b.hp-1);
     }
   });
 }
 
-function explode(centerBlock) {
-  const cx = centerBlock.x + centerBlock.w/2;
-  const cy = centerBlock.y + centerBlock.h/2;
-
-  blocks.forEach(b => {
-    if (b.hp <= 0) return;
-    const dx = (b.x + b.w/2) - cx;
-    const dy = (b.y + b.h/2) - cy;
-    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
-    if (dist < 190) {
-      b.vx += (dx/dist) * 10;
-      b.vy += (dy/dist) * 10 - 4;
-      b.angular += (Math.random()-0.5)*0.35;
-      if (b.type !== 'tnt') b.hp = Math.max(0, b.hp - 1);
-    }
-  });
-}
-
-function gameLoop() {
-  physicsStep();
-  draw();
-  requestAnimationFrame(gameLoop);
-}
-
-function startTimer() {
-  if (timerInterval) clearInterval(timerInterval);
-  startTime = Date.now();
-  timerInterval = setInterval(updateTimer, 250);
-}
-
-function endRun() {
-  clearInterval(timerInterval);
-  const elapsed = Math.floor((Date.now() - startTime) / 1000);
-  const min = String(Math.floor(elapsed/60)).padStart(2,'0');
-  const sec = String(elapsed%60).padStart(2,'0');
-
-  document.getElementById('finalTime').textContent = `${min}:${sec}`;
-  document.getElementById('finalShots').textContent = shots;
-
-  const efficiency = shots <= 3 ? 3 : shots <= 6 ? 2 : 1;
-  document.getElementById('finalStars').textContent = '★'.repeat(efficiency) + '☆'.repeat(3-efficiency);
-
+function gameLoop(){physicsStep();draw();requestAnimationFrame(gameLoop);}
+function startTimer(){if(timerInterval)clearInterval(timerInterval);startTime=Date.now();timerInterval=setInterval(updateTimer,220);}
+function endRun(){clearInterval(timerInterval);const e=Math.floor((Date.now()-startTime)/1000);const m=String(Math.floor(e/60)).padStart(2,'0');const s=String(e%60).padStart(2,'0');
+  document.getElementById('finalTime').textContent=`${m}:${s}`;document.getElementById('finalShots').textContent=shots;
+  const stars=shots<=3?3:shots<=6?2:1;document.getElementById('finalStars').textContent='★'.repeat(stars)+'☆'.repeat(3-stars);
   document.getElementById('winOverlay').classList.add('show');
 }
-
-function restartGame() {
-  document.getElementById('winOverlay').classList.remove('show');
-  const amount = parseInt(prompt('How much do you want to melt? (£)', '85')) || 85;
-  createTower(amount);
-  projectiles = [];
-  shots = 0;
-  melted = 0;
-  startTime = 0;
-  document.getElementById('progressBar').style.width = '0%';
-  document.getElementById('goalText').textContent = `Goal: £0 / £${amount}`;
-  document.getElementById('timer').textContent = '00:00';
-  document.getElementById('shots').textContent = 'Shots: 0';
-  updateProgress();
+function restartGame(){document.getElementById('winOverlay').classList.remove('show');
+  const amt=parseInt(prompt('How much do you want to melt? (£)','95'))||95;
+  createTower(amt);projectiles=[];shots=0;melted=0;startTime=0;
+  document.getElementById('progressBar').style.width='0%';document.getElementById('goalText').textContent=`Goal: £0 / £${amt}`;
+  document.getElementById('timer').textContent='00:00';document.getElementById('shots').textContent='Shots: 0';updateProgress();
+}
+function launch(ex,ey){const dx=SLING_X+24-ex,dy=SLING_Y-35-ey;const pwr=Math.min(18,Math.hypot(dx,dy)*0.1);
+  const ang=Math.atan2(dy,dx);const vx=Math.cos(ang)*pwr*1.2,vy=Math.sin(ang)*pwr*1.2;
+  projectiles.push({x:ex,y:ey,r:12,vx,vy});shots++;updateShots();if(!startTime)startTimer();
 }
 
-function launchSnowball(sx, sy, ex, ey) {
-  const dx = sx - ex;
-  const dy = sy - ey;
-  const power = Math.min(17, Math.sqrt(dx*dx + dy*dy) * 0.095);
+// Controls
+canvas.addEventListener('mousedown',e=>{const r=canvas.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;
+  if(Math.hypot(mx-(SLING_X+24),my-(SLING_Y-35))<60){isDragging=true;currentDrag.x=mx;currentDrag.y=my;}});
+canvas.addEventListener('mousemove',e=>{if(!isDragging)return;const r=canvas.getBoundingClientRect();let mx=e.clientX-r.left,my=e.clientY-r.top;
+  const dx=mx-(SLING_X+24),dy=my-(SLING_Y-35);const d=Math.hypot(dx,dy);if(d>MAX_PULL){const s=MAX_PULL/d;mx=SLING_X+24+dx*s;my=SLING_Y-35+dy*s;}
+  currentDrag.x=mx;currentDrag.y=my;});
+canvas.addEventListener('mouseup',e=>{if(!isDragging)return;isDragging=false;launch(currentDrag.x,currentDrag.y);});
 
-  const angle = Math.atan2(dy, dx);
-  const vx = Math.cos(angle) * power * 1.15;
-  const vy = Math.sin(angle) * power * 1.15;
+canvas.addEventListener('touchstart',e=>{const r=canvas.getBoundingClientRect();const mx=e.touches[0].clientX-r.left,my=e.touches[0].clientY-r.top;
+  if(Math.hypot(mx-(SLING_X+24),my-(SLING_Y-35))<60){isDragging=true;currentDrag.x=mx;currentDrag.y=my;}e.preventDefault();});
+canvas.addEventListener('touchmove',e=>{if(!isDragging)return;const r=canvas.getBoundingClientRect();let mx=e.touches[0].clientX-r.left,my=e.touches[0].clientY-r.top;
+  const dx=mx-(SLING_X+24),dy=my-(SLING_Y-35);const d=Math.hypot(dx,dy);if(d>MAX_PULL){const s=MAX_PULL/d;mx=SLING_X+24+dx*s;my=SLING_Y-35+dy*s;}
+  currentDrag.x=mx;currentDrag.y=my;e.preventDefault();});
+canvas.addEventListener('touchend',e=>{if(!isDragging)return;isDragging=false;launch(currentDrag.x,currentDrag.y);e.preventDefault();});
 
-  projectiles.push({
-    x: ex,
-    y: ey,
-    r: 11,
-    vx: vx,
-    vy: vy
-  });
+document.addEventListener('keydown',e=>{if(e.key===' '&&document.getElementById('winOverlay').classList.contains('show')){e.preventDefault();restartGame();}});
 
-  shots++;
-  updateShots();
-
-  if (!startTime) startTimer();
-}
-
-// Mouse controls - proper Angry Birds style
-canvas.addEventListener('mousedown', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-
-  const dist = Math.hypot(mx - (SLING_X + 22), my - (SLING_Y - 32));
-  if (dist < 55) {
-    isDragging = true;
-    dragStart.x = mx;
-    dragStart.y = my;
-    currentDrag.x = mx;
-    currentDrag.y = my;
-  }
-});
-
-canvas.addEventListener('mousemove', (e) => {
-  if (!isDragging) return;
-  const rect = canvas.getBoundingClientRect();
-  let mx = e.clientX - rect.left;
-  let my = e.clientY - rect.top;
-
-  // Limit pull distance
-  const dx = mx - SLING_X - 22;
-  const dy = my - SLING_Y + 32;
-  const dist = Math.hypot(dx, dy);
-  if (dist > MAX_PULL) {
-    const scale = MAX_PULL / dist;
-    mx = SLING_X + 22 + dx * scale;
-    my = SLING_Y - 32 + dy * scale;
-  }
-
-  currentDrag.x = mx;
-  currentDrag.y = my;
-});
-
-canvas.addEventListener('mouseup', (e) => {
-  if (!isDragging) return;
-  isDragging = false;
-
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-
-  launchSnowball(SLING_X + 22, SLING_Y - 32, currentDrag.x, currentDrag.y);
-});
-
-// Touch support
-canvas.addEventListener('touchstart', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.touches[0].clientX - rect.left;
-  const my = e.touches[0].clientY - rect.top;
-
-  const dist = Math.hypot(mx - (SLING_X + 22), my - (SLING_Y - 32));
-  if (dist < 55) {
-    isDragging = true;
-    currentDrag.x = mx;
-    currentDrag.y = my;
-  }
-  e.preventDefault();
-});
-
-canvas.addEventListener('touchmove', (e) => {
-  if (!isDragging) return;
-  const rect = canvas.getBoundingClientRect();
-  let mx = e.touches[0].clientX - rect.left;
-  let my = e.touches[0].clientY - rect.top;
-
-  const dx = mx - SLING_X - 22;
-  const dy = my - SLING_Y + 32;
-  const dist = Math.hypot(dx, dy);
-  if (dist > MAX_PULL) {
-    const scale = MAX_PULL / dist;
-    mx = SLING_X + 22 + dx * scale;
-    my = SLING_Y - 32 + dy * scale;
-  }
-
-  currentDrag.x = mx;
-  currentDrag.y = my;
-  e.preventDefault();
-});
-
-canvas.addEventListener('touchend', (e) => {
-  if (!isDragging) return;
-  isDragging = false;
-  launchSnowball(SLING_X + 22, SLING_Y - 32, currentDrag.x, currentDrag.y);
-  e.preventDefault();
-});
-
-// Keyboard
-document.addEventListener('keydown', (e) => {
-  if (e.key === ' ' && document.getElementById('winOverlay').classList.contains('show')) {
-    e.preventDefault();
-    restartGame();
-  }
-});
-
-// Boot
-function init() {
-  createTower(85);
-  updateProgress();
-  gameLoop();
-
-  setTimeout(() => {
-    if (!startTime) {
-      document.getElementById('goalText').textContent = 'Goal: £0 / £85  •  Drag the snowball!';
-    }
-  }, 1600);
-}
-
+function init(){createTower(95);updateProgress();gameLoop();
+  setTimeout(()=>{if(!startTime)document.getElementById('goalText').textContent='Goal: £0 / £95  •  Pull back the snowball';},1400);}
 init();
 </script>
 </body>
