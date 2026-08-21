@@ -61,6 +61,15 @@
   .big-emoji{font-size:46px;margin-bottom:6px}
   #roundInfo{text-align:center;color:var(--muted);font-size:13px;margin-bottom:4px}
   .badge{display:inline-block;background:rgba(242,184,75,.15);color:var(--gold);font-size:11px;font-weight:700;border:1px solid rgba(242,184,75,.35);border-radius:999px;padding:2px 10px;margin-bottom:8px;letter-spacing:.6px}
+  .chip-row{display:flex;gap:8px;margin:14px 0 6px;flex-wrap:wrap}
+  .chip{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:var(--text);border-radius:999px;padding:9px 18px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Manrope';transition:.12s}
+  .chip:hover{border-color:var(--mint-melt)}
+  .chip.active{background:var(--mint-melt);color:#10241C;border-color:var(--mint-melt)}
+  .chip.special{background:rgba(255,107,74,.18);border-color:rgba(255,107,74,.45);color:#FFB09A}
+  select,input[type=number]{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:var(--text);border-radius:10px;padding:10px 12px;font-size:14px;font-family:'Manrope';outline:none}
+  select:focus,input[type=number]:focus{border-color:var(--mint-melt)}
+  .stars{font-size:30px;letter-spacing:4px;margin:4px 0 2px}
+  .rank{font-family:'Baloo 2';font-size:20px;font-weight:800;color:var(--gold)}
   @media(max-width:640px){
     .topbar{gap:8px;padding:8px 10px}
     .logo{font-size:18px}
@@ -80,14 +89,15 @@
 <div class="wrap">
   <div class="topbar">
     <div class="logo">❄️ Snowball</div>
-    <div class="stat" id="hudRemaining">£0 left</div>
+    <div class="stat" id="hudGoal">Goal: £15</div>
     <div class="progress"><div class="progress-bar" id="hudBar"></div></div>
-    <div class="stat" id="hudCleared">Cleared <b>£0</b></div>
+    <div class="stat" id="hudPot">Pot <b>£0</b></div>
     <div class="stat" id="hudShots">Shots: 0</div>
+    <div class="stat" id="hudTime">00:00</div>
     <div class="spacer"></div>
     <button class="icon-btn" id="muteBtn" title="Sound">🔊</button>
     <button class="icon-btn" id="editBtn" title="Edit debts">✏️</button>
-    <button class="icon-btn" id="resetBtn" title="Restart round">↺</button>
+    <button class="icon-btn" id="resetBtn" title="Restart run">↺</button>
   </div>
 
   <div class="stage">
@@ -96,32 +106,52 @@
     <!-- Setup / edit debts -->
     <div class="overlay show" id="setupOverlay">
       <div class="modal">
-        <div class="badge">DEBT TOWERS</div>
+        <div class="badge">SNOWBALL SPEEDRUN</div>
         <h2>Add your debts</h2>
-        <p class="sub">Each debt becomes its own tower. You'll chip it away one satisfying block at a time.</p>
+        <p class="sub">Each debt becomes its own tower. Then you log a payment and race to melt it off, block by block.</p>
         <div id="debtList"></div>
         <button class="add-debt" onclick="addDebtRow()">+ Add another debt</button>
         <div class="modal-actions">
-          <button class="btn" onclick="startGame()">Build my towers 🏗️</button>
+          <button class="btn" onclick="openPayment()">Log a payment →</button>
           <button class="btn secondary" onclick="loadDemo()">Load demo debts</button>
         </div>
-        <p class="hint">Tip: hit the base of a tower to bring the whole thing down. Wood &amp; ice crack fast, stone holds. TNT blocks are hidden in some towers — hit them for a big chain reaction. 💥</p>
+        <p class="hint">How it works: log a small payment (e.g. £15), then fire unlimited snowballs. Every block you smash adds its value to your pot — ice £2, wood £5, TNT £10. Hit your target as fast as you can. Fewer shots = more stars.</p>
       </div>
     </div>
 
-    <!-- Round complete -->
+    <!-- Log a payment -->
+    <div class="overlay" id="paymentOverlay">
+      <div class="modal">
+        <div class="badge">TARGET SPEEDRUN</div>
+        <h2>Log a payment</h2>
+        <p class="sub">How much are you paying off today? That's your melt target.</p>
+        <div id="payDebtWrap" style="margin-bottom:4px"></div>
+        <div class="chip-row" id="payChips"></div>
+        <div class="chip-row" style="margin-top:2px">
+          <input type="number" id="customPay" min="1" max="10000" step="1" placeholder="Custom £ amount" style="flex:1">
+        </div>
+        <div class="modal-actions">
+          <button class="btn" onclick="startRun()">Start speedrun 🎯</button>
+          <button class="btn secondary" onclick="editDebts()">Edit debts</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run complete -->
     <div class="overlay" id="roundOverlay">
       <div class="modal" style="text-align:center">
-        <div class="big-emoji" id="roundEmoji">💥</div>
-        <h2 id="roundTitle">Towers down!</h2>
+        <div class="big-emoji" id="roundEmoji">💸</div>
+        <h2 id="roundTitle">Payment logged!</h2>
         <p class="sub" id="roundSub" style="margin-bottom:0"></p>
+        <div class="stars" id="winStars">★★★</div>
+        <div class="rank" id="winRank">SABRE-class Melt!</div>
         <div class="win-stats">
-          <div class="win-stat"><div class="num" id="winCleared">£0</div><div class="lbl">Debt gone</div></div>
+          <div class="win-stat"><div class="num" id="winPot">£15</div><div class="lbl">Melted</div></div>
           <div class="win-stat"><div class="num" id="winShots">0</div><div class="lbl">Shots</div></div>
           <div class="win-stat"><div class="num" id="winTime">0:00</div><div class="lbl">Time</div></div>
         </div>
         <div class="modal-actions" style="justify-content:center">
-          <button class="btn" id="nextBtn" onclick="nextRound()">Next debts →</button>
+          <button class="btn" onclick="openPayment()">Log another payment →</button>
           <button class="btn secondary" onclick="editDebts()">Edit debts</button>
         </div>
       </div>
@@ -132,9 +162,10 @@
 
 <script>
 /* ============================================================
-   Snowball • Debt Towers  —  v2 rebuild
+   Snowball • Debt Towers — Target Speedrun
+   Log a payment → melt that much off the towers → win.
    Real 2D Angry Birds physics: OBB collisions, impulses,
-   stacking solver, TNT chain reactions. Each debt = a tower.
+   stacking solver, midpoint contacts, TNT, particles, sound.
    ============================================================ */
 'use strict';
 
@@ -199,34 +230,35 @@ function tickSnow(){sctx.clearRect(0,0,sw,sh);sctx.fillStyle='rgba(255,255,255,.
 addEventListener('resize',()=>{sw=innerWidth;sh=innerHeight;snowCanvas.width=sw;snowCanvas.height=sh;});
 
 /* ---------- game state ---------- */
-let debts=[];           // {name, amount, remaining, cleared, towerX, blocks[]}
+let debts=[];           // {name, amount, paid, towerX, blocks[]}
 let blocks=[];          // physics bodies
 let projectiles=[];     // snowballs
 let particles=[];
 let floaters=[];        // floating text
 let shake=0;
-let shots=0,allShots=0,roundStartTime=0;
-let roundIdx=0;         // which debts are on the field
+let goal=15;            // melt target (£)
+let pot=0;              // melted so far
+let shots=0,runStartTime=0,timerOn=false;
+let payDebtIdx=0;       // which debt this payment is for
 let ballReady=true,ball=null;
 let dragging=false,dragPos={x:0,y:0};
-let done=false;         // current round finished
-let totalDebtAll=0,clearedAll=0;
+let done=false;         // run finished
+let fieldDebts=[];      // towers currently on the field
 
-const SLING={x:118,y:GROUND_Y-52};
-const ANCH1={x:86,y:GROUND_Y-104};
-const ANCH2={x:150,y:GROUND_Y-104};
-const MAX_PULL=118,POWER=0.235;
-const ROUND_SIZE=4;
-const GRAV=1.42;
+const SLING={x:200,y:GROUND_Y-52};
+const ANCH1={x:168,y:GROUND_Y-104};
+const ANCH2={x:232,y:GROUND_Y-104};
+const MAX_PULL=170,POWER=0.30,MAX_SPEED=45;
+const GRAV=1.0;
 
-/* ---------- materials ---------- */
+/* ---------- materials ----------
+   value = how much each block adds to your melt pot */
 const MATS={
-  ice:  {hp:1, den:.35,rest:.15,fr:.55,color:'#A8D5E5',dark:'#7FB8D0',edge:'#D7EBF4',w:1.0},
-  wood: {hp:3, den:.8, rest:.2, fr:.6, color:'#C17A4A',dark:'#9C5F35',edge:'#E0A878',w:1.4},
-  stone:{hp:6, den:1.6,rest:.1, fr:.7, color:'#8A93A6',dark:'#676F83',edge:'#B3BBC9',w:2.0},
-  gold: {hp:2, den:1.1,rest:.1, fr:.6, color:'#F2B84B',dark:'#D99A2B',edge:'#FFE29A',w:0},
-  tnt:  {hp:1, den:.9, rest:.2, fr:.5, color:'#FF6B4A',dark:'#C94A2E',edge:'#FFB09A',w:.7},
-  plank:{hp:2, den:.7, rest:.2, fr:.6, color:'#B0703F',dark:'#8F5730',edge:'#D09A68',w:1.2},
+  ice:  {hp:1, den:.35,rest:.15,fr:.55,color:'#A8D5E5',dark:'#7FB8D0',edge:'#D7EBF4',value:2},
+  wood: {hp:3, den:.8, rest:.2, fr:.6, color:'#C17A4A',dark:'#9C5F35',edge:'#E0A878',value:5},
+  stone:{hp:8, den:1.6,rest:.1, fr:.7, color:'#8A93A6',dark:'#676F83',edge:'#B3BBC9',value:4},
+  gold: {hp:2, den:1.1,rest:.1, fr:.6, color:'#F2B84B',dark:'#D99A2B',edge:'#FFE29A',value:10},
+  tnt:  {hp:1, den:.9, rest:.2, fr:.5, color:'#FF6B4A',dark:'#C94A2E',edge:'#FFB09A',value:10},
 };
 
 class Body{
@@ -240,7 +272,7 @@ class Body{
     this.invI=12/(this.mass*(w*w+h*h));
     this.rest=m.rest;this.fr=m.fr;
     this.sleeping=false;this.sleepT=0;
-    this.dead=false;this.value=0;
+    this.dead=false;this.value=m.value;
   }
   wake(){this.sleeping=false;this.sleepT=0;}
 }
@@ -263,14 +295,13 @@ function corners(b){
   ];
 }
 function faceOf(b,n){
-  // edges: (0,1) right, (1,2) top, (2,3) left, (3,0) bottom  (y-down)
   const cs=corners(b);
   const edges=[[0,1],[1,2],[2,3],[3,0]];
   let best=-2,bestE=null;
   for(const [i,j] of edges){
     const dx=cs[j].x-cs[i].x,dy=cs[j].y-cs[i].y;
     const len=Math.hypot(dx,dy)||1;
-    const nx=-dy/len,ny=dx/len;              // outward normal (y-down right-hand)
+    const nx=-dy/len,ny=dx/len;
     const d=nx*n.x+ny*n.y;
     if(d>best){best=d;bestE={v1:cs[i],v2:cs[j],nx,ny};}
   }
@@ -284,7 +315,6 @@ function clipSeg(p1,p2,n,c){
   if(d1*d2<0){const f=d1/(d1-d2);out.push({x:p1.x+(p2.x-p1.x)*f,y:p1.y+(p2.y-p1.y)*f});}
   return out;
 }
-// returns array of {px,py,nx,ny,pen}
 function collideOBB(A,B){
   const axes=[];
   const cA=Math.cos(A.angle),sA=Math.sin(A.angle);
@@ -308,11 +338,10 @@ function collideOBB(A,B){
   if(pts.length)pts=clipSeg(pts[0],pts[1]||pts[0],{x:-t.x,y:-t.y},-dot(rf.v2,t));
   const contacts=[];
   for(const p of pts){
-    const pen=dot(rf.v1,n)-dot(p,n);        // >0 => penetrating into A
+    const pen=dot(rf.v1,n)-dot(p,n);
     if(pen>-0.4)contacts.push({px:p.x,py:p.y,nx:n.x,ny:n.y,pen});
   }
-  // single contact point (midpoint of clipped points) → no resting torque,
-  // rock-stable stacks; corner impacts still produce full tumbling torque.
+  // single midpoint contact → no resting torque, rock-stable stacks
   if(contacts.length===2){
     const c0=contacts[0],c1=contacts[1];
     return [{px:(c0.px+c1.px)/2,py:(c0.py+c1.py)/2,nx:n.x,ny:n.y,pen:Math.max(c0.pen,c1.pen)}];
@@ -348,10 +377,8 @@ function solveVelocity(c,A,B){
     const rnA=rAx*c.ny-rAy*c.nx;
     const rnB=rBx*c.ny-rBy*c.nx;
     const k=A.invM+B.invM+rnA*rnA*A.invI+rnB*rnB*B.invI;
-    // restitution only for real impacts; resting contacts damp to zero
     const e=(vn<-2.2)?Math.min(A.rest,B.rest):0;
     let j=-(1+e)*vn/k;
-    // friction
     const tx=rvx-vn*c.nx,ty=rvy-vn*c.ny;
     const tl=Math.hypot(tx,ty);
     if(tl>0.001){
@@ -377,16 +404,13 @@ function solvePosition(c,A,B){
 function stepPhysics(){
   const substeps=2;
   for(let s=0;s<substeps;s++){
-    // integrate
     for(const b of blocks){
       if(b.dead)continue;
       if(b.sleeping)continue;
       b.vy+=GRAV/2;
       b.vx=clamp(b.vx,-14,14);b.vy=clamp(b.vy,-18,18);
-      // damping: settle sway without killing launched blocks
       b.vx*=0.995;b.vy*=0.995;b.angVel*=0.975;
       b.x+=b.vx/2;b.y+=b.vy/2;b.angle+=b.angVel/2;
-      // ground
       if(b.y+b.h/2>GROUND_Y){
         b.y=GROUND_Y-b.h/2;
         if(b.vy>1.2){b.vy=-b.vy*b.rest;b.vx*=0.86;b.angVel*=0.82;}
@@ -396,7 +420,6 @@ function stepPhysics(){
       if(b.x-b.w/2<2){b.x=2+b.w/2;b.vx=Math.abs(b.vx)*.45;}
       if(b.x+b.w/2>W-2){b.x=W-2-b.w/2;b.vx=-Math.abs(b.vx)*.45;}
     }
-    // block-block contacts
     contacts.length=0;
     for(let i=0;i<blocks.length;i++){
       const A=blocks[i];if(A.dead)continue;
@@ -407,10 +430,8 @@ function stepPhysics(){
         if(cs)for(const c of cs)contacts.push({c,A,B});
       }
     }
-    // velocity solver (impulses only, accumulate to convergence)
     for(let it=0;it<8;it++)
       for(const {c,A,B} of contacts)solveVelocity(c,A,B);
-    // position solver (fresh overlaps, few iterations, no overshoot)
     for(let it=0;it<3;it++){
       let any=false;
       for(let i=0;i<blocks.length;i++){
@@ -423,27 +444,23 @@ function stepPhysics(){
       }
       if(!any)break;
     }
-    // re-clamp ground after position solver (blocks must never sink)
     for(const b of blocks){
       if(b.dead)continue;
       if(b.y+b.h/2>GROUND_Y)b.y=GROUND_Y-b.h/2;
       if(b.x-b.w/2<2){b.x=2+b.w/2;b.vx=Math.abs(b.vx)*.45;}
       if(b.x+b.w/2>W-2){b.x=W-2-b.w/2;b.vx=-Math.abs(b.vx)*.45;}
     }
-    // safety clamp
     for(const b of blocks){
       if(b.dead)continue;
       b.vx=clamp(b.vx,-18,18);b.vy=clamp(b.vy,-22,22);
       b.angVel=clamp(b.angVel,-6,6);
     }
-    // sleeping
     for(const b of blocks){
       if(b.dead||b.sleeping)continue;
       if(Math.abs(b.vx)<.06&&Math.abs(b.vy)<.06&&Math.abs(b.angVel)<.008){
         if(++b.sleepT>20){b.sleeping=true;b.vx=b.vy=b.angVel=0;}
       }else b.sleepT=0;
     }
-    // projectiles
     stepProjectiles();
   }
 }
@@ -452,7 +469,6 @@ function stepProjectiles(){
     const p=projectiles[i];
     p.vy+=GRAV/2;
     p.x+=p.vx/2;p.y+=p.vy/2;
-    // ground bounce
     if(p.y+p.r>GROUND_Y){
       p.y=GROUND_Y-p.r;
       if(Math.abs(p.vy)>.6){p.vy=-p.vy*.42;p.vx*=.82;}
@@ -461,7 +477,6 @@ function stepProjectiles(){
     }
     if(p.x-p.r<2){p.x=2+p.r;p.vx=Math.abs(p.vx)*.5;}
     if(p.x+p.r>W-2){p.x=W-2-p.r;p.vx=-Math.abs(p.vx)*.5;}
-    // vs blocks
     for(const b of blocks){
       if(b.dead)continue;
       const c=collideBall(p,b);
@@ -470,18 +485,16 @@ function stepProjectiles(){
         if(p.dead)break;
       }
     }
-    // cleanup: off screen or fully stopped
     if(p.y-p.r>H+80||p.x<-120||p.x>W+120)p.dead=true;
     if((p.stoppedT||0)>100)p.dead=true;
     if(p.dead){projectiles.splice(i,1);}
   }
 }
 function hitBlock(p,b,c){
-  // relative normal velocity of ball into block
   const rvx=p.vx-b.vx,rvy=p.vy-b.vy;
   const vn=-(rvx*c.nx+rvy*c.ny);            // >0 => ball moving into block
-  // damage
-  const dmg=Math.max(0,vn)*2.2*0.05;
+  // damage: full-power hit cracks wood, stone needs 2-3 hits, ball bleeds energy each contact
+  const dmg=Math.max(0,vn)*0.05;
   if(dmg>.12){
     b.hp-=dmg;
     spawnCrack(b);
@@ -489,64 +502,50 @@ function hitBlock(p,b,c){
     else sfx.chip();
     shake=Math.min(shake+Math.max(.6,dmg*.55),9);
   }
-  // bounce impulse
-  const e=.35;
+  const e=.3;
   const k=p.invM+b.invM;
   let j=-(1+e)*vn/k;
   const ix=c.nx*j,iy=c.ny*j;
   p.vx-=ix*p.invM;p.vy-=iy*p.invM;
-  b.vx+=ix*b.invM*.6;b.vy+=iy*b.invM*.6;
+  b.vx+=ix*b.invM*.4;b.vy+=iy*b.invM*.4;
   b.angVel+=(Math.random()-.5)*.06*vn*.3;
+  // bleed ball energy so one shot can't plow through the whole field
+  p.vx*=0.90;p.vy*=0.90;
   b.wake();
   if(j>1)sfx.thud();
 }
 function destroyBlock(b,cause){
   if(b.dead)return;
   b.dead=true;
-  const m=MATS[b.mat];
   spawnDebris(b);
-  if(b.debt){
-    b.debt.cleared+=b.value;
-    b.debt.remaining=Math.max(0,b.debt.amount-b.debt.cleared);
-    floaters.push({x:b.x,y:b.y-b.h/2,text:'-£'+fmt(b.value),color:b.mat==='gold'?'#F2B84B':'#FFFFFF',life:1.1,big:b.mat==='gold'});
-    if(b.mat==='gold')sfx.coin();
-  }
+  // add to melt pot
+  pot+=b.value;
+  floaters.push({x:b.x,y:b.y-b.h/2,text:'+£'+b.value,color:b.mat==='gold'||b.mat==='tnt'?'#F2B84B':'#5FC9A8',life:1.2,big:b.mat==='gold'||b.mat==='tnt'});
+  if(b.mat==='gold'||b.mat==='tnt')sfx.coin();
   if(b.mat==='tnt'){explode(b.x,b.y);sfx.tnt();}
-  checkTower(b.debt);
+  updateHUD();
+  checkWin();
 }
 function explode(x,y){
   shake=Math.min(shake+13,18);
-  const R=150;
+  const R=95;
   for(let i=0;i<26;i++){
     const a=Math.random()*TAU,sp=Math.random()*7+2;
     particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1.5,life:Math.random()*.5+.3,color:'#FFB36B',size:Math.random()*5+3,grav:.18});
   }
   for(let i=0;i<10;i++)particles.push({x,y,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,life:.25,color:'#FFF7E0',size:Math.random()*14+8,grav:0});
   for(const b of blocks){
-    if(b.dead)continue;
+    if(b.dead||b.mat==='tnt')continue;      // no chain reactions
     const dx=b.x-x,dy=b.y-y;
     const d=Math.hypot(dx,dy)||1;
     if(d<R){
-      const f=9.5*(1-d/R);
+      const f=8*(1-d/R);
       b.vx+=(dx/d)*f;b.vy+=(dy/d)*f-3;
       b.angVel+=(Math.random()-.5)*.8;
       b.wake();
-      if(b.mat==='tnt'){b.hp=0;destroyBlock(b,'boom');}
-      else{b.hp-=2.2;if(b.hp<=0)destroyBlock(b,'boom');}
+      b.hp-=1.0;
+      if(b.hp<=0)destroyBlock(b,'boom');
     }
-  }
-}
-function checkTower(debt){
-  if(!debt||debt.clearedFlag)return;
-  if(debt.remaining<=0){
-    debt.clearedFlag=true;
-    sfx.paid();
-    // cascade-destroy remaining blocks
-    for(const b of blocks){
-      if(!b.dead&&b.debt===debt){b.hp=0;destroyBlock(b,'paid');}
-    }
-    confetti(debt.towerX+debt.tw/2,GROUND_Y-160);
-    floaters.push({x:debt.towerX+debt.tw/2,y:GROUND_Y-200,text:'PAID! 🎉',color:'#5FC9A8',life:1.8,big:true});
   }
 }
 
@@ -572,9 +571,8 @@ function confetti(x,y){
       color:['#5FC9A8','#F2B84B','#3E92CC','#FF6B4A','#FFFFFF'][i%5],size:Math.random()*5+3,grav:.2,rot:Math.random()*TAU,rv:(Math.random()-.5)*.4});
   }
 }
-function addFloaters(){}
 
-/* ---------- tower construction ---------- */
+/* ---------- tower construction (stable brick towers) ---------- */
 function buildTower(debt,idx){
   const rnd=mulberry32(hashStr(debt.name||'debt')+idx*7919);
   const scale=clamp(Math.pow((debt.amount||8000)/8000,.33),.7,1.55);
@@ -584,66 +582,51 @@ function buildTower(debt,idx){
   const cx=x0+baseW/2;
   const bs=[];
   const add=(x,y,w,h,mat)=>{const b=new Body(x+w/2,y+h/2,w,h,mat,debt);bs.push(b);};
-  // solid 3-column brick stack — stable like a real tower
+  // solid 3-column brick stack — proven rock-stable, with a raised keep + crown so it reads as an ACTUAL tower
   const colX=[x0,x0+BW,x0+BW*2];
   // foundation (26 tall) sits on the ground
   let y=GROUND_Y-26;
   add(colX[0],y,BW,26,'stone');
   add(colX[1],y,BW,26,'stone');
   add(colX[2],y,BW,26,'stone');
-  // columns stack up, middle column hides TNT in lower rows
-  const rows=2+Math.round(scale*1.5);
+  // columns stack up; middle column hides TNT in a lower row
+  const rows=2+Math.round(scale);
+  const tntRow=rnd()<.5?1:2;
   for(let r=0;r<rows;r++){
     y=y-GAP-BH;
     const matL=r===0?'stone':(r<2?'wood':'ice');
     const matR=r===0?'stone':(r<2?'wood':'ice');
-    const matC=r===0?'stone':(rnd()<.35&&r<rows-1?'tnt':(r<2?'wood':'ice'));
+    let matC=r===0?'stone':(r<2?'wood':'ice');
+    if(r===tntRow&&rnd()<.6)matC='tnt';
     add(colX[0],y,BW,BH,matL);
     add(colX[1],y,BW,BH,matC);
     add(colX[2],y,BW,BH,matR);
   }
-  // crown on the centre column
+  // raised keep: centre column gets one extra tier (fully supported, still stable)
+  y=y-GAP-BH;
+  add(colX[1],y,BW,BH,'ice');
+  // gold crown on top of the keep
   y=y-GAP-BH;
   add(cx-BW/2,y,BW,BH,'gold');
-  // values
-  const crownVal=Math.max(1,Math.round(debt.amount*.15));
-  let rest=debt.amount-crownVal;
-  let sumW=0;
-  for(const b of bs)sumW+=b.mat==='gold'?0:MATS[b.mat].w;
-  for(const b of bs){
-    if(b.mat==='gold'){b.value=crownVal;continue;}
-    b.value=Math.max(1,Math.round(MATS[b.mat].w*rest/sumW));
-  }
-  // fix rounding so totals match exactly
-  let total=bs.reduce((s,b)=>s+b.value,0);
-  let i=0;
-  while(total!==debt.amount&&i<1000){
-    const b=bs[i%bs.length];if(b.mat!=='gold'){
-      const d=debt.amount-total;
-      b.value=Math.max(1,b.value+Math.sign(d));total+=Math.sign(d);
-    }i++;
-  }
-  debt.blocks=bs;debt.cleared=0;debt.remaining=debt.amount;debt.clearedFlag=false;
-  debt.topY=Math.min(...bs.map(b=>b.y-b.h/2));
+  debt.blocks=bs;debt.topY=Math.min(...bs.map(b=>b.y-b.h/2));
   return bs;
 }
-function towerXFor(i){
-  const n=Math.min(debts.length-roundIdx*ROUND_SIZE,ROUND_SIZE);
-  if(n<=1)return W/2-69;
-  const gap=200;
-  const totalW=n*138+(n-1)*(gap-138);
-  let x=(W-totalW)/2;
-  x+=i*200;
-  return x;
+function towerXFor(i,n){
+  if(n<=1)return W/2-92;
+  if(n===2)return [420,840][i];
+  return [380,650,920][i];
 }
 function buildRound(){
   blocks=[];
-  const start=roundIdx*ROUND_SIZE;
-  const slice=debts.slice(start,start+ROUND_SIZE);
-  slice.forEach((d,i)=>{d.towerX=towerXFor(i);d.tw=138;buildTower(d,i);blocks.push(...d.blocks);});
+  // target debt first, then the 2 biggest remaining debts (max 3 towers = all reachable)
+  const others=debts.filter((_,i)=>i!==payDebtIdx)
+    .sort((a,b)=>(b.amount-(b.paid||0))-(a.amount-(a.paid||0))).slice(0,2);
+  const onField=[debts[payDebtIdx],...others];
+  fieldDebts=onField;
+  onField.forEach((d,i)=>{d.towerX=towerXFor(i,onField.length);d.tw=184;buildTower(d,i);blocks.push(...d.blocks);});
   projectiles=[];
-  shots=0;ballReady=true;ball=makeBall();dragging=false;done=false;
-  roundStartTime=performance.now();
+  shots=0;pot=0;ballReady=true;ball=makeBall();dragging=false;done=false;timerOn=false;
+  runStartTime=performance.now();
   updateHUD();
 }
 
@@ -655,11 +638,12 @@ function launchBall(){
   if(!ball)return;
   const dx=SLING.x-dragPos.x,dy=SLING.y-dragPos.y;
   const len=Math.hypot(dx,dy);
-  const vx=dx/len*Math.min(len*POWER,26),vy=dy/len*Math.min(len*POWER,26);
-  ball.vx=vx;ball.vy=vy;
+  const spd=Math.min(len*POWER,MAX_SPEED);
+  ball.vx=dx/len*spd;ball.vy=dy/len*spd;
   ballReady=false;
   projectiles.push(ball);
-  shots++;allShots++;sfx.launch();
+  shots++;sfx.launch();
+  if(!timerOn)timerOn=true;
   updateHUD();
   ball=null;
 }
@@ -679,7 +663,7 @@ function toCanvas(e){
 function tryGrab(p){
   if(!ballReady||!ball||done)return false;
   const d=Math.hypot(p.x-SLING.x,p.y-SLING.y);
-  if(d<80){dragging=true;dragPos={x:p.x,y:p.y};return true;}
+  if(d<90){dragging=true;dragPos={x:p.x,y:p.y};return true;}
   return false;
 }
 canvas.addEventListener('mousedown',e=>{initAudio();const p=toCanvas(e);tryGrab(p);});
@@ -689,7 +673,7 @@ canvas.addEventListener('mousemove',e=>{
   const dx=p.x-SLING.x,dy=p.y-SLING.y;
   const d=Math.hypot(dx,dy);
   dragPos=d>MAX_PULL?{x:SLING.x+dx/d*MAX_PULL,y:SLING.y+dy/d*MAX_PULL}:{x:p.x,y:p.y};
-  if(dragPos.y>GROUND_Y-24)dragPos.y=GROUND_Y-24;
+  if(dragPos.y>H-16)dragPos.y=H-16;   // pull down as far as you like, like real AB
 });
 addEventListener('mouseup',()=>{if(dragging){dragging=false;launchBall();}});
 canvas.addEventListener('touchstart',e=>{e.preventDefault();initAudio();const p=toCanvas(e);tryGrab(p);},{passive:false});
@@ -700,18 +684,16 @@ canvas.addEventListener('touchmove',e=>{
   const dx=p.x-SLING.x,dy=p.y-SLING.y;
   const d=Math.hypot(dx,dy);
   dragPos=d>MAX_PULL?{x:SLING.x+dx/d*MAX_PULL,y:SLING.y+dy/d*MAX_PULL}:{x:p.x,y:p.y};
-  if(dragPos.y>GROUND_Y-24)dragPos.y=GROUND_Y-24;
+  if(dragPos.y>H-16)dragPos.y=H-16;   // pull down as far as you like, like real AB
 },{passive:false});
 canvas.addEventListener('touchend',e=>{e.preventDefault();if(dragging){dragging=false;launchBall();}},{passive:false});
 canvas.addEventListener('touchcancel',e=>{e.preventDefault();if(dragging){dragging=false;launchBall();}},{passive:false});
 
 /* ---------- drawing ---------- */
 function drawScene(){
-  // sky gradient in-canvas (game area)
   const g=ctx.createLinearGradient(0,0,0,H);
   g.addColorStop(0,'#3D4C63');g.addColorStop(.45,'#6E87A3');g.addColorStop(1,'#DCEAF2');
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  // ground
   const gg=ctx.createLinearGradient(0,GROUND_Y,0,H);
   gg.addColorStop(0,'#EAF4F8');gg.addColorStop(.25,'#C9DEE8');gg.addColorStop(1,'#A9C4D4');
   ctx.fillStyle=gg;ctx.fillRect(0,GROUND_Y,W,H-GROUND_Y);
@@ -730,8 +712,7 @@ function drawBlock(b){
   ctx.fillStyle=m.dark;
   ctx.fillRect(-b.w/2,-b.h/2+2,3,b.h-4);
   ctx.fillRect(-b.w/2+2,b.h/2-3,b.w-4,3);
-  // texture
-  if(b.mat==='wood'||b.mat==='plank'){
+  if(b.mat==='wood'){
     ctx.strokeStyle='rgba(0,0,0,.12)';ctx.lineWidth=1;
     for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(-b.w/2,b.h/2-5-i*5);ctx.lineTo(b.w/2,b.h/2-5-i*5);ctx.stroke();}
   }else if(b.mat==='stone'){
@@ -751,7 +732,6 @@ function drawBlock(b){
     ctx.beginPath();ctx.moveTo(-b.w/2+6,-b.h/2+8);ctx.lineTo(-b.w/2+18,-b.h/2+8);ctx.lineTo(-b.w/2+12,-b.h/2+16);ctx.fill();
     ctx.fillStyle='#7A5400';ctx.font='bold 13px Baloo 2';ctx.textAlign='center';ctx.fillText('£',0,6);
   }
-  // cracks when damaged
   if(b.hp<b.maxHp){
     ctx.strokeStyle='rgba(0,0,0,.45)';ctx.lineWidth=1.6;
     ctx.beginPath();ctx.moveTo(-b.w/4,-b.h/4);
@@ -790,12 +770,13 @@ function drawTrajectory(){
   if(!dragging)return;
   const dx=SLING.x-dragPos.x,dy=SLING.y-dragPos.y;
   const len=Math.hypot(dx,dy)||1;
-  let vx=dx/len*Math.min(len*POWER,26),vy=dy/len*Math.min(len*POWER,26);
+  const spd=Math.min(len*POWER,MAX_SPEED);
+  let vx=dx/len*spd,vy=dy/len*spd;
   let x=SLING.x,y=SLING.y;
-  for(let i=0;i<34;i++){
+  for(let i=0;i<55;i++){
     x+=vx;y+=vy;vy+=GRAV;
     if(y>GROUND_Y-2)break;
-    const a=1-i/34;
+    const a=1-i/55;
     ctx.fillStyle=`rgba(255,255,255,${a*.75})`;
     ctx.beginPath();ctx.arc(x,y,i%3===0?4:2.4,0,TAU);ctx.fill();
   }
@@ -806,29 +787,24 @@ function roundRect(x,y,w,h,r){
   ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
 }
 function drawTowerLabels(){
-  for(const d of debts.slice(roundIdx*ROUND_SIZE,roundIdx*ROUND_SIZE+ROUND_SIZE)){
-    const cx=d.towerX+69;
+  for(const d of fieldDebts){
+    const cx=d.towerX+92;
     const name=d.name.length>12?d.name.slice(0,11)+'…':d.name;
-    ctx.font='bold 13px Manrope';
     ctx.textAlign='center';
-    const labelY=d.clearedFlag?Math.max(GROUND_Y-235,d.topY-44):Math.max(GROUND_Y-220,d.topY-40);
-    // remaining chip
-    const txt=d.clearedFlag?'PAID ✓':'£'+fmt(d.remaining)+' left';
-    ctx.font='bold 15px JetBrains Mono';
+    const labelY=Math.max(GROUND_Y-240,d.topY-40);
+    const left=Math.max(0,d.amount-(d.paid||0));
+    const txt=d.paid>=d.amount?'PAID ✓':'£'+fmt(left)+' left';
+    ctx.font='bold 14px JetBrains Mono';
     const w=ctx.measureText(txt).width+20;
-    ctx.fillStyle=d.clearedFlag?'rgba(95,201,168,.22)':'rgba(22,40,61,.72)';
+    ctx.fillStyle=d.paid>=d.amount?'rgba(95,201,168,.22)':'rgba(22,40,61,.72)';
     roundRect(cx-w/2,labelY-18,w,24,12);ctx.fill();
-    ctx.fillStyle=d.clearedFlag?'#7FE8C4':'#FFFFFF';
+    ctx.fillStyle=d.paid>=d.amount?'#7FE8C4':'#FFFFFF';
     ctx.fillText(txt,cx,labelY);
     ctx.fillStyle='#E8F2F8';ctx.font='700 12px Manrope';
     ctx.fillText(name,cx,labelY+16);
-    // progress bar
-    if(!d.clearedFlag){
-      const pct=clamp(d.cleared/d.amount,0,1);
-      ctx.fillStyle='rgba(22,40,61,.55)';
-      roundRect(cx-34,labelY+26,68,6,3);ctx.fill();
-      ctx.fillStyle='#5FC9A8';
-      roundRect(cx-34,labelY+26,68*pct,6,3);ctx.fill();
+    if(payDebtIdx===debts.indexOf(d)&&!done){
+      ctx.font='700 10px Manrope';ctx.fillStyle='#F2B84B';
+      ctx.fillText('🎯 PAYING THIS',cx,labelY+30);
     }
   }
 }
@@ -857,83 +833,109 @@ function drawFloaters(){
 
 /* ---------- HUD ---------- */
 function fmt(n){return n>=1000?(n/1000).toFixed(n>=10000?0:1)+'k':String(Math.round(n));}
-function totalRemaining(){let t=0;for(const d of debts.slice(roundIdx*ROUND_SIZE,roundIdx*ROUND_SIZE+ROUND_SIZE))t+=d.remaining;return t;}
 function updateHUD(){
-  const rem=totalRemaining();
-  const roundDebt=debts.slice(roundIdx*ROUND_SIZE,roundIdx*ROUND_SIZE+ROUND_SIZE).reduce((s,d)=>s+d.amount,0);
-  document.getElementById('hudRemaining').textContent='£'+fmt(rem)+' left';
-  document.getElementById('hudCleared').innerHTML='Cleared <b>£'+fmt(roundDebt-rem)+'</b>';
+  document.getElementById('hudGoal').textContent='Goal: £'+goal;
+  document.getElementById('hudPot').innerHTML='Pot <b>£'+fmt(Math.min(pot,goal))+'</b>';
   document.getElementById('hudShots').textContent='Shots: '+shots;
-  document.getElementById('hudBar').style.width=roundDebt?clamp((roundDebt-rem)/roundDebt*100,0,100)+'%':'0%';
-  const totalRounds=Math.ceil(debts.length/ROUND_SIZE);
-  document.getElementById('roundInfo').textContent=totalRounds>1?`Round ${roundIdx+1} of ${totalRounds} — ${debts.length} debts total`:'';
+  document.getElementById('hudBar').style.width=clamp(pot/goal*100,0,100)+'%';
+  if(timerOn){
+    const sec=Math.floor((performance.now()-runStartTime)/1000);
+    document.getElementById('hudTime').textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
+  }
+  document.getElementById('roundInfo').textContent=`Speedrun • melt £${goal} • blocks: ice £2, wood £5, stone £4, TNT £10, crown £10`;
 }
 
 /* ---------- game flow ---------- */
-function startGame(){
-  debts=debts.filter(d=>d.amount>0);
-  if(!debts.length){alert('Add at least one debt first!');return;}
-  saveDebts();
+function openPayment(){
   document.getElementById('setupOverlay').classList.remove('show');
   document.getElementById('roundOverlay').classList.remove('show');
-  roundIdx=0;
-  totalDebtAll=debts.reduce((s,d)=>s+d.amount,0);
-  clearedAll=0;allShots=0;
+  // debt picker
+  const wrap=document.getElementById('payDebtWrap');
+  let html='<label style="font-size:12px;color:var(--muted)">Paying toward</label><select id="payDebt" style="width:100%;margin-top:4px">';
+  debts.forEach((d,i)=>{
+    const left=Math.max(0,d.amount-(d.paid||0));
+    html+=`<option value="${i}">${esc(d.name||('Debt '+(i+1)))} — £${fmt(left)} left</option>`;
+  });
+  html+='</select>';
+  wrap.innerHTML=html;
+  document.getElementById('payDebt').addEventListener('change',e=>{payDebtIdx=parseInt(e.target.value);});
+  // chips
+  const chips=[5,10,15,25,50,100];
+  const chipWrap=document.getElementById('payChips');
+  chipWrap.innerHTML='';
+  chips.forEach((v,ci)=>{
+    const b=document.createElement('button');
+    b.className='chip'+(v===15?' active':'');
+    b.textContent='£'+v;
+    b.onclick=()=>{
+      goal=v;
+      chipWrap.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+    };
+    chipWrap.appendChild(b);
+  });
+  document.getElementById('customPay').value='';
+  document.getElementById('paymentOverlay').classList.add('show');
+}
+function startRun(){
+  const custom=parseInt(document.getElementById('customPay').value||'0',10);
+  if(custom>0)goal=custom;
+  const debtSel=document.getElementById('payDebt');
+  if(debtSel)payDebtIdx=parseInt(debtSel.value,10);
+  goal=Math.max(1,Math.min(10000,goal));
+  document.getElementById('paymentOverlay').classList.remove('show');
+  saveDebts();
   buildRound();
-}
-function nextRound(){
-  document.getElementById('roundOverlay').classList.remove('show');
-  roundIdx++;
-  if(roundIdx*ROUND_SIZE>=debts.length){
-    // all debts cleared
-    finishAll();
-    return;
-  }
-  buildRound();
-}
-function finishAll(){
-  const el=document.getElementById('roundOverlay');
-  document.getElementById('roundEmoji').textContent='🏆';
-  document.getElementById('roundTitle').textContent='DEBT FREE!';
-  document.getElementById('roundSub').textContent='Every tower is down. That’s the whole point.';
-  document.getElementById('winCleared').textContent='£'+fmt(totalDebtAll);
-  document.getElementById('winShots').textContent=String(allShots);
-  const sec=Math.round((performance.now()-roundStartTime)/1000);
-  document.getElementById('winTime').textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
-  document.getElementById('nextBtn').style.display='none';
-  el.classList.add('show');
-  sfx.win();
-}
-function roundComplete(){
-  if(done)return;
-  done=true;
-  const el=document.getElementById('roundOverlay');
-  const sec=Math.round((performance.now()-roundStartTime)/1000);
-  document.getElementById('roundEmoji').textContent='💥';
-  document.getElementById('roundTitle').textContent='Towers down!';
-  const roundDebt=debts.slice(roundIdx*ROUND_SIZE,roundIdx*ROUND_SIZE+ROUND_SIZE).reduce((s,d)=>s+d.amount,0);
-  document.getElementById('roundSub').textContent='Round '+(roundIdx+1)+' cleared — that debt is gone for good.';
-  document.getElementById('winCleared').textContent='£'+fmt(roundDebt);
-  document.getElementById('winShots').textContent=String(shots);
-  document.getElementById('winTime').textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
-  const hasMore=roundIdx*ROUND_SIZE+ROUND_SIZE<debts.length;
-  document.getElementById('nextBtn').style.display=hasMore?'':'none';
-  document.getElementById('nextBtn').textContent=hasMore?'Next debts →':'';
-  el.classList.add('show');
-  sfx.win();
 }
 function editDebts(){
+  document.getElementById('paymentOverlay').classList.remove('show');
   document.getElementById('roundOverlay').classList.remove('show');
-  openSetup();
-}
-function openSetup(){
   document.getElementById('setupOverlay').classList.add('show');
   renderDebtList();
 }
-function resetRound(){
-  if(done&&document.getElementById('roundOverlay').classList.contains('show')){
-    document.getElementById('roundOverlay').classList.remove('show');
+function checkWin(){
+  if(done)return;
+  if(pot>=goal){
+    done=true;
+    const d=debts[payDebtIdx];
+    if(d){
+      d.paid=(d.paid||0)+goal;
+      if(d.paid>d.amount)d.paid=d.amount;
+    }
+    saveDebts();
+    clearTimeout(winT);
+    winT=setTimeout(showWin,650);   // let the boom land
   }
+}
+let winT=null;
+function showWin(){
+  const el=document.getElementById('roundOverlay');
+  const sec=Math.round((performance.now()-runStartTime)/1000);
+  const timeStr=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
+  const d=debts[payDebtIdx];
+  const dName=d?esc(d.name||'this debt'):'your debt';
+  const left=d?Math.max(0,d.amount-d.paid):0;
+  document.getElementById('roundEmoji').textContent=shots<=1?'🏆':'💸';
+  document.getElementById('roundTitle').textContent='Payment logged!';
+  document.getElementById('roundSub').textContent=`£${goal} paid toward ${dName} — £${fmt(left)} to go.`;
+  // stars & rank
+  let stars,rank;
+  if(shots<=2){stars='★★★';rank='SABRE-class Melt!';}
+  else if(shots<=5){stars='★★☆';rank='Blizzard Blitz';}
+  else if(shots<=9){stars='★☆☆';rank='Snowball Sniper';}
+  else{stars='★☆☆';rank='Grind it out';}
+  document.getElementById('winStars').textContent=stars;
+  document.getElementById('winRank').textContent=rank;
+  document.getElementById('winPot').textContent='£'+Math.min(pot,goal);
+  document.getElementById('winShots').textContent=String(shots);
+  document.getElementById('winTime').textContent=timeStr;
+  el.classList.add('show');
+  sfx.win();
+  confetti(W/2,GROUND_Y-180);
+  shake=Math.min(shake+6,12);
+}
+function resetRun(){
+  document.getElementById('roundOverlay').classList.remove('show');
   buildRound();
 }
 
@@ -943,6 +945,7 @@ function renderDebtList(){
   el.innerHTML='';
   debts.forEach((d,i)=>{
     const row=document.createElement('div');row.className='debt-row';
+    const left=Math.max(0,d.amount-(d.paid||0));
     row.innerHTML=`
       <input class="dname" type="text" placeholder="e.g. Credit Card" value="${esc(d.name)}">
       <input class="damt" type="number" min="1" step="50" placeholder="£ amount" value="${d.amount||''}">
@@ -951,68 +954,74 @@ function renderDebtList(){
     row.querySelector('.damt').addEventListener('input',e=>d.amount=Math.max(0,parseFloat(e.target.value)||0));
     row.querySelector('.del-btn').addEventListener('click',()=>{debts.splice(i,1);renderDebtList();});
     el.appendChild(row);
+    if(d.paid>0){
+      const paidRow=document.createElement('div');
+      paidRow.style.cssText='font-size:11px;color:var(--mint-melt);margin:-4px 0 8px 4px';
+      paidRow.textContent=`✓ £${fmt(d.paid)} paid so far`;
+      el.appendChild(paidRow);
+    }
   });
 }
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function addDebtRow(){
-  debts.push({name:'',amount:0});
+  debts.push({name:'',amount:0,paid:0});
   renderDebtList();
   const rows=document.querySelectorAll('#debtList .dname');
   rows[rows.length-1].focus();
 }
 function loadDemo(){
   debts=[
-    {name:'Credit Card',amount:4250},
-    {name:'Car Loan',amount:9800},
-    {name:'Student Loan',amount:14200},
-    {name:'Overdraft',amount:750}
+    {name:'Credit Card',amount:4250,paid:0},
+    {name:'Car Loan',amount:9800,paid:0},
+    {name:'Student Loan',amount:14200,paid:0},
+    {name:'Overdraft',amount:750,paid:0}
   ];
   renderDebtList();
 }
 
 /* ---------- persistence ---------- */
-const STORE_KEY='saveshare_debt_towers_v2';
+const STORE_KEY='saveshare_debt_towers_v3';
 function saveDebts(){try{localStorage.setItem(STORE_KEY,JSON.stringify(debts));}catch(e){}}
 function loadDebts(){
   try{
     const raw=localStorage.getItem(STORE_KEY);
-    if(raw){const d=JSON.parse(raw);if(Array.isArray(d)&&d.length){debts=d;return;}}
+    if(raw){const d=JSON.parse(raw);if(Array.isArray(d)&&d.length){debts=d.map(x=>({paid:0,...x}));return;}}
   }catch(e){}
   debts=[
-    {name:'Credit Card',amount:4250},
-    {name:'Car Loan',amount:9800},
-    {name:'Student Loan',amount:14200}
+    {name:'Credit Card',amount:4250,paid:0},
+    {name:'Car Loan',amount:9800,paid:0},
+    {name:'Student Loan',amount:14200,paid:0}
   ];
 }
 
 /* ---------- UI wiring ---------- */
 document.getElementById('editBtn').addEventListener('click',()=>{initAudio();editDebts();});
-document.getElementById('resetBtn').addEventListener('click',()=>{initAudio();resetRound();});
+document.getElementById('resetBtn').addEventListener('click',()=>{initAudio();resetRun();});
 document.getElementById('muteBtn').addEventListener('click',function(){
   muted=!muted;this.textContent=muted?'🔇':'🔊';
   try{localStorage.setItem('saveshare_muted',muted?'1':'0');}catch(e){}
 });
 try{if(localStorage.getItem('saveshare_muted')==='1'){muted=true;document.getElementById('muteBtn').textContent='🔇';}}catch(e){}
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){initAudio();if(!document.getElementById('setupOverlay').classList.contains('show'))editDebts();}
-  if(e.key==='r'||e.key==='R'){resetRound();}
+  if(e.key==='Escape'){initAudio();
+    if(document.getElementById('setupOverlay').classList.contains('show'))return;
+    if(document.getElementById('paymentOverlay').classList.contains('show')){editDebts();return;}
+    if(document.getElementById('roundOverlay').classList.contains('show')){openPayment();return;}
+    openPayment();
+  }
+  if(e.key==='r'||e.key==='R'){resetRun();}
 });
 
 /* ---------- main loop ---------- */
 let lastT=performance.now();
 function loop(t){
   const dt=Math.min((t-lastT)/16.667,3);lastT=t;
-  if(!document.getElementById('setupOverlay').classList.contains('show')){
+  const inMenu=document.getElementById('setupOverlay').classList.contains('show')||
+               document.getElementById('paymentOverlay').classList.contains('show');
+  if(!inMenu){
     for(let i=0;i<Math.round(dt);i++)stepPhysics();
-    // reload ball when idle
     if(!done&&!ball&&!ballReady&&!dragging)reloadBall();
-    // round complete?
-    if(!done){
-      const slice=debts.slice(roundIdx*ROUND_SIZE,roundIdx*ROUND_SIZE+ROUND_SIZE);
-      if(slice.length&&slice.every(d=>d.clearedFlag))roundComplete();
-    }
   }
-  // effects
   shake=Math.max(0,shake-dt*.8);
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i];
@@ -1025,7 +1034,7 @@ function loop(t){
     f.y-=dt*.7;f.life-=dt/60;
     if(f.life<=0)floaters.splice(i,1);
   }
-  // render
+  if(timerOn&&!done&&Math.floor(performance.now()/1000)!==Math.floor((performance.now()-16)/1000))updateHUD();
   ctx.save();
   if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
   drawScene();
@@ -1046,9 +1055,12 @@ loadDebts();
 renderDebtList();
 rAF(loop);
 
-// ?play=1 → auto-load demo debts and jump straight into the action
+// ?play=1 → demo debts + straight into a £15 speedrun
 if(typeof location!=='undefined'&&location.search.indexOf('play')>=0){
-  loadDemo();startGame();
+  loadDemo();goal=15;pot=0;payDebtIdx=0;
+  document.getElementById('setupOverlay').classList.remove('show');
+  document.getElementById('paymentOverlay').classList.remove('show');
+  buildRound();
 }
 </script>
 </body>
