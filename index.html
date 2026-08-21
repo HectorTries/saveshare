@@ -311,6 +311,12 @@ function collideOBB(A,B){
     const pen=dot(rf.v1,n)-dot(p,n);        // >0 => penetrating into A
     if(pen>-0.4)contacts.push({px:p.x,py:p.y,nx:n.x,ny:n.y,pen});
   }
+  // single contact point (midpoint of clipped points) → no resting torque,
+  // rock-stable stacks; corner impacts still produce full tumbling torque.
+  if(contacts.length===2){
+    const c0=contacts[0],c1=contacts[1];
+    return [{px:(c0.px+c1.px)/2,py:(c0.py+c1.py)/2,nx:n.x,ny:n.y,pen:Math.max(c0.pen,c1.pen)}];
+  }
   return contacts.length?contacts:null;
 }
 function closestOnOBB(px,py,b){
@@ -332,13 +338,7 @@ function collideBall(bod,blk){
 
 /* ---------- physics step ---------- */
 const contacts=[];
-function resolvePair(c,A,B){
-  // positional correction
-  const slop=.35,percent=.55;
-  const corr=Math.max(c.pen-slop,0)/(A.invM+B.invM)*percent;
-  A.x-=c.nx*corr*A.invM;A.y-=c.ny*corr*A.invM;
-  B.x+=c.nx*corr*B.invM;B.y+=c.ny*corr*B.invM;
-  // velocity impulse
+function solveVelocity(c,A,B){
   const rAx=c.px-A.x,rAy=c.py-A.y;
   const rBx=c.px-B.x,rBy=c.py-B.y;
   const rvx=(B.vx-B.angVel*rBy)-(A.vx-A.angVel*rAy);
@@ -348,7 +348,8 @@ function resolvePair(c,A,B){
     const rnA=rAx*c.ny-rAy*c.nx;
     const rnB=rBx*c.ny-rBy*c.nx;
     const k=A.invM+B.invM+rnA*rnA*A.invI+rnB*rnB*B.invI;
-    const e=Math.min(A.rest,B.rest);
+    // restitution only for real impacts; resting contacts damp to zero
+    const e=(vn<-2.2)?Math.min(A.rest,B.rest):0;
     let j=-(1+e)*vn/k;
     // friction
     const tx=rvx-vn*c.nx,ty=rvy-vn*c.ny;
@@ -356,8 +357,7 @@ function resolvePair(c,A,B){
     if(tl>0.001){
       const jt=-(tl/k);
       const mu=Math.sqrt(A.fr*B.fr);
-      const jn=j;
-      const jtf=clamp(jt,-mu*jn,mu*jn);
+      const jtf=clamp(jt,-mu*j,mu*j);
       const fx=-tx/tl*jtf,fy=-ty/tl*jtf;
       A.vx-=fx*A.invM;A.vy-=fy*A.invM;A.angVel-=(rAx*fy-rAy*fx)*A.invI;
       B.vx+=fx*B.invM;B.vy+=fy*B.invM;B.angVel+=(rBx*fy-rBy*fx)*B.invI;
@@ -368,6 +368,12 @@ function resolvePair(c,A,B){
     if(j>0.6){A.wake();B.wake();}
   }
 }
+function solvePosition(c,A,B){
+  const slop=.35,percent=.4;
+  const corr=Math.max(c.pen-slop,0)/(A.invM+B.invM)*percent;
+  A.x-=c.nx*corr*A.invM;A.y-=c.ny*corr*A.invM;
+  B.x+=c.nx*corr*B.invM;B.y+=c.ny*corr*B.invM;
+}
 function stepPhysics(){
   const substeps=2;
   for(let s=0;s<substeps;s++){
@@ -377,11 +383,13 @@ function stepPhysics(){
       if(b.sleeping)continue;
       b.vy+=GRAV/2;
       b.vx=clamp(b.vx,-14,14);b.vy=clamp(b.vy,-18,18);
+      // damping: settle sway without killing launched blocks
+      b.vx*=0.995;b.vy*=0.995;b.angVel*=0.975;
       b.x+=b.vx/2;b.y+=b.vy/2;b.angle+=b.angVel/2;
       // ground
       if(b.y+b.h/2>GROUND_Y){
         b.y=GROUND_Y-b.h/2;
-        if(b.vy>0.4){b.vy=-b.vy*b.rest;b.vx*=0.86;b.angVel*=0.82;}
+        if(b.vy>1.2){b.vy=-b.vy*b.rest;b.vx*=0.86;b.angVel*=0.82;}
         else{b.vy=0;b.vx*=0.9;b.angVel*=0.85;}
         if(Math.abs(b.vx)<.3&&Math.abs(b.angVel)<.01)b.vx=0;
       }
@@ -399,14 +407,40 @@ function stepPhysics(){
         if(cs)for(const c of cs)contacts.push({c,A,B});
       }
     }
-    // solver iterations
+    // velocity solver (impulses only, accumulate to convergence)
     for(let it=0;it<8;it++)
-      for(const {c,A,B} of contacts)resolvePair(c,A,B);
+      for(const {c,A,B} of contacts)solveVelocity(c,A,B);
+    // position solver (fresh overlaps, few iterations, no overshoot)
+    for(let it=0;it<3;it++){
+      let any=false;
+      for(let i=0;i<blocks.length;i++){
+        const A=blocks[i];if(A.dead)continue;
+        for(let j=i+1;j<blocks.length;j++){
+          const B=blocks[j];if(B.dead)continue;
+          const cs=collideOBB(A,B);
+          if(cs)for(const c of cs){solvePosition(c,A,B);any=true;}
+        }
+      }
+      if(!any)break;
+    }
+    // re-clamp ground after position solver (blocks must never sink)
+    for(const b of blocks){
+      if(b.dead)continue;
+      if(b.y+b.h/2>GROUND_Y)b.y=GROUND_Y-b.h/2;
+      if(b.x-b.w/2<2){b.x=2+b.w/2;b.vx=Math.abs(b.vx)*.45;}
+      if(b.x+b.w/2>W-2){b.x=W-2-b.w/2;b.vx=-Math.abs(b.vx)*.45;}
+    }
+    // safety clamp
+    for(const b of blocks){
+      if(b.dead)continue;
+      b.vx=clamp(b.vx,-18,18);b.vy=clamp(b.vy,-22,22);
+      b.angVel=clamp(b.angVel,-6,6);
+    }
     // sleeping
     for(const b of blocks){
       if(b.dead||b.sleeping)continue;
       if(Math.abs(b.vx)<.06&&Math.abs(b.vy)<.06&&Math.abs(b.angVel)<.008){
-        if(++b.sleepT>45){b.sleeping=true;b.vx=b.vy=b.angVel=0;}
+        if(++b.sleepT>20){b.sleeping=true;b.vx=b.vy=b.angVel=0;}
       }else b.sleepT=0;
     }
     // projectiles
@@ -544,37 +578,32 @@ function addFloaters(){}
 function buildTower(debt,idx){
   const rnd=mulberry32(hashStr(debt.name||'debt')+idx*7919);
   const scale=clamp(Math.pow((debt.amount||8000)/8000,.33),.7,1.55);
-  const BW=46,BH=30,PW=30;
+  const BW=46,BH=30,GAP=2;
   const baseW=BW*3;
   const x0=debt.towerX;
   const cx=x0+baseW/2;
   const bs=[];
   const add=(x,y,w,h,mat)=>{const b=new Body(x+w/2,y+h/2,w,h,mat,debt);bs.push(b);};
-  // foundation
-  const fH=26;
-  add(x0,GROUND_Y-fH,BW,fH,'stone');
-  add(x0+BW,GROUND_Y-fH,BW,fH,'stone');
-  add(x0+BW*2,GROUND_Y-fH,BW,fH,'stone');
-  // pillars + center (maybe TNT)
-  const l1y=GROUND_Y-fH-BH;
-  add(x0+4,l1y,PW,BH,'stone');
-  add(x0+BW-2,l1y,PW,BH,rnd()<.45?'tnt':(rnd()<.6?'wood':'ice'));
-  add(x0+baseW-PW-4,l1y,PW,BH,'stone');
-  // plank
-  const l2y=l1y-BH;
-  add(x0-6,l2y,baseW+12,16,'plank');
-  // middle tier(s)
-  let y=l2y-16;
-  const tiers=Math.round(scale*1.6);
-  for(let t=0;t<tiers;t++){
-    add(x0+2,y,BW-4,BH-4,rnd()<.5?'ice':'wood');
-    add(x0+baseW-BW+2,y,BW-4,BH-4,rnd()<.5?'ice':'wood');
-    if(rnd()<.4)add(cx-BW/2+1,y,BW-2,BH-4,rnd()<.28?'tnt':'wood');
-    y-=BH-4;
-    add(x0-2,y,baseW+4,14,'plank');
-    y-=14;
+  // solid 3-column brick stack — stable like a real tower
+  const colX=[x0,x0+BW,x0+BW*2];
+  // foundation (26 tall) sits on the ground
+  let y=GROUND_Y-26;
+  add(colX[0],y,BW,26,'stone');
+  add(colX[1],y,BW,26,'stone');
+  add(colX[2],y,BW,26,'stone');
+  // columns stack up, middle column hides TNT in lower rows
+  const rows=2+Math.round(scale*1.5);
+  for(let r=0;r<rows;r++){
+    y=y-GAP-BH;
+    const matL=r===0?'stone':(r<2?'wood':'ice');
+    const matR=r===0?'stone':(r<2?'wood':'ice');
+    const matC=r===0?'stone':(rnd()<.35&&r<rows-1?'tnt':(r<2?'wood':'ice'));
+    add(colX[0],y,BW,BH,matL);
+    add(colX[1],y,BW,BH,matC);
+    add(colX[2],y,BW,BH,matR);
   }
-  // crown
+  // crown on the centre column
+  y=y-GAP-BH;
   add(cx-BW/2,y,BW,BH,'gold');
   // values
   const crownVal=Math.max(1,Math.round(debt.amount*.15));
@@ -595,6 +624,7 @@ function buildTower(debt,idx){
     }i++;
   }
   debt.blocks=bs;debt.cleared=0;debt.remaining=debt.amount;debt.clearedFlag=false;
+  debt.topY=Math.min(...bs.map(b=>b.y-b.h/2));
   return bs;
 }
 function towerXFor(i){
@@ -781,7 +811,7 @@ function drawTowerLabels(){
     const name=d.name.length>12?d.name.slice(0,11)+'…':d.name;
     ctx.font='bold 13px Manrope';
     ctx.textAlign='center';
-    const labelY=d.clearedFlag?GROUND_Y-235:GROUND_Y-150;
+    const labelY=d.clearedFlag?Math.max(GROUND_Y-235,d.topY-44):Math.max(GROUND_Y-220,d.topY-40);
     // remaining chip
     const txt=d.clearedFlag?'PAID ✓':'£'+fmt(d.remaining)+' left';
     ctx.font='bold 15px JetBrains Mono';
