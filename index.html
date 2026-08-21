@@ -149,6 +149,7 @@
           <div class="win-stat"><div class="num" id="winPot">£15</div><div class="lbl">Melted</div></div>
           <div class="win-stat"><div class="num" id="winShots">0</div><div class="lbl">Shots</div></div>
           <div class="win-stat"><div class="num" id="winTime">0:00</div><div class="lbl">Time</div></div>
+          <div class="win-stat"><div class="num" id="winInterest">£0</div><div class="lbl">Interest saved</div></div>
         </div>
         <div class="modal-actions" style="justify-content:center">
           <button class="btn" onclick="openPayment()">Log another payment →</button>
@@ -238,6 +239,7 @@ let floaters=[];        // floating text
 let shake=0;
 let goal=15;            // melt target (£)
 let pot=0;              // melted so far
+let tntHits=0;          // high-interest APR blocks destroyed → interest saved
 let shots=0,runStartTime=0,timerOn=false;
 let payDebtIdx=0;       // which debt this payment is for
 let ballReady=true,ball=null;
@@ -252,14 +254,17 @@ const MAX_PULL=170,POWER=0.30,MAX_SPEED=45;
 const GRAV=1.0;
 
 /* ---------- materials ----------
-   value = how much each block adds to your melt pot */
+   value = how much each block adds to your melt pot
+   durability: ice chips in 1 hit, wood 2, stone 4-5 (find the efficient route!) */
 const MATS={
-  ice:  {hp:1, den:.35,rest:.15,fr:.55,color:'#A8D5E5',dark:'#7FB8D0',edge:'#D7EBF4',value:2},
+  ice:  {hp:1, den:.35,rest:.15,fr:.55,color:'#A8D5E5',dark:'#7FB8D0',edge:'#D7EBF4',value:3},
   wood: {hp:3, den:.8, rest:.2, fr:.6, color:'#C17A4A',dark:'#9C5F35',edge:'#E0A878',value:5},
   stone:{hp:8, den:1.6,rest:.1, fr:.7, color:'#8A93A6',dark:'#676F83',edge:'#B3BBC9',value:4},
   gold: {hp:2, den:1.1,rest:.1, fr:.6, color:'#F2B84B',dark:'#D99A2B',edge:'#FFE29A',value:10},
   tnt:  {hp:1, den:.9, rest:.2, fr:.5, color:'#FF6B4A',dark:'#C94A2E',edge:'#FFB09A',value:10},
 };
+// how much ball energy each material eats on impact (ice lets you through, stone stops you)
+const BLEED={ice:0.93, wood:0.78, stone:0.55, gold:0.72, tnt:0.85, plank:0.78};
 
 class Body{
   constructor(x,y,w,h,mat,debt){
@@ -493,7 +498,7 @@ function stepProjectiles(){
 function hitBlock(p,b,c){
   const rvx=p.vx-b.vx,rvy=p.vy-b.vy;
   const vn=-(rvx*c.nx+rvy*c.ny);            // >0 => ball moving into block
-  // damage: full-power hit cracks wood, stone needs 2-3 hits, ball bleeds energy each contact
+  // damage: ice chips in one hit, wood two, stone takes 4-5 — pick your route
   const dmg=Math.max(0,vn)*0.05;
   if(dmg>.12){
     b.hp-=dmg;
@@ -507,10 +512,12 @@ function hitBlock(p,b,c){
   let j=-(1+e)*vn/k;
   const ix=c.nx*j,iy=c.ny*j;
   p.vx-=ix*p.invM;p.vy-=iy*p.invM;
-  b.vx+=ix*b.invM*.4;b.vy+=iy*b.invM*.4;
-  b.angVel+=(Math.random()-.5)*.06*vn*.3;
-  // bleed ball energy so one shot can't plow through the whole field
-  p.vx*=0.90;p.vy*=0.90;
+  // small kick: blocks chip in place instead of scattering across the map
+  b.vx+=ix*b.invM*.15;b.vy+=iy*b.invM*.15;
+  b.angVel+=(Math.random()-.5)*.03*vn*.3;
+  // material eats the ball's energy: ice lets you punch through, stone stops you cold
+  const bleed=BLEED[b.mat]||0.85;
+  p.vx*=bleed;p.vy*=bleed;
   b.wake();
   if(j>1)sfx.thud();
 }
@@ -522,7 +529,7 @@ function destroyBlock(b,cause){
   pot+=b.value;
   floaters.push({x:b.x,y:b.y-b.h/2,text:'+£'+b.value,color:b.mat==='gold'||b.mat==='tnt'?'#F2B84B':'#5FC9A8',life:1.2,big:b.mat==='gold'||b.mat==='tnt'});
   if(b.mat==='gold'||b.mat==='tnt')sfx.coin();
-  if(b.mat==='tnt'){explode(b.x,b.y);sfx.tnt();}
+  if(b.mat==='tnt'){tntHits++;explode(b.x,b.y);sfx.tnt();}
   updateHUD();
   checkWin();
 }
@@ -572,7 +579,11 @@ function confetti(x,y){
   }
 }
 
-/* ---------- tower construction (stable brick towers) ---------- */
+/* ---------- tower construction (one structural tower per round) ----------
+   Solid column stack — proven rock-stable. Blocks above a destroyed block fall
+   onto the block below (never pancake to the floor). TNT (high-interest APR)
+   is buried in the core: stone shell on every side but the top, where wood sits
+   above it — you must break stone or arc over to reach it. */
 function buildTower(debt,idx){
   const rnd=mulberry32(hashStr(debt.name||'debt')+idx*7919);
   const scale=clamp(Math.pow((debt.amount||8000)/8000,.33),.7,1.55);
@@ -582,50 +593,67 @@ function buildTower(debt,idx){
   const cx=x0+baseW/2;
   const bs=[];
   const add=(x,y,w,h,mat)=>{const b=new Body(x+w/2,y+h/2,w,h,mat,debt);bs.push(b);};
-  // solid 3-column brick stack — proven rock-stable, with a raised keep + crown so it reads as an ACTUAL tower
   const colX=[x0,x0+BW,x0+BW*2];
-  // foundation (26 tall) sits on the ground
+
+  // Foundation: 3 stone bricks on the ground
   let y=GROUND_Y-26;
   add(colX[0],y,BW,26,'stone');
   add(colX[1],y,BW,26,'stone');
   add(colX[2],y,BW,26,'stone');
-  // columns stack up; middle column hides TNT in a lower row
-  const rows=2+Math.round(scale);
-  const tntRow=rnd()<.5?1:2;
-  for(let r=0;r<rows;r++){
+
+  // Row 0: wood sides (easy chip), stone centre backbone
+  y=y-GAP-BH;
+  add(colX[0],y,BW,BH,'wood');
+  add(colX[1],y,BW,BH,'stone');
+  add(colX[2],y,BW,BH,'wood');
+
+  // Row 1: TNT buried in the core — wood in front (stronger than ice), stone below
+  y=y-GAP-BH;
+  add(colX[0],y,BW,BH,'wood');
+  add(colX[1],y,BW,BH,'tnt');
+  add(colX[2],y,BW,BH,'wood');
+
+  // Row 2: wood tier
+  y=y-GAP-BH;
+  add(colX[0],y,BW,BH,'wood');
+  add(colX[1],y,BW,BH,'wood');
+  add(colX[2],y,BW,BH,'wood');
+
+  // Row 3: ice upper storey (easy chip)
+  y=y-GAP-BH;
+  add(colX[0],y,BW,BH,'ice');
+  add(colX[1],y,BW,BH,'ice');
+  add(colX[2],y,BW,BH,'ice');
+
+  // Row 4: ice (bigger debts)
+  if(scale>1.0){
     y=y-GAP-BH;
-    const matL=r===0?'stone':(r<2?'wood':'ice');
-    const matR=r===0?'stone':(r<2?'wood':'ice');
-    let matC=r===0?'stone':(r<2?'wood':'ice');
-    if(r===tntRow&&rnd()<.6)matC='tnt';
-    add(colX[0],y,BW,BH,matL);
-    add(colX[1],y,BW,BH,matC);
-    add(colX[2],y,BW,BH,matR);
+    add(colX[0],y,BW,BH,'ice');
+    add(colX[1],y,BW,BH,'ice');
+    add(colX[2],y,BW,BH,'ice');
   }
-  // raised keep: centre column gets one extra tier (fully supported, still stable)
+
+  // Raised keep: centre column one extra ice tier (reads as a tower)
   y=y-GAP-BH;
   add(colX[1],y,BW,BH,'ice');
-  // gold crown on top of the keep
+
+  // Gold crown on top of the keep
   y=y-GAP-BH;
   add(cx-BW/2,y,BW,BH,'gold');
+
   debt.blocks=bs;debt.topY=Math.min(...bs.map(b=>b.y-b.h/2));
   return bs;
 }
-function towerXFor(i,n){
-  if(n<=1)return W/2-92;
-  if(n===2)return [420,840][i];
-  return [380,650,920][i];
-}
 function buildRound(){
   blocks=[];
-  // target debt first, then the 2 biggest remaining debts (max 3 towers = all reachable)
-  const others=debts.filter((_,i)=>i!==payDebtIdx)
-    .sort((a,b)=>(b.amount-(b.paid||0))-(a.amount-(a.paid||0))).slice(0,2);
-  const onField=[debts[payDebtIdx],...others];
-  fieldDebts=onField;
-  onField.forEach((d,i)=>{d.towerX=towerXFor(i,onField.length);d.tw=184;buildTower(d,i);blocks.push(...d.blocks);});
+  // ONE tower per round: the debt this payment is against
+  const d=debts[payDebtIdx];
+  d.towerX=W/2-92;d.tw=184;
+  fieldDebts=[d];
+  buildTower(d,0);
+  blocks.push(...d.blocks);
   projectiles=[];
-  shots=0;pot=0;ballReady=true;ball=makeBall();dragging=false;done=false;timerOn=false;
+  shots=0;pot=0;tntHits=0;ballReady=true;ball=makeBall();dragging=false;done=false;timerOn=false;
   runStartTime=performance.now();
   updateHUD();
 }
@@ -929,6 +957,10 @@ function showWin(){
   document.getElementById('winPot').textContent='£'+Math.min(pot,goal);
   document.getElementById('winShots').textContent=String(shots);
   document.getElementById('winTime').textContent=timeStr;
+  // interest saved: each high-interest (TNT) block melted adds a bonus
+  const interestSaved=tntHits*12;
+  document.getElementById('winInterest').textContent='£'+interestSaved;
+  if(tntHits>0)document.getElementById('roundSub').textContent=`£${goal} paid toward ${dName} — £${fmt(left)} to go. 💥 +£${interestSaved} interest saved by melting the high-interest blocks first!`;
   el.classList.add('show');
   sfx.win();
   confetti(W/2,GROUND_Y-180);
