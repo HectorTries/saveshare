@@ -19,6 +19,7 @@ const POWER = 0.3;
 const MAX_SPEED = 42;          // slightly under 45 so Matter never tunnels a 30px block
 const BALL_R = 14;
 const GRAV_STEP = 1.0;         // px/step² — matches v1's GRAV=1.0 per frame
+const GRAB_RADIUS = 160;       // generous grab zone around the sling (finger friendly on mobile)
 
 interface BlockRec {
   img: Phaser.GameObjects.Image;
@@ -66,6 +67,9 @@ export class GameScene extends Phaser.Scene {
   private winT: Phaser.Time.TimerEvent | null = null;
   private removeQueue: MatterJS.BodyType[] = []; // bodies removed after the physics step (never mid-event)
   private destroyQueue: Phaser.GameObjects.Image[] = []; // sprites destroyed in the same safe window
+  private ballGo: any = null;   // hidden matter game object holding the flying ball body
+  private trail: { x: number; y: number }[] = [];
+  private trailGfx!: Phaser.GameObjects.Graphics;
 
   private rnd: () => number = Math.random;
 
@@ -93,6 +97,7 @@ export class GameScene extends Phaser.Scene {
     this.blockGfx = this.add.graphics();
     this.slingGfx = this.add.graphics();
     this.trajGfx = this.add.graphics();
+    this.trailGfx = this.add.graphics();
     this.labelGfx = this.add.graphics();
 
     this.ballImg = this.add.image(SLING.x, SLING.y, 'snowball').setScale(BALL_R / 16);
@@ -151,59 +156,102 @@ export class GameScene extends Phaser.Scene {
       const key = `block-${mat}`;
       if (!this.textures.exists(key)) {
         const m = MATS[mat];
-        const c = this.textures.createCanvas(key, 64, 64);
+        const c = this.textures.createCanvas(key, 128, 128);
         if (c) {
           const ctx = c.getContext();
-          const g = ctx.createLinearGradient(0, 0, 0, 64);
+          // body with vertical gradient + bevel edges
+          const g = ctx.createLinearGradient(0, 4, 0, 124);
           g.addColorStop(0, m.edge);
-          g.addColorStop(0.4, m.color);
+          g.addColorStop(0.35, m.color);
           g.addColorStop(1, m.dark);
           ctx.fillStyle = g;
-          roundRectPath(ctx, 2, 2, 60, 60, 8);
+          roundRectPath(ctx, 4, 4, 120, 120, 12);
           ctx.fill();
+          // outer dark border (bevel)
+          ctx.strokeStyle = 'rgba(0,0,0,.25)';
+          ctx.lineWidth = 3;
+          roundRectPath(ctx, 5, 5, 118, 118, 11);
+          ctx.stroke();
           // top shine
-          ctx.fillStyle = 'rgba(255,255,255,.35)';
-          roundRectPath(ctx, 4, 3, 56, 5, 3);
+          ctx.fillStyle = 'rgba(255,255,255,.4)';
+          roundRectPath(ctx, 10, 7, 108, 10, 5);
+          ctx.fill();
+          // bottom shade
+          ctx.fillStyle = 'rgba(0,0,0,.14)';
+          roundRectPath(ctx, 10, 112, 108, 9, 4);
           ctx.fill();
           // material detail
           if (mat === 'wood') {
-            ctx.strokeStyle = 'rgba(80,45,18,.35)';
-            ctx.lineWidth = 2;
-            for (let i = 0; i < 3; i++) {
+            ctx.strokeStyle = 'rgba(80,45,18,.4)';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 5; i++) {
               ctx.beginPath();
-              ctx.moveTo(4, 48 - i * 8);
-              ctx.lineTo(60, 48 - i * 8);
+              ctx.moveTo(14, 96 - i * 18);
+              ctx.lineTo(114, 96 - i * 18);
               ctx.stroke();
             }
+            ctx.fillStyle = 'rgba(80,45,18,.5)';
+            ctx.beginPath(); ctx.ellipse(34, 40, 7, 5, 0.3, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(88, 76, 6, 4, -0.2, 0, Math.PI * 2); ctx.fill();
           } else if (mat === 'stone') {
-            ctx.fillStyle = 'rgba(30,45,65,.35)';
-            ctx.beginPath(); ctx.ellipse(20, 18, 4, 3, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.ellipse(44, 42, 3, 2.4, 0, 0, Math.PI * 2); ctx.fill();
-          } else if (mat === 'ice') {
-            ctx.fillStyle = 'rgba(255,255,255,.7)';
-            ctx.beginPath();
-            ctx.moveTo(12, 12); ctx.lineTo(28, 12); ctx.lineTo(19, 24);
-            ctx.closePath(); ctx.fill();
-          } else if (mat === 'tnt') {
-            ctx.fillStyle = '#2B2B33';
-            ctx.fillRect(28, 0, 8, 10);
-            ctx.strokeStyle = '#FFD9A0';
+            ctx.fillStyle = 'rgba(30,45,65,.4)';
+            ctx.beginPath(); ctx.ellipse(36, 34, 8, 6, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(88, 86, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(68, 58, 5, 4, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = 'rgba(30,45,65,.3)';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(32, 2); ctx.quadraticCurveTo(44, 6, 40, 18); ctx.stroke();
-            ctx.fillStyle = '#FFF';
-            ctx.font = 'bold 14px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText('TNT', 32, 40);
-          } else if (mat === 'gold') {
-            ctx.fillStyle = 'rgba(255,255,255,.6)';
+            ctx.moveTo(20, 100); ctx.lineTo(40, 84); ctx.lineTo(52, 90);
+            ctx.stroke();
+          } else if (mat === 'ice') {
+            ctx.fillStyle = 'rgba(255,255,255,.75)';
             ctx.beginPath();
-            ctx.moveTo(14, 12); ctx.moveTo(14, 16); ctx.lineTo(30, 16); ctx.lineTo(24, 28);
+            ctx.moveTo(24, 22); ctx.lineTo(56, 22); ctx.lineTo(40, 46);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,.4)';
+            ctx.beginPath();
+            ctx.moveTo(70, 60); ctx.lineTo(96, 60); ctx.lineTo(82, 82);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = 'rgba(180,220,240,.35)';
+            ctx.beginPath(); ctx.arc(96, 34, 12, 0, Math.PI * 2); ctx.fill();
+          } else if (mat === 'tnt') {
+            // warning stripes top
+            ctx.save();
+            ctx.beginPath();
+            roundRectPath(ctx, 4, 4, 120, 120, 12);
+            ctx.clip();
+            ctx.fillStyle = 'rgba(255,217,160,.25)';
+            for (let i = -2; i < 14; i++) {
+              ctx.save();
+              ctx.translate(i * 14, 0);
+              ctx.rotate(0.6);
+              ctx.fillRect(0, 0, 7, 130);
+              ctx.restore();
+            }
+            ctx.restore();
+            ctx.fillStyle = '#2B2B33';
+            ctx.fillRect(56, 0, 16, 18);
+            ctx.strokeStyle = '#FFD9A0';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(64, 4); ctx.quadraticCurveTo(88, 12, 82, 34); ctx.stroke();
+            ctx.fillStyle = '#FFF';
+            ctx.font = 'bold 30px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('TNT', 64, 84);
+            ctx.fillStyle = 'rgba(255,190,130,.6)';
+            ctx.beginPath(); ctx.arc(82, 34, 5, 0, Math.PI * 2); ctx.fill();
+          } else if (mat === 'gold') {
+            ctx.fillStyle = 'rgba(255,255,255,.65)';
+            ctx.beginPath();
+            ctx.moveTo(28, 26); ctx.lineTo(58, 26); ctx.lineTo(46, 52);
             ctx.closePath(); ctx.fill();
             ctx.fillStyle = '#7A5400';
-            ctx.font = 'bold 22px sans-serif';
+            ctx.font = 'bold 52px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('£', 32, 42);
+            ctx.fillText('£', 64, 86);
+            ctx.fillStyle = 'rgba(255,255,255,.7)';
+            ctx.beginPath(); ctx.arc(98, 30, 6, 0, Math.PI * 2); ctx.fill();
           }
           c.refresh();
         }
@@ -253,7 +301,9 @@ export class GameScene extends Phaser.Scene {
     }
     this.blocks = [];
     this.blockByBody.clear();
-    if (this.ballBody) { this.matter.world.remove(this.ballBody); this.ballBody = null; }
+    this.removeBallBody();
+    this.launched = false;
+    this.trail.length = 0;
     if (this.winT) { this.winT.remove(); this.winT = null; }
     this.trajGfx.clear();
   }
@@ -348,47 +398,44 @@ export class GameScene extends Phaser.Scene {
     return rec;
   }
 
-  /* ================= ball ================= */
+  /* ================= ball =================
+     The ready ball is VISUAL ONLY — no physics body exists until launch.
+     Dragging a physics body around (v1 approach) fought the solver every
+     frame → jittery bands + mobile jank. Now: image follows finger,
+     body is created at release with the right velocity. */
   private resetBall(): void {
-    if (this.ballBody) {
-      this.matter.world.remove(this.ballBody);
-      this.ballBody = null;
-    }
+    this.removeBallBody();
     this.launched = false;
     this.stoppedT = 0;
+    this.launchTime = 0;
+    this.trail.length = 0;
     this.ballImg.setPosition(SLING.x, SLING.y).setVisible(true);
   }
 
-  private spawnBall(): void {
-    if (this.ballBody) return;
-    // fresh image + body every time so we never reuse a removed body
-    this.ballImg.destroy();
-    this.ballImg = this.add.image(SLING.x, SLING.y, 'snowball').setScale(BALL_R / 16);
-    this.ballImg.setVisible(true);
-    this.matter.add.gameObject(this.ballImg, {
-      shape: { type: 'circle', radius: BALL_R },
-      isStatic: false, // create dynamic so setStatic(true) records real mass for later restore
+  private removeBallBody(): void {
+    if (this.ballBody) {
+      try { this.matter.world.remove(this.ballBody); } catch (e) { /* already gone */ }
+      this.ballBody = null;
+    }
+    this.ballGo = null;
+  }
+
+  private launchBall(): void {
+    if (!this.dragPos || this.done) return;
+    const dx = SLING.x - this.dragPos.x;
+    const dy = SLING.y - this.dragPos.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const spd = Math.min(len * POWER, MAX_SPEED);
+    // fresh dynamic circle body — no static juggling, no NaN trap.
+    // NOTE: matter.add.circle returns the raw body in Phaser 3.87.
+    this.ballBody = this.matter.add.circle(SLING.x, SLING.y, BALL_R, {
       label: 'ball',
       density: 2.2 / (Math.PI * BALL_R * BALL_R), // mass ≈ 2.2 like v1
       friction: 0.3,
       frictionAir: 0.01, // minimal air drag: real flight matches the trajectory preview
       restitution: 0.3,
-    });
-    this.ballBody = this.ballImg.body as MatterJS.BodyType;
-    const M: any = (Phaser.Physics.Matter as any).Matter;
-    M.Body.setStatic(this.ballBody, true); // anchor at sling; _original captures real mass
-  }
-
-  private launchBall(): void {
-    if (!this.ballBody || !this.dragPos || this.done) return;
-    const dx = SLING.x - this.dragPos.x;
-    const dy = SLING.y - this.dragPos.y;
-    const len = Math.hypot(dx, dy) || 1;
-    const spd = Math.min(len * POWER, MAX_SPEED);
-    const M: any = (Phaser.Physics.Matter as any).Matter;
-    M.Body.setStatic(this.ballBody, false);
-    // set velocity directly: Matter's setVelocity divides by body.deltaTime,
-    // which is undefined on a body created static → NaN. positionPrev trick avoids it.
+    }) as unknown as MatterJS.BodyType;
+    this.ballGo = null; // visuals handled by our own ballImg
     this.setVel(this.ballBody, (dx / len) * spd, (dy / len) * spd);
     this.launched = true;
     this.stoppedT = 0;
@@ -411,11 +458,11 @@ export class GameScene extends Phaser.Scene {
   /* ================= input ================= */
   private tryGrab(p: Phaser.Input.Pointer): void {
     if (this.done || this.launched) return;
-    if (!this.ballBody) this.spawnBall();
     const d = Math.hypot(p.x - SLING.x, p.y - SLING.y);
-    if (d < 90) {
+    if (d < GRAB_RADIUS) {
       this.dragging = true;
       this.dragPos = { x: p.x, y: p.y };
+      this.ballImg.setPosition(p.x, p.y);
     }
   }
 
@@ -425,10 +472,6 @@ export class GameScene extends Phaser.Scene {
     const d = Math.hypot(dx, dy);
     this.dragPos = d > MAX_PULL ? { x: SLING.x + (dx / d) * MAX_PULL, y: SLING.y + (dy / d) * MAX_PULL } : { x: p.x, y: p.y };
     if (this.dragPos.y > H - 16) this.dragPos.y = H - 16;
-    if (this.ballBody) {
-      const M: any = (Phaser.Physics.Matter as any).Matter;
-      M.Body.setPosition(this.ballBody, this.dragPos);
-    }
     this.ballImg.setPosition(this.dragPos.x, this.dragPos.y);
   }
 
@@ -464,7 +507,10 @@ export class GameScene extends Phaser.Scene {
         rec.hp -= dmg;
         this.spawnCrack(rec.body.position.x, rec.body.position.y);
         if (rec.hp <= 0) this.destroyBlock(rec, 'hit');
-        else sfx.chip();
+        else {
+          sfx.chip();
+          this.flashBlock(rec);
+        }
         this.cameras.main.shake(60, Math.min(0.004 + dmg * 0.0012, 0.02));
       }
 
@@ -477,6 +523,14 @@ export class GameScene extends Phaser.Scene {
       });
       if (vn > 1.2) sfx.thud();
     }
+  }
+
+  private flashBlock(rec: BlockRec): void {
+    if (rec.dead) return;
+    rec.img.setTintFill(0xffffff);
+    this.time.delayedCall(70, () => {
+      if (!rec.dead) rec.img.clearTint();
+    });
   }
 
   private destroyBlock(rec: BlockRec, cause: 'hit' | 'boom'): void {
@@ -687,22 +741,26 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // ball lifecycle
+    // ball lifecycle — track the flying body, then reset visual-only ball
     if (this.ballBody && this.launched) {
-      const v = this.ballBody.velocity;
-      const spd = Math.hypot(v.x, v.y);
-      const off = this.ballImg.y > H + 80 || this.ballImg.x < -120 || this.ballImg.x > W + 120;
-      // remove once nearly stopped, offscreen, or after 4s of flight (keeps reload snappy)
+      const body = this.ballBody;
+      const spd = Math.hypot(body.velocity.x, body.velocity.y);
+      const px = body.position.x, py = body.position.y;
+      const off = py > H + 80 || px < -120 || px > W + 120;
       const timedOut = this.launchTime && performance.now() - this.launchTime > 4000;
       if (spd < 0.5) this.stoppedT++; else this.stoppedT = 0;
+      // trail
+      this.trail.push({ x: px, y: py });
+      if (this.trail.length > 14) this.trail.shift();
       if (off || this.stoppedT > 30 || timedOut) {
-        try { this.matter.world.remove(this.ballBody); } catch (e) { /* already gone */ }
-        this.ballBody = null;
+        this.removeBallBody();
         this.launched = false;
         this.stoppedT = 0;
         this.launchTime = 0;
-        this.spawnBall();
-        this.ballImg.setPosition(SLING.x, SLING.y);
+        this.trail.length = 0;
+        this.ballImg.setPosition(SLING.x, SLING.y).setVisible(true);
+      } else {
+        this.ballImg.setPosition(px, py);
       }
     }
 
@@ -714,6 +772,7 @@ export class GameScene extends Phaser.Scene {
 
   /* ================= drawing ================= */
   private draw(): void {
+    this.drawTrail();
     this.drawBlocks();
     this.drawSling();
     this.drawTrajectory();
@@ -721,19 +780,46 @@ export class GameScene extends Phaser.Scene {
     this.drawBall();
   }
 
+  private drawTrail(): void {
+    this.trailGfx.clear();
+    if (!this.launched || this.trail.length < 2) return;
+    for (let i = 0; i < this.trail.length; i++) {
+      const t = this.trail[i];
+      const a = (i / this.trail.length) * 0.55;
+      const r = 2 + (i / this.trail.length) * 3;
+      this.trailGfx.fillStyle(0xffffff, a);
+      this.trailGfx.fillCircle(t.x, t.y, r);
+    }
+  }
+
   private drawBackground(): void {
     const g = this.bgGfx;
     g.clear();
     // sky
-    g.fillGradientStyle(0x2b3d57, 0x2b3d57, 0xa9c5d9, 0xa9c5d9, 1);
+    g.fillGradientStyle(0x232f4a, 0x232f4a, 0x7fa3c4, 0x9cc3da, 1);
     g.fillRect(0, 0, W, GROUND_Y);
-    // moon
+    // stars
+    g.fillStyle(0xffffff, 0.6);
+    for (let i = 0; i < 70; i++) {
+      const sx = (i * 137 + 41) % W;
+      const sy = (i * 89 + 23) % (GROUND_Y - 160);
+      g.fillCircle(sx, sy, i % 7 === 0 ? 2 : 1.2);
+    }
+    // aurora
+    g.fillStyle(0x5fc9a8, 0.12);
+    g.fillEllipse(W * 0.42, 60, 640, 90);
+    g.fillStyle(0x3e92cc, 0.1);
+    g.fillEllipse(W * 0.62, 100, 520, 70);
+    // moon with glow
+    g.fillStyle(0xffffff, 0.14);
+    g.fillCircle(1100, 88, 64);
     g.fillStyle(0xffffff, 0.85);
     g.fillCircle(1100, 88, 30);
-    g.fillStyle(0xffffff, 0.2);
-    g.fillCircle(1100, 88, 46);
-    // mountains (back)
-    g.fillStyle(0x647e96, 0.55);
+    g.fillStyle(0xe8dcc0, 0.5);
+    g.fillCircle(1093, 82, 6);
+    g.fillCircle(1108, 95, 4);
+    // mountains (back, hazy)
+    g.fillStyle(0x647e96, 0.5);
     g.fillPoints([
       new Phaser.Geom.Point(0, GROUND_Y), new Phaser.Geom.Point(120, GROUND_Y - 90),
       new Phaser.Geom.Point(260, GROUND_Y - 40), new Phaser.Geom.Point(420, GROUND_Y - 130),
@@ -742,8 +828,8 @@ export class GameScene extends Phaser.Scene {
       new Phaser.Geom.Point(1200, GROUND_Y - 50), new Phaser.Geom.Point(1280, GROUND_Y - 95),
       new Phaser.Geom.Point(1280, GROUND_Y), new Phaser.Geom.Point(0, GROUND_Y),
     ], true);
-    // mountains (front)
-    g.fillStyle(0x9cb4c6, 0.7);
+    // mountains (front) with snow caps
+    g.fillStyle(0x9cb4c6, 0.75);
     g.fillPoints([
       new Phaser.Geom.Point(0, GROUND_Y), new Phaser.Geom.Point(160, GROUND_Y - 45),
       new Phaser.Geom.Point(340, GROUND_Y - 20), new Phaser.Geom.Point(520, GROUND_Y - 55),
@@ -751,17 +837,39 @@ export class GameScene extends Phaser.Scene {
       new Phaser.Geom.Point(1100, GROUND_Y - 30), new Phaser.Geom.Point(1280, GROUND_Y - 50),
       new Phaser.Geom.Point(1280, GROUND_Y), new Phaser.Geom.Point(0, GROUND_Y),
     ], true);
+    // snow caps on front peaks
+    g.fillStyle(0xf4fafc, 0.9);
+    g.fillPoints([
+      new Phaser.Geom.Point(160, GROUND_Y - 45), new Phaser.Geom.Point(230, GROUND_Y - 38),
+      new Phaser.Geom.Point(200, GROUND_Y - 30), new Phaser.Geom.Point(160, GROUND_Y - 33),
+    ], true);
+    g.fillPoints([
+      new Phaser.Geom.Point(520, GROUND_Y - 55), new Phaser.Geom.Point(600, GROUND_Y - 47),
+      new Phaser.Geom.Point(565, GROUND_Y - 38), new Phaser.Geom.Point(520, GROUND_Y - 42),
+    ], true);
+    g.fillPoints([
+      new Phaser.Geom.Point(900, GROUND_Y - 60), new Phaser.Geom.Point(980, GROUND_Y - 52),
+      new Phaser.Geom.Point(945, GROUND_Y - 42), new Phaser.Geom.Point(900, GROUND_Y - 46),
+    ], true);
     // snow ground
-    g.fillGradientStyle(0xf6fbfd, 0xf6fbfd, 0xafcbdb, 0xafcbdb, 1);
+    g.fillGradientStyle(0xf6fbfd, 0xf6fbfd, 0xafcbdb, 0x8fb2c8, 1);
     g.fillRect(0, GROUND_Y, W, H - GROUND_Y);
-    g.fillStyle(0xffffff, 0.9);
+    g.fillStyle(0xffffff, 0.95);
     g.fillRect(0, GROUND_Y, W, 5);
     // soft shadow under tower
     g.fillStyle(0x466982, 0.16);
-    g.fillEllipse(W / 2, GROUND_Y + 8, 280, 26);
+    g.fillEllipse(W / 2, GROUND_Y + 8, 300, 26);
+    // snow drifts
+    g.fillStyle(0xffffff, 0.25);
+    g.fillEllipse(240, GROUND_Y + 34, 260, 22);
+    g.fillEllipse(1010, GROUND_Y + 46, 320, 26);
     // sparkles
     g.fillStyle(0xffffff, 0.5);
     for (let i = 0; i < 36; i++) g.fillRect((i * 37 + 13) % W, GROUND_Y + 12 + ((i * 53) % 26), 2, 2);
+    // vignette
+    g.fillStyle(0x0b1422, 0.12);
+    g.fillRect(0, 0, W, 14);
+    g.fillRect(0, H - 14, W, 14);
   }
 
   private drawBlocks(): void {
@@ -792,27 +900,64 @@ export class GameScene extends Phaser.Scene {
   private drawSling(): void {
     const g = this.slingGfx;
     g.clear();
-    const woodGrad = g.fillGradientStyle(0x4a3322, 0x7a5436, 0x3f2a1a, 0x4a3322, 1);
+    // target point: drag position, flying ball, or rest
+    const target = this.dragging && this.dragPos ? this.dragPos
+      : this.launched ? { x: this.ballImg.x, y: this.ballImg.y }
+      : { x: SLING.x, y: SLING.y };
+    const stretch = this.dragging ? Math.min(Math.hypot(target.x - SLING.x, target.y - SLING.y) / MAX_PULL, 1) : 0;
+
+    // ---- wooden frame (behind bands) ----
+    // trunk
+    g.fillGradientStyle(0x4a3322, 0x7a5436, 0x3f2a1a, 0x2e1e12, 1);
+    g.fillRoundedRect(SLING.x - 8, SLING.y - 26, 16, 54, 5);
     // prongs
     g.fillStyle(0x7a5436, 1);
-    g.fillRoundedRect(SLING.x - 13, SLING.y - 64, 13, 72, 6);
-    g.fillRoundedRect(SLING.x + 1, SLING.y - 64, 13, 72, 6);
+    g.fillRoundedRect(SLING.x - 16, SLING.y - 66, 13, 44, 6);
+    g.fillRoundedRect(SLING.x + 3, SLING.y - 66, 13, 44, 6);
+    // prong highlights
+    g.fillStyle(0x9a7048, 0.6);
+    g.fillRoundedRect(SLING.x - 14, SLING.y - 64, 4, 40, 2);
+    g.fillRoundedRect(SLING.x + 5, SLING.y - 64, 4, 40, 2);
+    // crossbar
     g.fillStyle(0x2e1e12, 1);
-    g.fillRoundedRect(SLING.x - 15, SLING.y - 68, 44, 10, 5);
-    // bands
-    const target = this.dragging && this.dragPos ? this.dragPos
-      : this.launched ? { x: SLING.x, y: SLING.y }
-      : { x: this.ballImg.x, y: this.ballImg.y };
-    g.lineStyle(6, 0x6b4a2e, 1);
+    g.fillRoundedRect(SLING.x - 18, SLING.y - 70, 36, 8, 4);
+    // trunk grain
+    g.lineStyle(1.2, 0x2e1e12, 0.35);
     g.beginPath();
-    g.moveTo(ANCH1.x, ANCH1.y); g.lineTo(target.x, target.y);
-    g.moveTo(ANCH2.x, ANCH2.y); g.lineTo(target.x, target.y);
+    g.moveTo(SLING.x - 3, SLING.y - 20); g.lineTo(SLING.x - 3, SLING.y + 22);
+    g.moveTo(SLING.x + 4, SLING.y - 20); g.lineTo(SLING.x + 4, SLING.y + 22);
     g.strokePath();
-    g.lineStyle(2.4, 0x4a3322, 1);
+
+    // ---- rubber bands (curved look via segmented lines) ----
+    const sag = 4 + stretch * 10;
+    const mx = (ANCH1.x + ANCH2.x) / 2;
+    const my = (ANCH1.y + ANCH2.y) / 2 + sag;
+    g.lineStyle(7, 0x5a3a24, 1);
     g.beginPath();
-    g.moveTo(ANCH1.x, ANCH1.y); g.lineTo(target.x, target.y);
-    g.moveTo(ANCH2.x, ANCH2.y); g.lineTo(target.x, target.y);
+    g.moveTo(ANCH1.x, ANCH1.y);
+    g.lineTo(mx, my);
+    g.lineTo(target.x, target.y);
+    g.moveTo(ANCH2.x, ANCH2.y);
+    g.lineTo(mx, my);
+    g.lineTo(target.x, target.y);
     g.strokePath();
+    // band highlight
+    g.lineStyle(2.5, 0x8a6040, 0.9);
+    g.beginPath();
+    g.moveTo(ANCH1.x, ANCH1.y);
+    g.lineTo(mx, my - 2);
+    g.lineTo(target.x, target.y);
+    g.moveTo(ANCH2.x, ANCH2.y);
+    g.lineTo(mx, my - 2);
+    g.lineTo(target.x, target.y);
+    g.strokePath();
+    // pouch
+    if (this.dragging || !this.launched) {
+      g.fillStyle(0x3f2a1a, 1);
+      g.fillEllipse(target.x, target.y, 20, 12);
+      g.fillStyle(0x7a5436, 0.8);
+      g.fillEllipse(target.x, target.y, 14, 7);
+    }
   }
 
   private drawTrajectory(): void {
@@ -845,24 +990,24 @@ export class GameScene extends Phaser.Scene {
     const left = Math.max(0, d.amount - (d.paid || 0));
     const txt = d.paid >= d.amount ? 'PAID ✓' : `£${fmt(left)} left`;
     this.labelGfx.fillStyle(d.paid >= d.amount ? 0x5fc9a8 : 0x16283d, d.paid >= d.amount ? 0.22 : 0.72);
-    const w = 24 + txt.length * 9;
+    const w = 26 + txt.length * 9.5;
     this.labelGfx.fillRoundedRect(cx - w / 2, labelY - 18, w, 24, 12);
     if (!this.pillText) {
       this.pillText = this.add.text(cx, labelY, txt, {
         fontFamily: 'JetBrains Mono', fontSize: '14px', fontStyle: 'bold',
         color: d.paid >= d.amount ? '#7FE8C4' : '#FFFFFF',
       }).setOrigin(0.5);
-      this.nameText = this.add.text(cx, labelY + 16, '', {
+      this.nameText = this.add.text(cx, labelY + 18, '', {
         fontFamily: 'Manrope', fontSize: '12px', fontStyle: '700', color: '#E8F2F8',
       }).setOrigin(0.5);
-      this.payText = this.add.text(cx, labelY + 30, '', {
+      this.payText = this.add.text(cx, labelY + 34, '', {
         fontFamily: 'Manrope', fontSize: '10px', fontStyle: '700', color: '#F2B84B',
       }).setOrigin(0.5);
     }
     this.pillText.setPosition(cx, labelY).setText(txt)
       .setColor(d.paid >= d.amount ? '#7FE8C4' : '#FFFFFF');
-    this.nameText.setPosition(cx, labelY + 16).setText(d.name.length > 12 ? d.name.slice(0, 11) + '…' : d.name);
-    this.payText.setPosition(cx, labelY + 30).setVisible(!this.done).setText('🎯 PAYING THIS');
+    this.nameText.setPosition(cx, labelY + 18).setText(d.name.length > 12 ? d.name.slice(0, 11) + '…' : d.name);
+    this.payText.setPosition(cx, labelY + 34).setVisible(!this.done).setText('🎯 PAYING THIS');
   }
 
   private drawBall(): void {
