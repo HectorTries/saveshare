@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3T9QS61KD0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-3T9QS61KD0');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Snowball — bury your debt</title>
@@ -203,12 +211,12 @@
 
   <div class="setup-panel">
     <h3>Build your own snowball</h3>
-    <p class="hint">This starts with example debts so you can see how it works. Add your own below — balance, interest rate and months remaining — and your line re-sorts smallest to largest automatically.</p>
+    <p class="hint">This starts with example debts so you can see how it works. Add your own below — balance, interest rate and years remaining — and your line re-sorts smallest to largest automatically.</p>
     <div class="setup-grid">
       <div class="field"><label for="inName">Debt name</label><input type="text" id="inName" placeholder="e.g. Credit Card"></div>
       <div class="field"><label for="inBalance">Balance (£)</label><input type="number" id="inBalance" min="1" step="1" placeholder="1200"></div>
       <div class="field"><label for="inRate">Interest rate (APR %)</label><input type="number" id="inRate" min="0" step="0.1" placeholder="22.9"></div>
-      <div class="field"><label for="inTerm">Months remaining</label><input type="number" id="inTerm" min="1" step="1" placeholder="24"></div>
+      <div class="field"><label for="inTerm">Years remaining</label><input type="number" id="inTerm" min="1" step="1" placeholder="24"></div>
       <button class="add-btn" id="addDebtBtn">+ Add debt</button>
     </div>
     <div class="setup-foot">
@@ -242,7 +250,7 @@
   </div>
 
   <footer>
-    <b>Prototype note:</b> "interest saved" is an estimate — chip amount × monthly rate × months remaining on that debt — a simplified stand-in for a full amortization schedule, close enough to feel rewarding without pretending to be financial advice. The sky, snowfall and each iceberg's cracks are driven by your real numbers. Everything here lives in memory for the preview; the real build would keep this in on-device storage plus an export/import backup file.
+    <b>Prototype note:</b> "interest saved" is an estimate — chip amount × monthly rate × years remaining on that debt — a simplified stand-in for a full amortization schedule, close enough to feel rewarding without pretending to be financial advice. The sky, snowfall and each iceberg's cracks are driven by your real numbers. Everything here lives in memory for the preview; the real build would keep this in on-device storage plus an export/import backup file.
   </footer>
 
 </div>
@@ -250,19 +258,91 @@
 <script>
   const fmt = n => '£' + n.toLocaleString('en-GB', {maximumFractionDigits:0});
   const fmt2 = n => '£' + n.toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
+  function saveToStorage() {
+    localStorage.setItem('snowball_debts', JSON.stringify(debts));
+    localStorage.setItem('snowball_banked', banked);
+    localStorage.setItem('snowball_charges', charges);
+    localStorage.setItem('snowball_crushed', crushed);
+    localStorage.setItem('snowball_totalSaved', totalSaved);
+  }
+  function saveToStorage() {
+    localStorage.setItem('snowball_debts', JSON.stringify(debts));
+    localStorage.setItem('snowball_banked', banked);
+    localStorage.setItem('snowball_charges', charges);
+    localStorage.setItem('snowball_crushed', crushed);
+    localStorage.setItem('snowball_totalSaved', totalSaved);
+  }
+  function saveToStorage() {
+    localStorage.setItem('snowball_debts', JSON.stringify(debts));
+    localStorage.setItem('snowball_banked', banked);
+    localStorage.setItem('snowball_charges', charges);
+    localStorage.setItem('snowball_crushed', crushed);
+    localStorage.setItem('snowball_totalSaved', totalSaved);
+  }
+  function saveToStorage() {
+    localStorage.setItem('snowball_debts', JSON.stringify(debts));
+    localStorage.setItem('snowball_banked', banked);
+    localStorage.setItem('snowball_charges', charges);
+    localStorage.setItem('snowball_crushed', crushed);
+    localStorage.setItem('snowball_totalSaved', totalSaved);
+  }
+  function saveToStorage() {
+    localStorage.setItem('snowball_debts', JSON.stringify(debts));
+    localStorage.setItem('snowball_banked', banked);
+    localStorage.setItem('snowball_charges', charges);
+    localStorage.setItem('snowball_crushed', crushed);
+    localStorage.setItem('snowball_totalSaved', totalSaved);
+  }
+  function saveToStorage() {
+    localStorage.setItem('snowball_debts', JSON.stringify(debts));
+    localStorage.setItem('snowball_banked', banked);
+    localStorage.setItem('snowball_charges', charges);
+    localStorage.setItem('snowball_crushed', crushed);
+    localStorage.setItem('snowball_totalSaved', totalSaved);
+  }
+  function saveToStorage() {
+    localStorage.setItem('snowball_debts', JSON.stringify(debts));
+    localStorage.setItem('snowball_banked', banked);
+    localStorage.setItem('snowball_charges', charges);
+    localStorage.setItem('snowball_crushed', crushed);
+    localStorage.setItem('snowball_totalSaved', totalSaved);
+  }
+  function saveToStorage() {
+    localStorage.setItem('snowball_debts', JSON.stringify(debts));
+    localStorage.setItem('snowball_banked', banked);
+    localStorage.setItem('snowball_charges', charges);
+    localStorage.setItem('snowball_crushed', crushed);
+    localStorage.setItem('snowball_totalSaved', totalSaved);
+  }
+  function saveToStorage() {
+    localStorage.setItem('snowball_debts', JSON.stringify(debts));
+    localStorage.setItem('snowball_banked', banked);
+    localStorage.setItem('snowball_charges', charges);
+    localStorage.setItem('snowball_crushed', crushed);
+    localStorage.setItem('snowball_totalSaved', totalSaved);
+  }
+  function saveToStorage() {
+    localStorage.setItem('snowball_debts', JSON.stringify(debts));
+    localStorage.setItem('snowball_banked', banked);
+    localStorage.setItem('snowball_charges', charges);
+    localStorage.setItem('snowball_crushed', crushed);
+    localStorage.setItem('snowball_totalSaved', totalSaved);
+  }
 
-  let debts = [
-    { id:1, name:'Store Card',   balance:320,   original:500,   rate:24.9, termMonths:14 },
-    { id:2, name:'Overdraft',    balance:850,   original:850,   rate:39.9, termMonths:10 },
-    { id:3, name:'Car Loan',     balance:4200,  original:4200,  rate:7.9,  termMonths:36 },
-    { id:4, name:'Student Loan', balance:11500, original:11500, rate:5.5,  termMonths:96 },
+  // Load from localStorage or use demo data
+  let debts = JSON.parse(localStorage.getItem('snowball_debts')) || [
+    { id:1, name:'Mortgage',     balance:185000, original:185000, rate:4.2,  termMonths:300 },
+    { id:2, name:'Student Loan', balance:24500,  original:24500,  rate:5.5,  termMonths:180 },
+    { id:3, name:'Credit Card',  balance:4200,   original:4200,   rate:24.9, termMonths:36 },
+    { id:4, name:'Car Loan',     balance:9800,   original:9800,   rate:7.9,  termMonths:48 },
+    { id:5, name:'Personal Loan',balance:6500,   original:6500,   rate:11.4, termMonths:36 },
   ];
-  let nextId = 5;
-  let banked = 3;
-  let charges = 1;
-  let crushed = 0;
-  let totalSaved = 0;
-  let isDemo = true;
+  let nextId = Math.max(5, ...debts.map(d => d.id + 1));
+  let banked = parseInt(localStorage.getItem('snowball_banked')) || 3;
+  let charges = parseInt(localStorage.getItem('snowball_charges')) || 1;
+  let crushed = parseInt(localStorage.getItem('snowball_crushed')) || 0;
+  let totalSaved = parseFloat(localStorage.getItem('snowball_totalSaved')) || 0;
+  let isDemo = !localStorage.getItem('snowball_debts');
 
   const lineEl = document.getElementById('debtLine');
   const selectEl = document.getElementById('debtSelect');
@@ -350,6 +430,14 @@
   if(!reducedMotion) tickSnow(); else { ctx.clearRect(0,0,W,H); }
 
   // ---------- render ----------
+  function saveToStorage() {
+    localStorage.setItem('snowball_debts', JSON.stringify(debts));
+    localStorage.setItem('snowball_banked', banked);
+    localStorage.setItem('snowball_charges', charges);
+    localStorage.setItem('snowball_crushed', crushed);
+    localStorage.setItem('snowball_totalSaved', totalSaved);
+  }
+
   function render(){
     sortDebts();
     const remaining = debts.filter(d=>d.balance>0);
