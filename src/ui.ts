@@ -9,6 +9,7 @@ export interface HudState {
   shots: number;
   time: string;
   bar: number;
+  level: number;
 }
 
 export interface WinStats {
@@ -33,6 +34,7 @@ export function hideOverlays(): void {
   $('setupOverlay').classList.remove('show');
   $('paymentOverlay').classList.remove('show');
   $('roundOverlay').classList.remove('show');
+  $('levelOverlay').classList.remove('show');
 }
 
 function showSetup(): void {
@@ -90,7 +92,7 @@ function editDebts(): void {
 
 /* ---------- HUD ---------- */
 export function setHud(h: HudState): void {
-  $('hudGoal').textContent = 'Goal: £' + h.goal;
+  $('hudGoal').textContent = 'Level ' + h.level + '/3';
   $('hudPot').innerHTML = 'Pot <b>£' + fmt(h.pot) + '</b>';
   $('hudShots').textContent = 'Shots: ' + h.shots;
   $('hudTime').textContent = h.time;
@@ -99,6 +101,14 @@ export function setHud(h: HudState): void {
 
 export function setRoundInfo(txt: string): void {
   $('roundInfo').textContent = txt;
+}
+
+/* ---------- level clear ---------- */
+export function showLevelClear(level: number, credit: number, name: string): void {
+  $('levelTitle').textContent = `Level ${level} cleared!`;
+  $('levelSub').textContent = `💥 TNT exploded — £${credit} paid toward ${esc(name || 'this debt')}`;
+  hideOverlays();
+  $('levelOverlay').classList.add('show');
 }
 
 /* ---------- win screen ---------- */
@@ -166,6 +176,7 @@ export function initUI(): void {
   $('winEditBtn').addEventListener('click', editDebts);
   $('editBtn').addEventListener('click', editDebts);
   $('resetBtn').addEventListener('click', () => { if (bridge.onReset) bridge.onReset(); });
+  $('nextLevelBtn').addEventListener('click', () => { if (bridge.onNextLevel) bridge.onNextLevel(); });
   $('muteBtn').addEventListener('click', function () {
     setMuted(!isMuted());
     this.textContent = isMuted() ? '🔇' : '🔊';

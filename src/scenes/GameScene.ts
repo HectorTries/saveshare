@@ -8,7 +8,7 @@ import { MATS, BLEED, type MatKey, GROUND_Y, W, H } from '../core/materials';
 import { sfx } from '../core/audio';
 import { store, fmt } from '../core/state';
 import { bridge } from '../bridge';
-import { setHud, showWin, hideOverlays, setRoundInfo } from '../ui';
+import { setHud, showWin, showLevelClear, hideOverlays, setRoundInfo } from '../ui';
 
 /* ---------- constants (same feel as v1) ---------- */
 const SLING = { x: 200, y: GROUND_Y - 52 };
@@ -54,6 +54,10 @@ export class GameScene extends Phaser.Scene {
   private timerOn = false;
   private runStart = 0;
   private winSec = 0;
+  private level = 0;          // 0..2 → three towers per round
+  private levelsCleared = 0;
+  private levelCredit = 5;    // goal / 3, credited per level
+  private levelDone = false;  // guards double-clear
 
   private bgGfx!: Phaser.GameObjects.Graphics;
   private trajGfx!: Phaser.GameObjects.Graphics;
@@ -116,6 +120,7 @@ export class GameScene extends Phaser.Scene {
     bridge.onStartRun = (goal, idx) => this.startRun(goal, idx);
     bridge.onEditDebts = () => { /* overlay handled in ui; nothing to reset here */ };
     bridge.onReset = () => this.resetRun();
+    bridge.onNextLevel = () => this.nextLevel();
 
     // quick play: ?play=1
     if (typeof location !== 'undefined' && location.search.includes('play')) {
@@ -264,6 +269,10 @@ export class GameScene extends Phaser.Scene {
     this.clearRound();
     this.goal = Math.max(1, Math.min(10000, goal));
     this.payDebtIdx = payDebtIdx;
+    this.level = 0;
+    this.levelsCleared = 0;
+    this.levelCredit = Math.max(1, Math.round(this.goal / 3));
+    this.levelDone = false;
     this.pot = 0;
     this.shots = 0;
     this.tntHits = 0;
@@ -275,13 +284,17 @@ export class GameScene extends Phaser.Scene {
     this.buildTower();
     this.resetBall();
     this.runStart = performance.now();
-    setRoundInfo(`Speedrun • melt £${this.goal} • blocks: ice £3, wood £5, stone £4, TNT £10, crown £10`);
+    setRoundInfo(`Level 1/3 • blow up the TNT • each level pays £${this.levelCredit} of your £${this.goal} target`);
     this.syncHud(true);
   }
 
   resetRun(): void {
     if (this.done) return;
     this.clearRound();
+    this.level = 0;
+    this.levelsCleared = 0;
+    this.levelCredit = Math.max(1, Math.round(this.goal / 3));
+    this.levelDone = false;
     this.pot = 0;
     this.shots = 0;
     this.tntHits = 0;
@@ -291,6 +304,7 @@ export class GameScene extends Phaser.Scene {
     this.buildTower();
     this.resetBall();
     this.runStart = performance.now();
+    setRoundInfo(`Level 1/3 • blow up the TNT • each level pays £${this.levelCredit} of your £${this.goal} target`);
     this.syncHud(true);
   }
 
@@ -309,69 +323,96 @@ export class GameScene extends Phaser.Scene {
   }
 
   /* ================= tower construction =================
-     Solid 3-column stack. Blocks start STATIC = infinite mass anchors,
-     so the tower is rock-stable. Only the column above a destroyed block
-     becomes dynamic: it falls and lands on the support below, then
-     re-anchors once settled. TNT (high-interest APR) sits in the core. */
+     Three levels per round, each a fresh tower with a TNT bomb as the goal.
+     Blocks start STATIC = infinite mass anchors, so towers are rock-stable.
+     Only the column above a destroyed block becomes dynamic: it falls and
+     lands on the support below, then re-anchors once settled.
+     Rubble that settles on the ground gets poofed — no floor camping. */
   private buildTower(): void {
     const debt = store.debts[this.payDebtIdx];
     if (!debt) return;
-    const scale = clamp(Math.pow((debt.amount || 8000) / 8000, 1 / 3), 0.7, 1.55);
     const BW = 46, BH = 30, GAP = 2;
-    const x0 = W / 2 - 92;
-    const cx = x0 + BW * 3 / 2;
-    const colX = [x0, x0 + BW, x0 + BW * 2];
     const idx = this.payDebtIdx;
-
     const add = (x: number, y: number, w: number, h: number, mat: MatKey) => {
       this.addBlock(x + w / 2, y + h / 2, w, h, mat, idx);
     };
+    if (this.level === 0) this.buildLevel1(add, BW, BH, GAP);
+    else if (this.level === 1) this.buildLevel2(add, BW, BH, GAP);
+    else this.buildLevel3(add, BW, BH, GAP);
+  }
 
-    // Foundation: 3 stone bricks on the ground
+  /* Level 1 — “The Gate”: bomb buried low behind wood. Easy warm-up. */
+  private buildLevel1(add: (x: number, y: number, w: number, h: number, mat: MatKey) => void, BW: number, BH: number, GAP: number): void {
+    const x0 = W / 2 - 92;
+    const c = [x0, x0 + BW, x0 + BW * 2];
     let y = GROUND_Y - 26;
-    add(colX[0], y, BW, 26, 'stone');
-    add(colX[1], y, BW, 26, 'stone');
-    add(colX[2], y, BW, 26, 'stone');
-
-    // Row 0: wood sides, stone centre backbone
+    c.forEach((x) => add(x, y, BW, 26, 'stone'));                 // foundation
     y -= GAP + BH;
-    add(colX[0], y, BW, BH, 'wood');
-    add(colX[1], y, BW, BH, 'stone');
-    add(colX[2], y, BW, BH, 'wood');
-
-    // Row 1: TNT buried in the core — wood in front (stronger than ice), stone below
+    c.forEach((x) => add(x, y, BW, BH, 'wood'));                   // row 0
     y -= GAP + BH;
-    add(colX[0], y, BW, BH, 'wood');
-    add(colX[1], y, BW, BH, 'tnt');
-    add(colX[2], y, BW, BH, 'wood');
-
-    // Row 2: wood tier
+    add(c[0], y, BW, BH, 'wood'); add(c[1], y, BW, BH, 'tnt'); add(c[2], y, BW, BH, 'wood'); // row 1: bomb core
     y -= GAP + BH;
-    add(colX[0], y, BW, BH, 'wood');
-    add(colX[1], y, BW, BH, 'wood');
-    add(colX[2], y, BW, BH, 'wood');
-
-    // Row 3: ice upper storey (easy chip)
+    c.forEach((x) => add(x, y, BW, BH, 'wood'));                   // row 2
     y -= GAP + BH;
-    add(colX[0], y, BW, BH, 'ice');
-    add(colX[1], y, BW, BH, 'ice');
-    add(colX[2], y, BW, BH, 'ice');
-
-    // Row 4: extra ice for bigger debts
-    if (scale > 1.0) {
-      y -= GAP + BH;
-      add(colX[0], y, BW, BH, 'ice');
-      add(colX[1], y, BW, BH, 'ice');
-      add(colX[2], y, BW, BH, 'ice');
-    }
-
-    // Raised keep: centre column one extra ice tier
+    c.forEach((x) => add(x, y, BW, BH, 'ice'));                    // row 3
     y -= GAP + BH;
-    add(colX[1], y, BW, BH, 'ice');
-
-    // Gold crown on top of the keep
+    add(c[1], y, BW, BH, 'ice');                                   // keep
     y -= GAP + BH;
-    add(cx - BW / 2, y, BW, BH, 'gold');
+    add(c[1], y, BW, BH, 'gold');                                  // crown
+  }
+
+  /* Level 2 — “The Vault”: taller, stone shell, bomb deeper. */
+  private buildLevel2(add: (x: number, y: number, w: number, h: number, mat: MatKey) => void, BW: number, BH: number, GAP: number): void {
+    const x0 = W / 2 - 92;
+    const c = [x0, x0 + BW, x0 + BW * 2];
+    let y = GROUND_Y - 26;
+    c.forEach((x) => add(x, y, BW, 26, 'stone'));                 // foundation
+    y -= GAP + BH;
+    c.forEach((x) => add(x, y, BW, BH, 'stone'));                  // stone base
+    y -= GAP + BH;
+    add(c[0], y, BW, BH, 'wood'); add(c[1], y, BW, BH, 'tnt'); add(c[2], y, BW, BH, 'wood'); // bomb
+    y -= GAP + BH;
+    add(c[0], y, BW, BH, 'stone'); add(c[1], y, BW, BH, 'wood'); add(c[2], y, BW, BH, 'stone'); // armored
+    y -= GAP + BH;
+    c.forEach((x) => add(x, y, BW, BH, 'wood'));                   // row
+    y -= GAP + BH;
+    c.forEach((x) => add(x, y, BW, BH, 'ice'));                    // ice storey
+    y -= GAP + BH;
+    add(c[1], y, BW, BH, 'ice');                                   // keep
+    y -= GAP + BH;
+    add(c[1], y, BW, BH, 'gold');                                  // crown
+  }
+
+  /* Level 3 — “The Fortress”: tallest, bomb high in a keep, side ice pillars. */
+  private buildLevel3(add: (x: number, y: number, w: number, h: number, mat: MatKey) => void, BW: number, BH: number, GAP: number): void {
+    const x0 = W / 2 - 92;
+    const c = [x0, x0 + BW, x0 + BW * 2];
+    let y = GROUND_Y - 26;
+    c.forEach((x) => add(x, y, BW, 26, 'stone'));                 // foundation
+    y -= GAP + BH;
+    c.forEach((x) => add(x, y, BW, BH, 'stone'));                  // stone base
+    y -= GAP + BH;
+    add(c[0], y, BW, BH, 'wood'); add(c[1], y, BW, BH, 'tnt'); add(c[2], y, BW, BH, 'wood'); // bomb
+    y -= GAP + BH;
+    c.forEach((x) => add(x, y, BW, BH, 'stone'));                  // cap above bomb
+    y -= GAP + BH;
+    c.forEach((x) => add(x, y, BW, BH, 'wood'));                   // row
+    y -= GAP + BH;
+    c.forEach((x) => add(x, y, BW, BH, 'ice'));                    // ice storey
+    y -= GAP + BH;
+    add(c[1], y, BW, BH, 'ice');                                   // keep
+    y -= GAP + BH;
+    add(c[1], y, BW, BH, 'gold');                                  // crown
+    // side ice pillars
+    let py = GROUND_Y - 26;
+    add(x0 - BW, py, BW, 26, 'ice');
+    add(x0 + BW * 3, py, BW, 26, 'ice');
+    py -= GAP + BH;
+    add(x0 - BW, py, BW, BH, 'ice');
+    add(x0 + BW * 3, py, BW, BH, 'ice');
+    py -= GAP + BH;
+    add(x0 - BW, py, BW, BH, 'ice');
+    add(x0 + BW * 3, py, BW, BH, 'ice');
   }
 
   private addBlock(x: number, y: number, w: number, h: number, mat: MatKey, debtIdx: number): BlockRec {
@@ -502,11 +543,13 @@ export class GameScene extends Phaser.Scene {
       let vn = rvx * n.x + rvy * n.y;
       if (vn < 0) vn = -vn; // approach speed
       const dmg = Math.max(0, vn) * 0.05;
+      // the bomb is the level goal: any solid hit detonates it
+      const tntHit = rec.mat === 'tnt' && vn > 1.5;
 
-      if (dmg > 0.12) {
+      if (dmg > 0.12 || tntHit) {
         rec.hp -= dmg;
         this.spawnCrack(rec.body.position.x, rec.body.position.y);
-        if (rec.hp <= 0) this.destroyBlock(rec, 'hit');
+        if (rec.hp <= 0 || tntHit) this.destroyBlock(rec, 'hit');
         else {
           sfx.chip();
           this.flashBlock(rec);
@@ -522,6 +565,22 @@ export class GameScene extends Phaser.Scene {
         y: ballB.velocity.y * bleed,
       });
       if (vn > 1.2) sfx.thud();
+    }
+  }
+
+  private poofBlock(rec: BlockRec): void {
+    if (rec.dead) return;
+    rec.dead = true;
+    const x = rec.img.x, y = rec.img.y;
+    this.removeQueue.push(rec.body);
+    this.destroyQueue.push(rec.img);
+    this.blockByBody.delete(rec.body);
+    // small poof puff so it doesn't just vanish
+    for (let i = 0; i < 6; i++) {
+      this.burst(x, y, {
+        count: 1, speed: Math.random() * 2.5 + 0.5, angle: Math.random() * Math.PI * 2,
+        color: 0xffffff, size: Math.random() * 3 + 1.5, life: 400, grav: 0.1,
+      });
     }
   }
 
@@ -545,7 +604,11 @@ export class GameScene extends Phaser.Scene {
     this.floater(bx, by - rec.img.displayHeight / 2, `+£${rec.value}`, rec.mat === 'gold' || rec.mat === 'tnt');
     this.spawnDebris(rec);
     if (rec.mat === 'gold' || rec.mat === 'tnt') sfx.coin();
-    if (rec.mat === 'tnt') { this.tntHits++; this.explode(bx, by); }
+    if (rec.mat === 'tnt') {
+      this.tntHits++;
+      this.explode(bx, by);
+      this.onTntBlown(); // bomb = the level goal
+    }
     sfx.crack();
 
     // blocks above in the same column lose support: fall and land on the block below
@@ -558,7 +621,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
     this.syncHud(true);
-    this.checkWin();
   }
 
   private explode(x: number, y: number): void {
@@ -587,20 +649,41 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /* ================= win ================= */
-  private checkWin(): void {
-    if (this.done) return;
-    if (this.pot >= this.goal) {
-      this.done = true;
-      this.winSec = Math.round((performance.now() - this.runStart) / 1000); // freeze timer at win moment
-      const d = store.debts[this.payDebtIdx];
-      if (d) {
-        d.paid = Math.min(d.amount, (d.paid || 0) + this.goal);
-        store.save();
-      }
-      if (this.winT) this.winT.remove();
-      this.winT = this.time.delayedCall(650, () => this.showWin());
+  /* ================= win / level flow ================= */
+  /* TNT exploded → level cleared. Credit goal/3 toward the debt.
+     After 3 levels → round win (total shots/time across all three). */
+  private onTntBlown(): void {
+    if (this.done || this.levelDone) return;
+    this.levelDone = true;
+    this.levelsCleared++;
+    const d = store.debts[this.payDebtIdx];
+    const credit = this.levelCredit;
+    if (d) {
+      d.paid = Math.min(d.amount, (d.paid || 0) + credit);
+      store.save();
     }
+    this.pot += credit;
+    this.syncHud(true);
+    if (this.levelsCleared >= 3) {
+      this.done = true;
+      this.winSec = Math.round((performance.now() - this.runStart) / 1000); // freeze total time
+      this.winT = this.time.delayedCall(900, () => this.showWin());
+    } else {
+      this.winT = this.time.delayedCall(800, () => {
+        showLevelClear(this.level + 1, credit, d ? d.name : '');
+      });
+    }
+  }
+
+  private nextLevel(): void {
+    hideOverlays();
+    this.level++;
+    this.levelDone = false;
+    this.clearRound();
+    this.buildTower();
+    this.resetBall();
+    setRoundInfo(`Level ${this.level + 1}/3 • blow up the TNT • each level pays £${this.levelCredit} of your £${this.goal} target`);
+    this.syncHud(true);
   }
 
   private showWin(): void {
@@ -610,15 +693,15 @@ export class GameScene extends Phaser.Scene {
     const dName = d ? esc(d.name || 'this debt') : 'your debt';
     const left = d ? Math.max(0, d.amount - d.paid) : 0;
     let stars: string, rank: string;
-    if (this.shots <= 2) { stars = '★★★'; rank = 'SABRE-class Melt!'; }
-    else if (this.shots <= 5) { stars = '★★☆'; rank = 'Blizzard Blitz'; }
-    else if (this.shots <= 9) { stars = '★☆☆'; rank = 'Snowball Sniper'; }
+    if (this.shots <= 6) { stars = '★★★'; rank = 'SABRE-class Melt!'; }
+    else if (this.shots <= 10) { stars = '★★☆'; rank = 'Blizzard Blitz'; }
+    else if (this.shots <= 15) { stars = '★☆☆'; rank = 'Snowball Sniper'; }
     else { stars = '★☆☆'; rank = 'Grind it out'; }
     const interest = this.tntHits * 12;
     showWin({
-      emoji: this.shots <= 1 ? '🏆' : '💸',
-      title: 'Payment logged!',
-      sub: `£${this.goal} paid toward ${dName} — £${fmt(left)} to go.` + (this.tntHits > 0 ? ` 💥 +£${interest} interest saved by melting the high-interest blocks first!` : ''),
+      emoji: this.shots <= 6 ? '🏆' : '💸',
+      title: 'All 3 levels cleared!',
+      sub: `£${this.goal} paid toward ${dName} across 3 levels — £${fmt(left)} to go.` + (this.tntHits > 0 ? ` 💥 +£${interest} interest saved by blowing up the bombs!` : ''),
       stars, rank,
       pot: Math.min(this.pot, this.goal), shots: this.shots, time: timeStr, interest,
     });
@@ -640,6 +723,7 @@ export class GameScene extends Phaser.Scene {
       shots: this.shots,
       time: this.timerOn ? this.timeStr() : '00:00',
       bar: clamp(this.pot / this.goal * 100, 0, 100),
+      level: this.level + 1,
     });
   }
 
@@ -719,7 +803,8 @@ export class GameScene extends Phaser.Scene {
       this.destroyQueue.length = 0;
     }
 
-    // settle: re-anchor blocks that have come to rest (only disturbed columns fall)
+    // settle: re-anchor blocks that have come to rest, EXCEPT rubble that
+    // landed on the ground — that poofs away so you never shoot floor debris.
     const M: any = (Phaser.Physics.Matter as any).Matter;
     for (const b of this.blocks) {
       if (b.dead) continue;
@@ -727,8 +812,19 @@ export class GameScene extends Phaser.Scene {
       if (b.body.isStatic) continue;
       if (spd < 0.18) {
         if (++b.settleT > 25) {
-          M.Body.setStatic(b.body, true);
-          this.setVel(b.body, 0, 0);
+          const bottom = b.img.y + b.img.displayHeight / 2;
+          if (bottom >= GROUND_Y - 6) {
+            // resting on the ground → poof it away
+            if (b.mat === 'tnt') {
+              this.destroyBlock(b, 'boom'); // bomb on the floor still blows up the level
+            } else {
+              this.poofBlock(b);
+            }
+          } else {
+            // resting on the tower → part of the structure now
+            M.Body.setStatic(b.body, true);
+            this.setVel(b.body, 0, 0);
+          }
           b.settleT = 0;
         }
       } else b.settleT = 0;
