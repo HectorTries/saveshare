@@ -15,12 +15,16 @@ export function hideOverlays(): void {
   $('setupOverlay').classList.remove('show');
   $('previewOverlay').classList.remove('show');
   $('resultOverlay').classList.remove('show');
+  bus.emit('input-unlock');
 }
+
+function lockInput(): void { bus.emit('input-lock'); }
 
 function showSetup(): void {
   hideOverlays();
   renderDebtList();
   $('setupOverlay').classList.add('show');
+  lockInput();
 }
 
 /* ---------- debt editor (now with APR + months) ---------- */
@@ -88,6 +92,7 @@ function showPreview(idx: number): void {
   $('prevTip').textContent = 'This payment is worth more now than it will be in 6 months. Steer into the crack during the roll for a bigger interest bonus.';
   hideOverlays();
   $('previewOverlay').classList.add('show');
+  lockInput();
 }
 
 /* ---------- hit result readout ---------- */
@@ -114,6 +119,7 @@ function showResult(s: RollStats): void {
     : `${money(s.interest)} base × ${s.critMult}${s.crit === 'none' ? '' : ' crit'} × ${s.comboMult.toFixed(1)} combo`;
   hideOverlays();
   $('resultOverlay').classList.add('show');
+  lockInput();
 }
 
 /* ---------- HUD ---------- */

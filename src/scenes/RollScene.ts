@@ -110,6 +110,8 @@ export class RollScene extends Phaser.Scene {
 
     bus.on('hit-again', this.onHitAgain, this);
     bus.on('to-overview', this.onToOverview, this);
+    bus.on('input-lock', this.onInputLock, this);
+    bus.on('input-unlock', this.onInputUnlock, this);
 
     sfx.roll();
     this.tweens.addCounter({
@@ -122,6 +124,8 @@ export class RollScene extends Phaser.Scene {
   shutdown(): void {
     bus.off('hit-again', this.onHitAgain, this);
     bus.off('to-overview', this.onToOverview, this);
+    bus.off('input-lock', this.onInputLock, this);
+    bus.off('input-unlock', this.onInputUnlock, this);
   }
 
   /* ---------- scenery ---------- */
@@ -395,5 +399,13 @@ export class RollScene extends Phaser.Scene {
 
   private onToOverview(): void {
     this.scene.start('Overview');
+  }
+
+  private onInputLock(): void {
+    this.input.enabled = false;
+  }
+
+  private onInputUnlock(): void {
+    this.input.enabled = true;
   }
 }

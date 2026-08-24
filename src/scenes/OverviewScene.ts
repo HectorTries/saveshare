@@ -40,6 +40,8 @@ export class OverviewScene extends Phaser.Scene {
     bus.on('start', this.onStart, this);
     bus.on('roll-cancel', this.onRollCancel, this);
     bus.on('roll-confirm', this.onRollConfirm, this);
+    bus.on('input-lock', this.onInputLock, this);
+    bus.on('input-unlock', this.onInputUnlock, this);
 
     this.drawTowers();
     this.drawStrategyToggle();
@@ -52,6 +54,8 @@ export class OverviewScene extends Phaser.Scene {
     bus.off('start', this.onStart, this);
     bus.off('roll-cancel', this.onRollCancel, this);
     bus.off('roll-confirm', this.onRollConfirm, this);
+    bus.off('input-lock', this.onInputLock, this);
+    bus.off('input-unlock', this.onInputUnlock, this);
   }
 
   /* ---------- towers ---------- */
@@ -189,6 +193,14 @@ export class OverviewScene extends Phaser.Scene {
     const idx = this.pendingIdx;
     this.pendingIdx = -1;
     this.scene.start('Roll', { towerIdx: idx, chip: prefs.chip });
+  }
+
+  private onInputLock(): void {
+    this.input.enabled = false;
+  }
+
+  private onInputUnlock(): void {
+    this.input.enabled = true;
   }
 
   private emitHud(): void {
