@@ -217,8 +217,8 @@ export class RollScene extends Phaser.Scene {
 
   private drawTowerAhead(): void {
     const d = store.debts[this.towerIdx];
-    this.towerC = drawTower(this, VP.x, VP.y + 150, d, this.towerIdx, {
-      showLabels: false, scale: 0.42,
+    this.towerC = drawTower(this, VP.x, VP.y + 24, d, this.towerIdx, {
+      showLabels: false, scale: 0.13, // distant at the end of the run way
     });
     this.towerC.setDepth(2);
     // crit crack marker (gold glow, scaled with tower)
@@ -240,7 +240,7 @@ export class RollScene extends Phaser.Scene {
     cg.lineTo(cx + 2, cy + 4);
     cg.lineTo(cx + 9, cy + 12);
     cg.strokePath();
-    this.crack = this.add.container(VP.x, VP.y + 150, [cg]);
+    this.crack = this.add.container(VP.x, VP.y + 24, [cg]);
     this.crack.setDepth(3);
     this.crack.setVisible(false);
   }
@@ -341,9 +341,11 @@ export class RollScene extends Phaser.Scene {
     this.trail.setPosition(bx, by + r * 0.7);
     this.trail.frequency = Phaser.Math.Linear(34, 10, e);
 
-    // tower looms ahead, growing as we approach
-    const ts = Phaser.Math.Linear(0.42, 2.05, e);
-    const ty = Phaser.Math.Linear(VP.y + 150, H - 55, e);
+    // tower sits at the END of the run way — small on the horizon for most of
+    // the run, then looms in the final stretch as you close in (perspective curve)
+    const tp = Math.pow(e, 1.8);
+    const ts = Phaser.Math.Linear(0.13, 2.1, tp);
+    const ty = Phaser.Math.Linear(VP.y + 24, H - 45, tp);
     this.towerC.setScale(ts);
     this.towerC.setPosition(VP.x, ty);
 
@@ -609,8 +611,8 @@ export class RollScene extends Phaser.Scene {
       if (!this.scene.isActive()) return;
       this.towerC.destroy();
       this.crack.destroy();
-      this.towerC = drawTower(this, VP.x, H - 55, store.debts[this.towerIdx], this.towerIdx, {
-        showLabels: false, scale: 2.05,
+      this.towerC = drawTower(this, VP.x, H - 45, store.debts[this.towerIdx], this.towerIdx, {
+        showLabels: false, scale: 2.1,
       });
       this.towerC.setDepth(2);
     }, 320);
