@@ -16,6 +16,10 @@ const game = new Phaser.Game({
   width: 1280,
   height: 640,
   transparent: true, // CSS sky/mountains/snow show through
+  input: {
+    // don't let clicks on DOM overlays/buttons leak into game hit-testing
+    windowEvents: false,
+  },
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

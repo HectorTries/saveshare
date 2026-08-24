@@ -75,6 +75,7 @@ export class RollScene extends Phaser.Scene {
   create(): void {
     const d = store.debts[this.towerIdx];
     if (!d || pctPaid(d) >= 1) { this.scene.start('Overview'); return; }
+    this.input.enabled = true;
 
     // white pixel texture for particles
     if (!this.textures.exists('pix')) {

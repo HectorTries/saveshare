@@ -35,6 +35,7 @@ export class OverviewScene extends Phaser.Scene {
     this.rings = [];
     this.chipBtns = [];
     this.stratBtns = [];
+    this.input.enabled = true;
     this.scene.bringToTop();
 
     bus.on('start', this.onStart, this);
