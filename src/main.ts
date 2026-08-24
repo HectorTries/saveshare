@@ -1,31 +1,26 @@
 import Phaser from 'phaser';
 import './style.css';
-import { GameScene } from './scenes/GameScene';
+import { OverviewScene } from './scenes/OverviewScene';
+import { RollScene } from './scenes/RollScene';
 import { initUI } from './ui';
 import { startSnow } from './snow';
+import { initAudio } from './core/audio';
 
 startSnow();
 initUI();
+initAudio();
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game-host',
   width: 1280,
   height: 640,
-  backgroundColor: '#0F1A2E',
+  transparent: true, // CSS sky/mountains/snow show through
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  physics: {
-    default: 'matter',
-    matter: {
-      gravity: { x: 0, y: 1 },
-      enableSleeping: true,
-      debug: false,
-    },
-  },
-  scene: [GameScene],
+  scene: [OverviewScene, RollScene],
 });
 
 // debug hook for headless testing

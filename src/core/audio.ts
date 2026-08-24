@@ -44,4 +44,9 @@ export const sfx = {
   paid(): void { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.14, 'triangle', 0.18), i * 90)); },
   win(): void { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => setTimeout(() => beep(f, 0.18, 'triangle', 0.16), i * 110)); },
   tnt(): void { beep(200, 0.3, 'sawtooth', 0.12, 60); noiseBurst(0.25, 0.3, 300); },
+  select(): void { beep(660, 0.08, 'triangle', 0.12); },
+  crit(): void { beep(1200, 0.12, 'square', 0.12); setTimeout(() => beep(1800, 0.15, 'square', 0.1), 80); },
+  milestone(): void { this.boom(); [523, 659, 784].forEach((f, i) => setTimeout(() => beep(f, 0.16, 'triangle', 0.2), i * 90)); },
+  roll(): void { noiseBurst(0.5, 0.05, 700); },
+  whoosh(): void { noiseBurst(0.3, 0.12, 500); },
 };

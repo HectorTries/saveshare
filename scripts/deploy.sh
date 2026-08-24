@@ -13,7 +13,7 @@ cp dist/index.html ./index.html
 
 echo "→ Committing and pushing..."
 git add -A
-git commit -m "deploy: v2 Phaser build $(date +%Y-%m-%d)" || echo "Nothing to commit"
+git commit -m "deploy: v3 redesign Phaser build $(date +%Y-%m-%d)" || echo "Nothing to commit"
 git push origin master
 
 echo "✅ Deployed. Give GH Pages ~1-2 min to rebuild."
