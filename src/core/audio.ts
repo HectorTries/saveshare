@@ -49,4 +49,7 @@ export const sfx = {
   milestone(): void { this.boom(); [523, 659, 784].forEach((f, i) => setTimeout(() => beep(f, 0.16, 'triangle', 0.2), i * 90)); },
   roll(): void { noiseBurst(0.5, 0.05, 700); },
   whoosh(): void { noiseBurst(0.3, 0.12, 500); },
+  jump(): void { beep(280, 0.18, 'sine', 0.1, 520); noiseBurst(0.15, 0.08, 800); },
+  land(): void { beep(120, 0.09, 'sine', 0.14, 70); noiseBurst(0.06, 0.12, 400); },
+  boost(): void { beep(660, 0.1, 'square', 0.1); setTimeout(() => beep(990, 0.1, 'square', 0.1), 70); setTimeout(() => beep(1320, 0.14, 'square', 0.1), 140); },
 };

@@ -1,8 +1,10 @@
 /* ============================================================
-   Roll — short first-person sequence: you ARE the snowball,
-   rolling downhill at the tower. Lane-steer (keys / hold left
-   or right half of the screen), steer into the telegraphed
-   crack before impact. No RNG — the variance is all skill.
+   Roll — chase-cam downhill run. You're a snowball picking up
+   speed, catching air over ramps, grabbing boost orbs, and
+   slamming into the tower — which visibly sheds chunks of ice.
+   Lane-steer (keys / hold left or right half of the screen),
+   steer into the telegraphed crack before impact. No RNG —
+   the variance is all skill.
    ============================================================ */
 import Phaser from 'phaser';
 import {
@@ -10,16 +12,30 @@ import {
   interestDestroyed, type HitOutcome,
 } from '../core/state';
 import { drawTower } from '../core/towerRender';
+import { ensureGameTextures } from '../core/textures';
 import { sfx } from '../core/audio';
 import { bus } from '../core/bus';
 
 const W = 1280;
 const H = 640;
-const VP = { x: 640, y: 268 };          // vanishing point
-const LANE_SPACING = 118;               // px between lanes at the ball's depth
-const DURATION = 2800;                  // ms of roll
-const TELEGRAPH_T = 0.45;               // when the crack appears
-const LATE_T = 0.62;                    // entering the crack lane after this = "late commit"
+const VP = { x: 640, y: 236 };          // vanishing point (horizon)
+const LANE_SPACING = 110;               // px between lanes at the ball's depth
+const DURATION = 4600;                  // ms of roll — longer, builds up
+const TELEGRAPH_T = 0.5;                // when the crack appears
+const LATE_T = 0.65;                    // entering the crack lane after this = "late commit"
+const JUMPS = [
+  { t0: 0.26, t1: 0.40, h: 58 },
+  { t0: 0.54, t1: 0.68, h: 78 },
+];
+const BOOSTS = [
+  { t: 0.16, lane: -1 },
+  { t: 0.40, lane: 1 },
+  { t: 0.60, lane: 0 },
+];
+const TREES = [
+  { t: 0.12, side: -1 }, { t: 0.28, side: 1 }, { t: 0.44, side: -1 },
+  { t: 0.58, side: 1 }, { t: 0.72, side: -1 },
+];
 
 export interface RollStats {
   debtIdx: number;
@@ -49,14 +65,23 @@ export class RollScene extends Phaser.Scene {
   private t = 0;
   private done = false;
   private hitApplied = false;
+  private boosted = 0;                 // boost glow timer (s)
+  private treesDone = new Set<number>();
 
   private ball!: Phaser.GameObjects.Container;
+  private ballImg!: Phaser.GameObjects.Image;
+  private eyes!: Phaser.GameObjects.Container;
+  private shadow!: Phaser.GameObjects.Ellipse;
   private towerC!: Phaser.GameObjects.Container;
   private crack!: Phaser.GameObjects.Container;
   private laneLights: Phaser.GameObjects.Graphics[] = [];
   private steerHint!: Phaser.GameObjects.Text;
   private streaks!: Phaser.GameObjects.Graphics;
+  private groundFlow!: Phaser.GameObjects.Graphics;
+  private ramps!: Phaser.GameObjects.Graphics;
+  private boostOrbs!: Phaser.GameObjects.Container;
   private trail!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private boostTexts: Phaser.GameObjects.Text[] = [];
 
   constructor() { super('Roll'); }
 
@@ -69,6 +94,8 @@ export class RollScene extends Phaser.Scene {
     this.done = false;
     this.hitApplied = false;
     this.enterT = -1;
+    this.boosted = 0;
+    this.treesDone.clear();
     this.critLane = Phaser.Math.Between(-1, 1);
   }
 
@@ -76,17 +103,10 @@ export class RollScene extends Phaser.Scene {
     const d = store.debts[this.towerIdx];
     if (!d || pctPaid(d) >= 1) { this.scene.start('Overview'); return; }
     this.input.enabled = true;
-
-    // white pixel texture for particles
-    if (!this.textures.exists('pix')) {
-      const g = this.add.graphics();
-      g.fillStyle(0xFFFFFF, 1);
-      g.fillRect(0, 0, 8, 8);
-      g.generateTexture('pix', 8, 8);
-      g.destroy();
-    }
+    ensureGameTextures(this);
 
     this.drawSlope();
+    this.drawRamps();
     this.drawBall();
     this.drawTowerAhead();
     this.drawLaneLights();
@@ -95,6 +115,16 @@ export class RollScene extends Phaser.Scene {
       fontFamily: '"Baloo 2"', fontSize: '18px', color: '#F4F8FB',
     }).setOrigin(0.5).setAlpha(0);
     this.streaks = this.add.graphics();
+    this.groundFlow = this.add.graphics();
+    this.boostOrbs = this.add.container(0, 0);
+
+    // opening beat
+    const go = this.add.text(W / 2, VP.y + 90, 'HERE WE GO!', {
+      fontFamily: '"Baloo 2"', fontSize: '34px', color: '#F4F8FB',
+      stroke: '#16283D', strokeThickness: 8,
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: go, alpha: 0, y: VP.y + 60, duration: 700, delay: 500 });
+    this.tweens.add({ targets: go, y: VP.y + 120, duration: 500, yoyo: true, ease: 'Quad.easeOut' });
 
     // input
     const keys = this.input.keyboard!.addKeys('LEFT,RIGHT,A,D') as Record<string, Phaser.Input.Keyboard.Key>;
@@ -111,8 +141,6 @@ export class RollScene extends Phaser.Scene {
 
     bus.on('hit-again', this.onHitAgain, this);
     bus.on('to-overview', this.onToOverview, this);
-    bus.on('input-lock', this.onInputLock, this);
-    bus.on('input-unlock', this.onInputUnlock, this);
 
     sfx.roll();
     this.tweens.addCounter({
@@ -125,67 +153,77 @@ export class RollScene extends Phaser.Scene {
   shutdown(): void {
     bus.off('hit-again', this.onHitAgain, this);
     bus.off('to-overview', this.onToOverview, this);
-    bus.off('input-lock', this.onInputLock, this);
-    bus.off('input-unlock', this.onInputUnlock, this);
   }
 
   /* ---------- scenery ---------- */
   private drawSlope(): void {
     const g = this.add.graphics();
     // sky band above horizon handled by CSS; slope below
-    g.fillStyle(0xEAF4FA, 0.9);
-    g.fillPoints([
-      { x: 0, y: H }, { x: W, y: H }, { x: W, y: VP.y + 40 }, { x: 0, y: VP.y + 40 },
+    const grad = this.add.graphics();
+    grad.fillStyle(0xEAF4FA, 0.9);
+    grad.fillPoints([
+      { x: 0, y: H }, { x: W, y: H }, { x: W, y: VP.y + 30 }, { x: 0, y: VP.y + 30 },
     ], true);
-    // converging lane guides
-    g.lineStyle(5, 0xFFFFFF, 0.7);
-    const bottoms = [-LANE_SPACING * 3.2, 0, LANE_SPACING * 3.2];
-    bottoms.forEach((off) => {
+    // converging lane guides (3 lanes)
+    g.lineStyle(6, 0xFFFFFF, 0.75);
+    [-1, 0, 1].forEach((off) => {
       g.beginPath();
-      g.moveTo(VP.x + off * 0.14, VP.y + 20);
-      g.lineTo(VP.x + off, H);
+      g.moveTo(VP.x + off * 26, VP.y + 26);
+      g.lineTo(VP.x + off * LANE_SPACING * 3.4, H);
       g.strokePath();
     });
     // side snowbanks
     g.fillStyle(0xFFFFFF, 0.95);
-    g.fillEllipse(70, H - 30, 300, 90);
-    g.fillEllipse(W - 70, H - 30, 300, 90);
+    g.fillEllipse(60, H - 26, 320, 96);
+    g.fillEllipse(W - 60, H - 26, 320, 96);
+    this.add.text(VP.x, VP.y - 30, '', { fontFamily: '"Manrope"', fontSize: '12px', color: '#9FB2C4' });
+  }
+
+  private drawRamps(): void {
+    const g = this.add.graphics();
+    g.fillStyle(0xF2F9FC, 1);
+    JUMPS.forEach((j) => {
+      const y = this.pathY(j.t0);
+      const spread = this.spread(j.t0);
+      // ramp lip across the road
+      g.fillTriangle(VP.x - spread * 3.1, y + 26, VP.x + spread * 3.1, y + 26, VP.x, y - 12);
+      g.lineStyle(3, 0xC9DEE9, 0.9);
+      g.beginPath();
+      g.moveTo(VP.x - spread * 3.1, y + 26);
+      g.lineTo(VP.x + spread * 3.1, y + 26);
+      g.strokePath();
+    });
+    this.ramps = g;
   }
 
   private drawBall(): void {
-    const d = store.debts[this.towerIdx];
-    const comboBonus = Math.min(Math.max(combo.count - 1, 0), 6);
-    const r = 20 + comboBonus * 3.5;
-    const g = this.add.graphics();
-    g.fillStyle(0xFFFFFF, 1);
-    g.fillCircle(0, 0, r);
-    g.fillStyle(0xCFE8F5, 0.8);
-    g.fillCircle(-r * 0.28, -r * 0.3, r * 0.32);
-    g.fillCircle(r * 0.3, r * 0.2, r * 0.22);
-    g.lineStyle(2.5, 0x9CCFE2, 1);
-    g.strokeCircle(0, 0, r);
-    // craters
-    g.fillStyle(0xB9D9E8, 0.9);
-    [[0.25, -0.5], [-0.5, 0.15], [0.5, 0.45], [-0.1, 0.6]].forEach(([cx, cy]) => {
-      g.fillCircle(cx * r, cy * r, r * 0.16);
-    });
-    // eyes — it's you, rolling at your debt
-    g.fillStyle(0x16283D, 1);
-    g.fillCircle(-r * 0.3, -r * 0.05, r * 0.09);
-    g.fillCircle(r * 0.3, -r * 0.05, r * 0.09);
-    this.ball = this.add.container(W / 2, H - 84, [g]);
+    const r = 20 + Math.min(Math.max(combo.count - 1, 0), 6) * 3.5;
+    this.ballImg = this.add.image(0, 0, 'snowball').setDisplaySize(r * 2.4, r * 2.4);
+    // eyes — counter-rotate so they stay upright while the ball rolls
+    this.eyes = this.add.container(0, 0);
+    const eyeG = this.add.graphics();
+    eyeG.fillStyle(0x16283D, 1);
+    eyeG.fillCircle(-r * 0.32, -r * 0.06, r * 0.1);
+    eyeG.fillCircle(r * 0.32, -r * 0.06, r * 0.1);
+    eyeG.fillStyle(0xFFFFFF, 1);
+    eyeG.fillCircle(-r * 0.36, -r * 0.1, r * 0.04);
+    eyeG.fillCircle(r * 0.28, -r * 0.1, r * 0.04);
+    this.eyes.add(eyeG);
+    this.ball = this.add.container(W / 2, H - 90, [this.ballImg, this.eyes]);
     this.ball.setDepth(5);
+    this.shadow = this.add.ellipse(W / 2, H - 74, 60, 16, 0x0B1524, 0.35);
+    this.shadow.setDepth(4);
   }
 
   private drawTowerAhead(): void {
     const d = store.debts[this.towerIdx];
-    this.towerC = drawTower(this, VP.x, VP.y, d, this.towerIdx, {
-      showLabels: false, scale: 0.3,
+    this.towerC = drawTower(this, VP.x, VP.y + 150, d, this.towerIdx, {
+      showLabels: false, scale: 0.42,
     });
     this.towerC.setDepth(2);
     // crit crack marker (gold glow, scaled with tower)
     const cg = this.add.graphics();
-    const cx = this.critLane * 62;
+    const cx = this.critLane * 60;
     const cy = -150;
     cg.fillStyle(0xF2B84B, 0.35);
     cg.fillCircle(cx, cy, 26);
@@ -202,7 +240,7 @@ export class RollScene extends Phaser.Scene {
     cg.lineTo(cx + 2, cy + 4);
     cg.lineTo(cx + 9, cy + 12);
     cg.strokePath();
-    this.crack = this.add.container(VP.x, VP.y, [cg]);
+    this.crack = this.add.container(VP.x, VP.y + 150, [cg]);
     this.crack.setDepth(3);
     this.crack.setVisible(false);
   }
@@ -221,21 +259,46 @@ export class RollScene extends Phaser.Scene {
 
   private makeTrail(): void {
     this.trail = this.add.particles(0, 0, 'pix', {
-      speed: { min: 30, max: 90 },
-      angle: { min: 60, max: 120 },
-      scale: { start: 0.6, end: 0 },
-      alpha: { start: 0.7, end: 0 },
-      lifespan: 450,
-      frequency: 28,
+      speed: { min: 40, max: 130 },
+      angle: { min: 70, max: 110 },
+      scale: { start: 0.7, end: 0 },
+      alpha: { start: 0.75, end: 0 },
+      lifespan: 480,
+      frequency: 24,
       quantity: 2,
       tint: 0xFFFFFF,
     });
     this.trail.setDepth(4);
   }
 
+  /* ---------- easing helpers ---------- */
+  /** eased 0..1 progress — starts slow, builds up speed */
+  private ease(t: number): number {
+    return t * t * (3 - 2 * t); // smoothstep-ish acceleration
+  }
+
+  private pathY(t: number): number {
+    return Phaser.Math.Linear(VP.y + 34, H - 92, this.ease(t));
+  }
+
+  private spread(t: number): number {
+    return Phaser.Math.Linear(16, LANE_SPACING, this.ease(t));
+  }
+
+  private jumpOffset(t: number): number {
+    for (const j of JUMPS) {
+      if (t >= j.t0 && t <= j.t1) {
+        const k = (t - j.t0) / (j.t1 - j.t0);
+        return -Math.sin(k * Math.PI) * j.h; // parabolic arc upward
+      }
+    }
+    return 0;
+  }
+
   /* ---------- per-frame ---------- */
   private advance(t: number): void {
     this.t = t;
+    const e = this.ease(t);
 
     // steering: move + ease toward nearest lane when no input
     if (this.steer !== 0) {
@@ -247,31 +310,53 @@ export class RollScene extends Phaser.Scene {
 
     // track first entry into the crit lane (for late/early commit)
     const band = Math.round(this.lane);
-    if (band === this.critLane && this.enterT < 0 && t > 0.15) this.enterT = t;
+    if (band === this.critLane && this.enterT < 0 && t > TELEGRAPH_T - 0.05) this.enterT = t;
 
-    // ball position + rolling rotation + grow with combo
+    // ball travels toward camera + lane
+    const bx = VP.x + this.lane * this.spread(t);
+    const by = this.pathY(t) + this.jumpOffset(t);
+    const inAir = this.jumpOffset(t) < -2;
+    const speed = 0.6 + e * 0.9; // rolling speed factor
+
     const r = 20 + Math.min(Math.max(combo.count - 1, 0), 6) * 3.5;
-    this.ball.setPosition(W / 2 + this.lane * LANE_SPACING, H - 84);
-    this.ball.setScale(r / 20);
-    this.ball.rotation += 0.09 + combo.count * 0.012;
-    this.trail.setPosition(this.ball.x, this.ball.y + r * 0.8);
+    this.ball.setPosition(bx, by);
+    const scale = Phaser.Math.Linear(0.24, 1.0, e);
+    this.ball.setScale(scale);
+    this.ballImg.rotation += (0.10 + speed * 0.13) * (inAir ? 1.7 : 1);
+    // boost glow
+    if (this.boosted > 0) {
+      this.boosted -= 0.016;
+      this.ballImg.setTint(0xFFE9B0);
+    } else {
+      this.ballImg.clearTint();
+    }
+    // shadow stays on the slope; shrinks while airborne
+    const shadowY = this.pathY(t) + 10;
+    const airK = Math.max(0, 1 - Math.abs(this.jumpOffset(t)) / 90);
+    this.shadow.setPosition(bx, shadowY);
+    this.shadow.setScale(airK, airK);
+    this.shadow.setAlpha(0.35 * airK + 0.05);
 
-    // tower approaches: scale + sink toward the player
-    const s = 0.3 + t * 1.35;
-    this.towerC.setScale(s);
-    this.towerC.setPosition(VP.x, VP.y + t * 120);
+    // trail emission grows with speed
+    this.trail.setPosition(bx, by + r * 0.7);
+    this.trail.frequency = Phaser.Math.Linear(34, 10, e);
 
-    // crack telegraph + lights
+    // tower looms ahead, growing as we approach
+    const ts = Phaser.Math.Linear(0.42, 2.05, e);
+    const ty = Phaser.Math.Linear(VP.y + 150, H - 55, e);
+    this.towerC.setScale(ts);
+    this.towerC.setPosition(VP.x, ty);
+
+    // crack telegraph
     if (t >= TELEGRAPH_T) {
       this.crack.setVisible(true);
-      this.crack.setScale(s);
-      this.crack.setPosition(VP.x, VP.y + t * 120);
+      this.crack.setScale(ts);
+      this.crack.setPosition(VP.x, ty);
       const pulse = 0.55 + 0.45 * Math.sin(this.time.now * 0.014);
       this.crack.setAlpha(pulse * 0.7 + 0.3);
       this.steerHint.setAlpha(Math.min(1, (t - TELEGRAPH_T) * 6));
-      if (t > 0.75) this.steerHint.setAlpha(Math.max(0, 1 - (t - 0.75) * 4));
-      // arrow pointing to the crit lane
-      const dir = this.critLane - Math.round(this.lane);
+      if (t > 0.82) this.steerHint.setAlpha(Math.max(0, 1 - (t - 0.82) * 5));
+      const dir = this.critLane - band;
       if (dir !== 0) {
         this.steerHint.setText(dir > 0 ? 'steer  ▶' : '◀  steer').setColor('#F2B84B');
       } else {
@@ -298,17 +383,114 @@ export class RollScene extends Phaser.Scene {
       g.fillCircle(x, H - 47, 6);
     });
 
-    // speed streaks
+    // ground flow: lane dashes rushing toward camera
+    this.groundFlow.clear();
+    this.groundFlow.lineStyle(5, 0xFFFFFF, 0.3 + e * 0.35);
+    [-1, 0, 1].forEach((off) => {
+      for (let k = 0; k < 5; k++) {
+        const p = (t * (3 + e * 4) + k / 5) % 1;
+        const y = Phaser.Math.Linear(VP.y + 26, H, p);
+        const x = Phaser.Math.Linear(VP.x + off * 26, VP.x + off * LANE_SPACING * 3.4, p);
+        this.groundFlow.beginPath();
+        this.groundFlow.moveTo(x, y);
+        this.groundFlow.lineTo(x, y + 14 + e * 26);
+        this.groundFlow.strokePath();
+      }
+    });
+
+    // speed streaks (wind)
     this.streaks.clear();
-    this.streaks.lineStyle(3, 0xFFFFFF, 0.25 + t * 0.2);
-    for (let i = 0; i < 8; i++) {
-      const sx = ((i * 173 + this.time.now * (0.8 + t * 1.4)) % W);
-      const len = 30 + t * 120;
+    this.streaks.lineStyle(3, 0xFFFFFF, 0.15 + e * 0.35);
+    const n = Math.round(6 + e * 10);
+    for (let i = 0; i < n; i++) {
+      const sy = ((i * 149 + this.time.now * (0.9 + e * 2.2)) % H);
+      const sx = (i * 263 + this.time.now * (40 + e * 260)) % (W + 400) - 200;
+      const len = 30 + e * 170;
       this.streaks.beginPath();
-      this.streaks.moveTo(sx, H - 40 - ((i * 97) % 160));
-      this.streaks.lineTo(sx + len, H - 40 - ((i * 97) % 160));
+      this.streaks.moveTo(sx, sy);
+      this.streaks.lineTo(sx + len, sy);
       this.streaks.strokePath();
     }
+
+    // boost orbs on the slope — grab them by being in the lane
+    this.boostOrbs.removeAll(true);
+    BOOSTS.forEach((b, i) => {
+      const orbT = b.t;
+      const ahead = orbT > t && orbT - t < 0.30;
+      const passed = t >= orbT && !this.boostOrbs.getData('col' + i);
+      if (passed) {
+        if (band === b.lane) {
+          this.boostOrbs.setData('col' + i, true);
+          this.collectBoost(bx, by);
+        }
+        return;
+      }
+      if (ahead || (t >= orbT - 0.06 && t < orbT)) {
+        const ox = VP.x + b.lane * this.spread(orbT);
+        const oy = this.pathY(orbT) - 30;
+        const orb = this.add.image(ox, oy, 'orb').setScale(0.8 + Math.sin(this.time.now * 0.01) * 0.15);
+        orb.setDepth(6);
+        this.boostOrbs.add(orb);
+        this.boostOrbs.setData('col' + i, false);
+      }
+    });
+
+    // pine trees rushing past at the edges
+    TREES.forEach((tr, i) => {
+      if (t >= tr.t && !this.treesDone.has(i)) {
+        this.treesDone.add(i);
+        this.spawnTree(tr.side, tr.t);
+      }
+    });
+
+    // tiny camera shake as speed builds (re-triggered each frame while fast)
+    const shake = e > 0.78 ? Math.min((e - 0.78) * 0.025, 0.012) : 0;
+    if (shake > 0) {
+      this.cameras.main.shake(120, shake);
+    }
+  }
+
+  private spawnTree(side: number, atT: number): void {
+    const g = this.add.graphics();
+    const x0 = VP.x + side * 60;
+    const y0 = this.pathY(atT) - 40;
+    g.fillStyle(0x33506B, 1);
+    g.fillTriangle(-16, 12, 16, 12, 0, -30);
+    g.fillTriangle(-12, -2, 12, -2, 0, -38);
+    g.fillStyle(0xF4FAFD, 0.9);
+    g.fillTriangle(-7, -12, 7, -12, 0, -24);
+    const c = this.add.container(x0, y0, [g]);
+    c.setDepth(1);
+    const targetX = side > 0 ? W + 120 : -120;
+    const targetY = H - 60;
+    this.tweens.add({
+      targets: c,
+      x: targetX, y: targetY,
+      scale: 2.4,
+      duration: 1400,
+      ease: 'Quad.easeIn',
+      onComplete: () => c.destroy(),
+    });
+  }
+
+  private collectBoost(bx: number, by: number): void {
+    this.boosted = 0.5;
+    sfx.boost();
+    this.cameras.main.flash(60, 255, 226, 154);
+    const txt = this.add.text(bx, by - 60, '+BOOST!', {
+      fontFamily: '"Baloo 2"', fontSize: '22px', color: '#F2B84B',
+      stroke: '#16283D', strokeThickness: 6,
+    }).setOrigin(0.5).setDepth(8);
+    this.boostTexts.push(txt);
+    this.tweens.add({ targets: txt, y: by - 120, alpha: 0, duration: 800, onComplete: () => txt.destroy() });
+    this.add.particles(bx, by - 20, 'orb', {
+      speed: { min: 40, max: 140 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 0.9, end: 0 },
+      lifespan: 500,
+      quantity: 12,
+      emitting: false,
+    }).explode(12);
   }
 
   /* ---------- impact ---------- */
@@ -331,46 +513,107 @@ export class RollScene extends Phaser.Scene {
     const interestTotal = outcome.interest * critMult * comboRes.mult;
 
     // hit-stop + shake + flash
-    this.cameras.main.flash(90, 255, 250, 235);
-    this.cameras.main.shake(220, 0.02);
-    this.time.timeScale = 0.12;
-    window.setTimeout(() => { this.time.timeScale = 1; }, 130);
+    this.cameras.main.flash(110, 255, 250, 235);
+    this.cameras.main.shake(450, 0.03);
+    this.time.timeScale = 0.08;
+    window.setTimeout(() => { this.time.timeScale = 1; }, 140);
     sfx.thud();
     sfx.crack();
     if (inCrit) sfx.crit();
     if (outcome.milestone) sfx.milestone();
     if (outcome.paidOff) sfx.win();
 
-    // burst particles
-    const bx = W / 2 + band * LANE_SPACING;
-    const by = H - 120;
-    this.add.particles(bx, by, 'pix', {
-      speed: { min: 120, max: 420 },
-      angle: { min: 180, max: 360 },
-      scale: { start: 1.2, end: 0 },
-      lifespan: { min: 300, max: 800 },
-      quantity: 34,
-      tint: [0xA8D5E5, 0xDFF3FB, 0xFFFFFF],
+    const bx = VP.x + band * LANE_SPACING;
+    const by = H - 92;
+
+    /* ice chunks shearing off the tower — the "a bit falls off" moment */
+    const debrisY = this.towerC.y - 250; // visible lower-mid tower, where the ball hits
+    const em = this.add.particles(bx, debrisY, 'chunk', {
+      speed: { min: 200, max: 620 },
+      angle: { min: -80, max: 10 },
+      gravityY: 1150,
+      scale: { start: 1.5, end: 0.35 },
+      rotate: { min: -720, max: 720 },
+      lifespan: { min: 700, max: 1600 },
+      quantity: 16,
+      tint: [0xDFF3FB, 0xA8D5E5, 0x7FB8D0, 0xFFFFFF],
       emitting: false,
-    }).explode(34);
+    }).explode(16);
+    // frost shell shards
+    this.add.particles(bx, debrisY - 20, 'frost', {
+      speed: { min: 150, max: 480 },
+      angle: { min: -90, max: 20 },
+      gravityY: 900,
+      scale: { start: 1.2, end: 0.3 },
+      rotate: { min: -540, max: 540 },
+      lifespan: { min: 500, max: 1200 },
+      quantity: 12,
+      tint: [0xFFFFFF, 0xCFE8F5, 0x8FA9C0],
+      emitting: false,
+    }).explode(12);
+    // snow puff
+    this.add.particles(bx, by, 'pix', {
+      speed: { min: 100, max: 380 },
+      angle: { min: 160, max: 200 },
+      scale: { start: 1.6, end: 0 },
+      lifespan: { min: 300, max: 700 },
+      quantity: 22,
+      tint: 0xFFFFFF,
+      emitting: false,
+    }).explode(22);
+
+    // a couple of chunky blocks drop off the tower and bounce
+    for (let i = 0; i < 3; i++) {
+      const c = this.add.image(bx + (i - 1) * 46, debrisY - 120 - i * 30, 'chunk').setDepth(7);
+      c.setScale(1.8 + i * 0.3);
+      c.setTint(0xA8D5E5);
+      const landY = H - 30 - i * 14;
+      this.tweens.add({
+        targets: c,
+        y: landY,
+        angle: 360 + i * 120,
+        duration: 420 + i * 160,
+        ease: 'Quad.easeIn',
+        onComplete: () => {
+          sfx.land();
+          this.tweens.add({
+            targets: c, y: landY - 18, duration: 120, yoyo: true,
+            onComplete: () => this.tweens.add({ targets: c, alpha: 0, duration: 400, onComplete: () => c.destroy() }),
+          });
+        },
+      });
+    }
+
+    // milestone shatter
     if (outcome.milestone) {
-      this.cameras.main.shake(420, 0.03);
-      this.add.particles(bx, by, 'pix', {
-        speed: { min: 200, max: 560 },
+      this.cameras.main.shake(600, 0.04);
+      this.add.particles(bx, debrisY, 'pix', {
+        speed: { min: 200, max: 620 },
         angle: { min: 0, max: 360 },
-        scale: { start: 1.4, end: 0 },
-        lifespan: { min: 500, max: 1100 },
-        quantity: 60,
+        gravityY: 500,
+        scale: { start: 1.6, end: 0 },
+        lifespan: { min: 500, max: 1200 },
+        quantity: 64,
         tint: [0xF2B84B, 0xFFE29A, 0xFFFFFF],
         emitting: false,
-      }).explode(60);
-      // aurora pulse on the CSS layer
+      }).explode(64);
       const aurora = document.getElementById('aurora');
       if (aurora) {
         aurora.classList.add('strong');
         window.setTimeout(() => aurora.classList.remove('strong'), 2600);
       }
     }
+
+    // redraw the looming tower with the new (damaged) state — melt line drops
+    window.setTimeout(() => {
+      if (!this.scene.isActive()) return;
+      this.towerC.destroy();
+      this.crack.destroy();
+      this.towerC = drawTower(this, VP.x, H - 55, store.debts[this.towerIdx], this.towerIdx, {
+        showLabels: false, scale: 2.05,
+      });
+      this.towerC.setDepth(2);
+    }, 320);
 
     // result readout
     const stats: RollStats = {
@@ -390,7 +633,7 @@ export class RollScene extends Phaser.Scene {
       pct: pctPaid(d),
     };
     this.hitApplied = true;
-    window.setTimeout(() => bus.emit('result', stats), 950);
+    window.setTimeout(() => bus.emit('result', stats), 1100);
   }
 
   private onHitAgain(): void {
@@ -400,13 +643,5 @@ export class RollScene extends Phaser.Scene {
 
   private onToOverview(): void {
     this.scene.start('Overview');
-  }
-
-  private onInputLock(): void {
-    this.input.enabled = false;
-  }
-
-  private onInputUnlock(): void {
-    this.input.enabled = true;
   }
 }
