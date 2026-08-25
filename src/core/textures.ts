@@ -127,6 +127,23 @@ export function ensureGameTextures(scene: Phaser.Scene): void {
     cv.refresh();
   }
 
+  /* ring — expanding shockwave on impact */
+  {
+    const cv = t.createCanvas('ring', 128, 128)!;
+    const ctx = cv.getContext() as CanvasRenderingContext2D;
+    ctx.strokeStyle = 'rgba(255,255,255,1)';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.arc(64, 64, 54, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(200,240,255,0.6)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(64, 64, 46, 0, Math.PI * 2);
+    ctx.stroke();
+    cv.refresh();
+  }
+
   /* pix — 1px white (particles) */
   {
     const cv = t.createCanvas('pix', 8, 8)!;
