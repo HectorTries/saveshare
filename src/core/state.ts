@@ -51,6 +51,15 @@ export function freshTerrain(): number[] {
   return new Array(SEGMENTS).fill(1);
 }
 
+/* ---------- debt length ---------- */
+/** Movement follows the LENGTH of the debt, not just its balance.
+    Reference term = 36 months: a 360-month mortgage crawls at 0.1×,
+    a 12-month overdraft sprints at 3×. Applied to both push distance
+    and the leftward pull so the tug-of-war stays proportionate. */
+export function termScale(d: Debt): number {
+  return Math.max(0.1, Math.min(3, 36 / Math.max(d.months, 1)));
+}
+
 /* ---------- terrain ---------- */
 export function segmentAt(progress: number): number {
   return Math.max(0, Math.min(SEGMENTS - 1, Math.floor(progress * SEGMENTS)));
@@ -59,15 +68,17 @@ export function steepnessAt(d: Debt, progress: number): number {
   const i = segmentAt(Math.max(0, progress));
   return d.terrain[i] ?? 1;
 }
-/** right-slope drift: % of slope per second. Flatter terrain = less grip. */
+/** right-slope drift: % of slope per second. Flatter terrain = less grip.
+    Scaled by debt length: a mortgage drifts slowly, a short card pulls hard. */
 export function driftPerSec(d: Debt, progress: number): number {
+  const t = termScale(d);
   if (progress <= 0) {
     // spiral pit side — always full pull, accelerating with depth
     const depth = Math.min(1, -progress / PIT);
-    return 0.03 * d.apr * (1 + 0.6 * depth);
+    return 0.03 * d.apr * (1 + 0.6 * depth) * t;
   }
   const s = steepnessAt(d, progress);
-  return 0.008 * d.apr * (0.25 + 0.75 * s);
+  return 0.008 * d.apr * (0.25 + 0.75 * s) * t;
 }
 /** flattened ground gives pushes more carry (the "easier climb" reward) */
 export function pushFactor(d: Debt, progress: number): number {
@@ -152,7 +163,9 @@ export function applyPush(idx: number, amount: number, skillEff: number): PushOu
   const cres = registerHit(idx, wellTimed);
   const before = pctPaid(d);
   const basePct = (cap / d.balance) * 100;
-  const distPct = basePct * skillEff * cres.mult * pushFactor(d, d.progress);
+  // the ball moves in accordance with the LENGTH of the debt: a mortgage
+  // advances far slower per £ than a short card. Final payment snaps to flag.
+  const distPct = basePct * termScale(d) * skillEff * cres.mult * pushFactor(d, d.progress);
 
   d.paid = Math.min(d.balance, d.paid + cap);
   const after = pctPaid(d);

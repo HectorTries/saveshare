@@ -22,7 +22,7 @@ import { bus } from '../core/bus';
 
 const W = 1280;
 const H = 640;
-const CHIPS = [15, 50, 100, 250, 500, 1000, 2500];
+const CHIPS = [15, 50, 100, 250, 500, 1000, 2500, 5000];
 const METER = { x0: 340, x1: 940, y: 430, perfect: 0.08, good: 0.16 };
 
 interface MeterStop {
@@ -172,20 +172,25 @@ export class SummitScene extends Phaser.Scene {
 
   /* ---------- chip selector ---------- */
   private drawChips(): void {
-    this.add.text(W / 2, H - 122, 'PAYMENT PER PUSH', {
+    this.add.text(W / 2, H - 140, 'PAYMENT PER PUSH', {
       fontFamily: '"JetBrains Mono"', fontSize: '10px', color: '#9FB2C4',
+      stroke: '#0F1A2E', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(10);
     CHIPS.forEach((v, i) => {
       const active = this.chip === v;
-      const x = W / 2 - 295 + i * 98;
+      const x = W / 2 - 343 + i * 98;
       const bg = this.add.graphics();
-      bg.fillStyle(active ? 0x5FC9A8 : 0xFFFFFF, active ? 1 : 0.12);
+      bg.fillStyle(active ? 0x5FC9A8 : 0x1E3350, active ? 1 : 0.92);
       bg.fillRoundedRect(-44, -17, 88, 34, 17);
+      if (!active) {
+        bg.lineStyle(1.5, 0xFFFFFF, 0.22);
+        bg.strokeRoundedRect(-44, -17, 88, 34, 17);
+      }
       const label = this.add.text(0, 0, '£' + v, {
         fontFamily: '"Baloo 2"', fontSize: '15px',
         color: active ? '#10241C' : '#F4F8FB',
       }).setOrigin(0.5);
-      const c = this.add.container(x, H - 100, [bg, label]);
+      const c = this.add.container(x, H - 108, [bg, label]);
       c.setSize(88, 34).setInteractive({ useHandCursor: true });
       c.on('pointerdown', () => {
         if (this.meterActive || this.busy) return;
@@ -353,22 +358,32 @@ export class SummitScene extends Phaser.Scene {
     // readout — honest numbers, kept separate. Stacked ABOVE the ball so the slope
     // never gets buried in text; left-aligned to the screen for readability.
     const lines: { text: string; color: string; size: number }[] = [
-      { text: `${label} — ${money(o.amount)} principal · +${o.basePct.toFixed(2)}%`, color: label === 'PERFECT' ? '#F2B84B' : label === 'GOOD' ? '#5FC9A8' : '#B7C7D6', size: 16 },
+      { text: `${label} — ${money(o.amount)} principal · +${o.distPct.toFixed(2)}% of the slope`, color: label === 'PERFECT' ? '#F2B84B' : label === 'GOOD' ? '#5FC9A8' : '#B7C7D6', size: 16 },
       { text: `💸 ${money(o.interest)} interest avoided`, color: '#5FC9A8', size: 14 },
     ];
     if (o.comboCount > 1) lines.push({ text: `COMBO ×${o.comboMult.toFixed(1)}`, color: '#F2B84B', size: 13 });
     if (o.flattenApplied > 0.01) lines.push({ text: 'slope flattened ahead', color: '#BFE3F2', size: 12 });
-    const anchorX = Math.max(170, Math.min(W - 170, at.x));
-    const startY = Math.max(96, at.y - 90 - lines.length * 20);
+    // fixed panel at top-centre — never overlaps the mountain or the ball
+    const panelY = 108;
+    const panelW = 430;
+    const panelH = 18 + lines.length * 26;
+    const bg = this.add.graphics();
+    bg.fillStyle(0x0F1A2E, 0.78);
+    bg.fillRoundedRect(W / 2 - panelW / 2, panelY - 12, panelW, panelH, 14);
+    bg.lineStyle(1.5, 0xFFFFFF, 0.14);
+    bg.strokeRoundedRect(W / 2 - panelW / 2, panelY - 12, panelW, panelH, 14);
+    const group = this.add.container(0, 0, [bg]);
+    group.setDepth(9);
     lines.forEach((l, i) => {
-      const t = this.add.text(anchorX, startY + i * 24, l.text, {
+      const t = this.add.text(W / 2, panelY + i * 26, l.text, {
         fontFamily: '"Baloo 2"', fontSize: `${l.size}px`, color: l.color,
         stroke: '#0F1A2E', strokeThickness: 4,
-      }).setOrigin(0.5, 0).setDepth(9);
-      this.tweens.add({
-        targets: t, y: t.y - 34, alpha: 0, duration: 1500, delay: 1100,
-        onComplete: () => t.destroy(),
-      });
+      }).setOrigin(0.5, 0).setDepth(10);
+      group.add(t);
+    });
+    this.tweens.add({
+      targets: group, alpha: 0, y: -18, duration: 1400, delay: 1800,
+      onComplete: () => group.destroy(),
     });
 
     // milestone / clear celebrations
