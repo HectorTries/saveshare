@@ -67,7 +67,7 @@ export function driftPerSec(d: Debt, progress: number): number {
     return 0.03 * d.apr * (1 + 0.6 * depth);
   }
   const s = steepnessAt(d, progress);
-  return 0.018 * d.apr * (0.25 + 0.75 * s);
+  return 0.008 * d.apr * (0.25 + 0.75 * s);
 }
 /** flattened ground gives pushes more carry (the "easier climb" reward) */
 export function pushFactor(d: Debt, progress: number): number {
@@ -157,6 +157,8 @@ export function applyPush(idx: number, amount: number, skillEff: number): PushOu
   d.paid = Math.min(d.balance, d.paid + cap);
   const after = pctPaid(d);
   d.progress = Math.max(-PIT, Math.min(1, d.progress + distPct / 100));
+  const cleared = after >= 1;
+  if (cleared) d.progress = 1; // reaching the payoff flag = debt cleared
 
   // permanent flattening of the slope ahead, ∝ interest avoided
   const strength = Math.min(FLATTEN_MAX, interest / (d.balance * FLATTEN_DIV));
@@ -178,7 +180,6 @@ export function applyPush(idx: number, amount: number, skillEff: number): PushOu
       milestone = t * 100;
     }
   }
-  const cleared = after >= 1;
 
   stats.interestDestroyed += interest;
   saveStats();

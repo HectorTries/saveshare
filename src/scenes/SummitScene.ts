@@ -431,9 +431,10 @@ export class SummitScene extends Phaser.Scene {
       fontFamily: '"Baloo 2"', fontSize: '30px', color: '#F4F8FB',
       stroke: '#0F1A2E', strokeThickness: 8,
     }).setOrigin(0.5).setDepth(12);
-    this.time.delayedCall(2600, () => {
+    // wall-clock timeout: slow-mo scales game time, so use real time for the return
+    window.setTimeout(() => {
       if (this.scene.isActive()) this.toOverview();
-    });
+    }, 2600);
   }
 
   private redrawMountain(): void {
@@ -470,6 +471,7 @@ export class SummitScene extends Phaser.Scene {
   private applyDrift(dt: number): void {
     const d = store.debts[this.debtIdx];
     if (!d) return;
+    if (pctPaid(d) >= 1) return; // cleared mountain — no more pull
     const before = d.progress;
     d.progress = Math.max(-PIT, d.progress - (driftPerSec(d, d.progress) / 100) * (dt / 1000));
     const now = this.time.now;
