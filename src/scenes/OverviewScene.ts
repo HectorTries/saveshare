@@ -1,86 +1,77 @@
 /* ============================================================
-   Overview — one persistent tower per debt.
-   Tap a tower → "pay it now" preview (DOM) → Roll sequence.
-   Strategy toggle (Snowball/Avalanche) = pure guidance, no
-   damage or reward multiplier. Blocks = % of original balance.
+   Overview — the mountain range. Every debt is a peak in a
+   skyline; the ball marker sits at its current position on each
+   slope. Tap a mountain to play it. Strategy toggle is pure
+   guidance (highlight only, no mechanical bonus).
    ============================================================ */
 import Phaser from 'phaser';
 import {
-  store, principalLeft, pctPaid, money, prefs, setPrefs,
-  combo, comboMult, stats, type Strategy,
+  store, principalLeft, pctPaid, prefs, setPrefs, combo, comboMult,
+  stats, money, type Strategy,
 } from '../core/state';
-import { drawTower } from '../core/towerRender';
+import { drawMiniMountain } from '../core/mountainRender';
 import { sfx } from '../core/audio';
 import { bus } from '../core/bus';
 
 const W = 1280;
 const H = 640;
-const BASE_Y = 545;
-const CHIPS = [15, 50, 100, 250, 500, 1000];
+const BASE_Y = 505;
 
 export class OverviewScene extends Phaser.Scene {
-  private towers: Phaser.GameObjects.Container[] = [];
-  private rings: (Phaser.GameObjects.Container | null)[] = [];
-  private chipBtns: Phaser.GameObjects.Container[] = [];
-  private stratBtns: Phaser.GameObjects.Container[] = [];
-  private pendingIdx = -1;
   private busy = false;
+  private stratBtns: Phaser.GameObjects.Container[] = [];
 
   constructor() { super('Overview'); }
 
   create(): void {
     this.busy = false;
-    this.pendingIdx = -1;
-    this.towers = [];
-    this.rings = [];
-    this.chipBtns = [];
     this.stratBtns = [];
     this.input.enabled = true;
     this.scene.bringToTop();
-
     bus.on('start', this.onStart, this);
-    bus.on('roll-cancel', this.onRollCancel, this);
-    bus.on('roll-confirm', this.onRollConfirm, this);
-    bus.on('input-lock', this.onInputLock, this);
-    bus.on('input-unlock', this.onInputUnlock, this);
 
-    this.drawTowers();
+    this.drawSkyline();
     this.drawStrategyToggle();
-    this.drawChips();
-    this.drawComboBadge();
+    this.drawBadges();
     this.emitHud();
+    (window as any).__overview = this;
   }
 
   shutdown(): void {
     bus.off('start', this.onStart, this);
-    bus.off('roll-cancel', this.onRollCancel, this);
-    bus.off('roll-confirm', this.onRollConfirm, this);
-    bus.off('input-lock', this.onInputLock, this);
-    bus.off('input-unlock', this.onInputUnlock, this);
   }
 
-  /* ---------- towers ---------- */
-  private drawTowers(): void {
+  private onStart(): void {
+    this.scene.restart();
+  }
+
+  /* ---------- skyline ---------- */
+  private drawSkyline(): void {
     const debts = store.debts;
     if (!debts.length) return;
-    const spacing = Math.min(250, 1080 / Math.max(debts.length, 1));
+    const spacing = Math.min(290, 1050 / Math.max(debts.length, 1));
     const x0 = W / 2 - (spacing * (debts.length - 1)) / 2;
 
     debts.forEach((d, i) => {
-      const x = x0 + i * spacing;
-      const ring = this.suggestFor(i) ? 'suggest' : 'none';
-      const t = drawTower(this, x, BASE_Y, d, i, { showLabels: true, ring });
-      this.towers.push(t);
-      this.rings.push(ring ? t : null);
-
-      // tap target (whole tower area)
-      const hit = this.add.zone(x, BASE_Y - 165, 220, 360).setInteractive({ useHandCursor: true });
-      hit.on('pointerdown', () => this.attack(i));
+      const m = drawMiniMountain(this, x0 + i * spacing, BASE_Y, 150, d, i);
+      const zone = m.getAt(m.length - 1) as Phaser.GameObjects.Zone;
+      zone.on('pointerdown', () => this.play(i));
+      if (this.suggestFor(i)) {
+        const g = this.add.graphics();
+        g.lineStyle(4, 0xF2B84B, 0.9);
+        g.strokeRoundedRect(x0 + i * spacing - 78, BASE_Y - 175, 156, 200, 18);
+        g.lineStyle(2, 0xFFE29A, 0.4);
+        g.strokeRoundedRect(x0 + i * spacing - 82, BASE_Y - 179, 164, 208, 20);
+        const arrow = this.add.text(x0 + i * spacing, BASE_Y - 190, '▼', {
+          fontFamily: '"Baloo 2"', fontSize: '18px', color: '#F2B84B',
+        }).setOrigin(0.5);
+        this.tweens.add({ targets: arrow, y: BASE_Y - 196, duration: 500, yoyo: true, repeat: -1 });
+        arrow.setDepth(5);
+      }
     });
 
-    // cleared check — show hint text if everything's paid off
     const allPaid = debts.every((d) => pctPaid(d) >= 1);
-    this.add.text(W / 2, 96, allPaid ? '🎉 Every debt cleared — incredible.' : 'Tap a tower, then roll your payment into it ❄️', {
+    this.add.text(W / 2, 92, allPaid ? '🎉 Every mountain cleared — incredible.' : 'Tap a mountain, then push your payment down its slope ❄️', {
       fontFamily: '"Baloo 2"', fontSize: '20px', color: '#F4F8FB',
     }).setOrigin(0.5).setAlpha(0.92);
   }
@@ -99,16 +90,15 @@ export class OverviewScene extends Phaser.Scene {
     return false;
   }
 
-  private attack(i: number): void {
+  private play(i: number): void {
     if (this.busy) return;
     const d = store.debts[i];
     if (!d || pctPaid(d) >= 1) return;
-    this.pendingIdx = i;
     sfx.select();
-    bus.emit('preview', i);
+    this.scene.start('Summit', { idx: i });
   }
 
-  /* ---------- strategy toggle (guidance only — no mechanical bonus) ---------- */
+  /* ---------- strategy toggle (guidance only) ---------- */
   private drawStrategyToggle(): void {
     const strategies: { key: Strategy; label: string; tip: string }[] = [
       { key: 'none', label: '🎯 Free choice', tip: 'no suggestion' },
@@ -134,74 +124,22 @@ export class OverviewScene extends Phaser.Scene {
       });
       this.stratBtns.push(c);
     });
-    this.add.text(W / 2, 66, 'Strategy guide — shows you a path, never changes damage', {
+    this.add.text(W / 2, 64, 'Strategy guide — shows you a path, never changes the push', {
       fontFamily: '"Manrope"', fontSize: '11px', color: '#9FB2C4',
     }).setOrigin(0.5);
   }
 
-  /* ---------- payment amount (the fixed £ per hit) ---------- */
-  private drawChips(): void {
-    this.add.text(W / 2, H - 62, 'PAYMENT PER HIT', {
-      fontFamily: '"JetBrains Mono"', fontSize: '10px', color: '#9FB2C4',
-    }).setOrigin(0.5);
-    CHIPS.forEach((v, i) => {
-      const active = prefs.chip === v;
-      const x = W / 2 - 275 + i * 110;
-      const bg = this.add.graphics();
-      bg.fillStyle(active ? 0x5FC9A8 : 0xFFFFFF, active ? 1 : 0.12);
-      bg.fillRoundedRect(-48, -18, 96, 36, 18);
-      const label = this.add.text(0, 0, '£' + v, {
-        fontFamily: '"Baloo 2"', fontSize: '16px',
-        color: active ? '#10241C' : '#F4F8FB',
-      }).setOrigin(0.5);
-      const c = this.add.container(x, H - 30, [bg, label]);
-      c.setSize(96, 36).setInteractive({ useHandCursor: true });
-      c.on('pointerdown', () => {
-        sfx.select();
-        setPrefs(v, prefs.strategy);
-        this.scene.restart();
-      });
-      this.chipBtns.push(c);
-    });
-  }
-
-  /* ---------- combo + lifetime interest badge ---------- */
-  private drawComboBadge(): void {
+  /* ---------- badges ---------- */
+  private drawBadges(): void {
     const c = combo.count;
-    if (c > 1) {
-      this.add.text(24, 24, `🔥 Combo ×${comboMult().toFixed(1)}\nstreak on ${store.debts[combo.towerIdx]?.name ?? ''}`, {
+    if (c > 1 && combo.debtIdx >= 0) {
+      this.add.text(24, 24, `🔥 Combo ×${comboMult().toFixed(1)}\nstreak on ${store.debts[combo.debtIdx]?.name ?? ''}`, {
         fontFamily: '"JetBrains Mono"', fontSize: '13px', color: '#F2B84B', align: 'left',
       }).setDepth(10);
     }
-    this.add.text(W - 24, 24, `💰 ${money(stats.interestDestroyed)} interest avoided\n(lifetime)`, {
+    this.add.text(W - 24, 24, `💸 ${money(stats.interestDestroyed)} interest avoided\n(lifetime)`, {
       fontFamily: '"JetBrains Mono"', fontSize: '12px', color: '#5FC9A8', align: 'right',
     }).setOrigin(1, 0).setDepth(10);
-  }
-
-  /* ---------- bridge ---------- */
-  private onStart(): void {
-    this.scene.restart();
-  }
-
-  private onRollCancel(): void {
-    this.busy = false;
-    this.pendingIdx = -1;
-  }
-
-  private onRollConfirm(): void {
-    if (this.pendingIdx < 0) return;
-    this.busy = true;
-    const idx = this.pendingIdx;
-    this.pendingIdx = -1;
-    this.scene.start('Roll', { towerIdx: idx, chip: prefs.chip });
-  }
-
-  private onInputLock(): void {
-    this.input.enabled = false;
-  }
-
-  private onInputUnlock(): void {
-    this.input.enabled = true;
   }
 
   private emitHud(): void {

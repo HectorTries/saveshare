@@ -18,8 +18,6 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 export function ensureGameTextures(scene: Phaser.Scene): void {
   const t = scene.textures;
   if (t.exists('iceblock')) return;
-
-  /* ice block — vertical gradient, highlight, shade (used for tower core blocks) */
   {
     const cv = t.createCanvas('iceblock', 44, 32)!;
     const ctx = cv.getContext() as CanvasRenderingContext2D;

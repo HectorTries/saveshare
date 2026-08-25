@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Snowball • Debt Towers</title>
+<title>Snowball • Summit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
 </head>
@@ -38,63 +38,16 @@
     <!-- Setup / edit debts -->
     <div class="overlay show" id="setupOverlay">
       <div class="modal">
-        <div class="badge">SNOWBALL • DEBT TOWERS</div>
-        <h2>Your debts, your towers</h2>
-        <p class="sub">Each debt is one persistent tower. Blocks are <b>% of the balance</b> — a £250k mortgage and a £2k card chip away equally. Pay a bit, roll the snowball, watch both the principal (core) and the future interest (shell) shrink.</p>
+        <div class="badge">SNOWBALL • SUMMIT</div>
+        <h2>Your debts, your mountains</h2>
+        <p class="sub">Each debt is one mountain: a peak, a right slope down to the payoff flag, and a left slope into the spiral pit. Your snowball starts at the peak. APR is gravity — it constantly pulls you toward the spiral. Every payment pushes you down the payoff slope, and the earlier you pay, the more the terrain flattens ahead of you, permanently.</p>
         <div id="debtList"></div>
         <button class="add-debt" id="addDebtBtn">+ Add another debt</button>
         <div class="modal-actions">
           <button class="btn" id="startBtn">Start ❄️</button>
           <button class="btn secondary" id="loadDemoBtn">Load demo debts</button>
         </div>
-        <p class="hint">How it works: pick a payment amount (bottom bar), tap a tower, then steer the snowball into the telegraphed crack during the roll. Principal removes blocks — interest avoided is a separate bonus that feeds your combo. No luck, no loot boxes: only your real payments and your aim.</p>
-      </div>
-    </div>
-
-    <!-- Pay it now preview -->
-    <div class="overlay" id="previewOverlay">
-      <div class="modal">
-        <div class="badge">PAY IT NOW</div>
-        <h2 id="prevTitle">Attack: Credit Card</h2>
-        <p class="sub" id="prevMeta" style="margin-bottom:10px"></p>
-        <div class="preview-box">
-          <div class="prev-row" id="prevChip"></div>
-          <div class="prev-row" id="prevBlocks"></div>
-          <div class="prev-row gold" id="prevInterest"></div>
-          <div class="prev-row" id="prevMilestone"></div>
-        </div>
-        <p class="hint" id="prevTip"></p>
-        <div class="modal-actions">
-          <button class="btn" id="rollBtn">Roll into it ❄️</button>
-          <button class="btn secondary" id="cancelBtn">Cancel</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Hit result -->
-    <div class="overlay" id="resultOverlay">
-      <div class="modal" style="text-align:center">
-        <div class="badge" id="resMilestone"></div>
-        <h2 id="resTitle">Hit landed!</h2>
-        <div class="res-stats">
-          <div class="res-stat">
-            <div class="num" id="resPrincipal">£50</div>
-            <div class="lbl">Principal removed</div>
-          </div>
-          <div class="res-stat">
-            <div class="num gold" id="resInterest">£12</div>
-            <div class="lbl">Interest avoided</div>
-          </div>
-        </div>
-        <div class="crit-tag" id="resCrit"></div>
-        <div class="combo-line" id="resCombo"></div>
-        <div class="left-line" id="resLeft"></div>
-        <div class="detail-line" id="resInterestDetail"></div>
-        <div class="modal-actions" style="justify-content:center">
-          <button class="btn" id="againBtn">Hit again ❄️</button>
-          <button class="btn secondary" id="overviewBtn">Overview 🏔</button>
-          <button class="btn secondary" id="resultEditBtn">Edit debts</button>
-        </div>
+        <p class="hint">How it works: tap a mountain, pick your payment, then time the marker into the gold on the power bar. Perfect timing = a bigger push. Principal moves the ball 1:1 with real £ — interest avoided is shown separately and permanently flattens the slope ahead. No luck, no loot boxes: only your payments and your timing.</p>
       </div>
     </div>
   </div>

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import './style.css';
 import { OverviewScene } from './scenes/OverviewScene';
-import { RollScene } from './scenes/RollScene';
+import { SummitScene } from './scenes/SummitScene';
 import { initUI } from './ui';
 import { startSnow } from './snow';
 import { initAudio } from './core/audio';
@@ -24,7 +24,7 @@ const game = new Phaser.Game({
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [OverviewScene, RollScene],
+  scene: [OverviewScene, SummitScene],
 });
 
 // debug hook for headless testing
