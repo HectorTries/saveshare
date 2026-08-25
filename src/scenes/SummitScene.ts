@@ -172,7 +172,7 @@ export class SummitScene extends Phaser.Scene {
 
   /* ---------- chip selector ---------- */
   private drawChips(): void {
-    this.add.text(W / 2, H - 118, 'PAYMENT PER PUSH', {
+    this.add.text(W / 2, H - 122, 'PAYMENT PER PUSH', {
       fontFamily: '"JetBrains Mono"', fontSize: '10px', color: '#9FB2C4',
     }).setOrigin(0.5).setDepth(10);
     CHIPS.forEach((v, i) => {
@@ -185,7 +185,7 @@ export class SummitScene extends Phaser.Scene {
         fontFamily: '"Baloo 2"', fontSize: '15px',
         color: active ? '#10241C' : '#F4F8FB',
       }).setOrigin(0.5);
-      const c = this.add.container(x, H - 88, [bg, label]);
+      const c = this.add.container(x, H - 100, [bg, label]);
       c.setSize(88, 34).setInteractive({ useHandCursor: true });
       c.on('pointerdown', () => {
         if (this.meterActive || this.busy) return;
@@ -201,17 +201,17 @@ export class SummitScene extends Phaser.Scene {
   /* ---------- pay button ---------- */
   private drawPayButton(): void {
     const x = W / 2;
-    const y = H - 60;
+    const y = H - 52;
     const g = this.add.graphics();
     g.fillStyle(0x5FC9A8, 1);
-    g.fillRoundedRect(-92, -26, 184, 52, 26);
+    g.fillRoundedRect(-92, -24, 184, 48, 24);
     g.fillStyle(0xFFFFFF, 0.25);
-    g.fillRoundedRect(-84, -20, 168, 12, 6);
+    g.fillRoundedRect(-84, -19, 168, 11, 5.5);
     this.payLbl = this.add.text(0, 0, `PAY £${this.chip} ❄️`, {
-      fontFamily: '"Baloo 2"', fontSize: '19px', color: '#10241C', fontStyle: 'bold',
+      fontFamily: '"Baloo 2"', fontSize: '18px', color: '#10241C', fontStyle: 'bold',
     }).setOrigin(0.5);
     this.payBtn = this.add.container(x, y, [g, this.payLbl]);
-    this.payBtn.setSize(184, 52).setInteractive({ useHandCursor: true });
+    this.payBtn.setSize(184, 48).setInteractive({ useHandCursor: true });
     this.payBtn.on('pointerdown', () => { if (!this.meterActive && !this.busy) this.openMeter(); });
     this.payBtn.setDepth(10);
   }
