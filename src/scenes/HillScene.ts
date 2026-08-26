@@ -57,9 +57,8 @@ export class HillScene extends Phaser.Scene {
 
   init(data: { idx: number }): void {
     this.debtIdx = data.idx;
-    // default chip = the debt's monthly repayment when one is set
-    const d = store.debts[this.debtIdx];
-    this.chip = d && d.monthly > 0 ? d.monthly : prefs.chip;
+    // respect the user's persisted chip choice — never force-reset to monthly
+    this.chip = prefs.chip;
     this.busy = false;
   }
 
@@ -191,34 +190,37 @@ export class HillScene extends Phaser.Scene {
     this.hudLevel.setText(`LEVEL ${lv} / ${LEVELS}`);
     this.hudLevelSub.setText(`${levelLabel(d)} per level · ${money(principalLeft(d))} left`);
     this.hintText.setText(
-      'Each payment rolls your ball down — every level cleared is 1% of the debt. Bigger ball, faster roll.',
+      'Each payment rolls your snowball down — every step cleared is 1% of the debt.',
     );
   }
 
   /* ---------- chip selector ---------- */
   private drawChips(): void {
-    this.add.text(W / 2, H - 152, 'PAYMENT PER ROLL', {
+    const d = this.debt;
+    this.add.text(W / 2, H - 156, 'PAYMENT PER ROLL', {
       fontFamily: '"JetBrains Mono"', fontSize: '10px', color: '#9FB2C4',
       stroke: '#0F1A2E', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(10);
-    const d = this.debt;
-    // prepend the debt's monthly repayment as a MIN chip when one is set
-    const chips = d && d.monthly > 0 && !CHIPS.includes(d.monthly) ? [d.monthly, ...CHIPS] : CHIPS;
+    if (d && d.monthly > 0) {
+      this.add.text(W / 2, H - 140, `your monthly payment ≈ £${d.monthly} — pay any amount you like`, {
+        fontFamily: '"Manrope"', fontSize: '11px', color: '#B7C7D6',
+      }).setOrigin(0.5).setDepth(10);
+    }
+    const chips = CHIPS;
     const n = chips.length;
     chips.forEach((v, i) => {
       const active = this.chip === v;
-      const isMin = d && d.monthly > 0 && v === d.monthly;
       const x = W / 2 - (n - 1) * 49 + i * 98;
       const bg = this.add.graphics();
-      bg.fillStyle(active ? 0x5FC9A8 : isMin ? 0xF2B84B : 0x1E3350, active ? 1 : isMin ? 0.25 : 0.92);
+      bg.fillStyle(active ? 0x5FC9A8 : 0x1E3350, active ? 1 : 0.92);
       bg.fillRoundedRect(-44, -17, 88, 34, 17);
       if (!active) {
-        bg.lineStyle(1.5, isMin ? 0xF2B84B : 0xFFFFFF, isMin ? 0.7 : 0.22);
+        bg.lineStyle(1.5, 0xFFFFFF, 0.22);
         bg.strokeRoundedRect(-44, -17, 88, 34, 17);
       }
-      const label = this.add.text(0, 0, isMin ? `£${v} MIN` : '£' + v, {
-        fontFamily: '"Baloo 2"', fontSize: isMin ? '13px' : '15px',
-        color: active ? '#10241C' : isMin ? '#F2B84B' : '#F4F8FB',
+      const label = this.add.text(0, 0, '£' + v, {
+        fontFamily: '"Baloo 2"', fontSize: '15px',
+        color: active ? '#10241C' : '#F4F8FB',
       }).setOrigin(0.5);
       const c = this.add.container(x, H - 108, [bg, label]);
       c.setSize(88, 34).setInteractive({ useHandCursor: true });

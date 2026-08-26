@@ -50,6 +50,15 @@ html,body{background:#0F1A2E;color:var(--text);font-family:'Manrope',sans-serif;
 .modal h2{font-family:'Baloo 2';font-size:26px;margin-bottom:4px}
 .modal .sub{color:var(--muted);font-size:13.5px;margin-bottom:18px}
 .debt-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.debt-head{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.debt-head .dname{flex:1}
+.debt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field>span{font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;font-weight:700}
+.field input,.field select{width:100%}
+.term-wrap{display:flex;gap:6px}
+.term-wrap input{flex:1;min-width:0}
+.term-wrap select{width:82px;flex-shrink:0;padding:8px 6px;font-size:12px}
 .debt-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 10px 6px;margin-bottom:12px}
 .debt-card .debt-row{margin-bottom:6px}
 .debt-row2{font-size:11px;color:var(--muted)}

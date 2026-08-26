@@ -26,20 +26,15 @@ function renderDebtList(): void {
     const card = document.createElement('div');
     card.className = 'debt-card';
     card.innerHTML = `
-      <div class="debt-row">
-        <input class="dname" type="text" placeholder="e.g. Credit Card" value="${esc(d.name)}" title="Name">
-        <input class="damt" type="number" min="1" step="50" placeholder="£" value="${d.balance || ''}" title="Balance £">
-        <input class="dapr" type="number" min="0" max="100" step="0.1" placeholder="APR %" value="${d.apr ?? ''}" title="APR %">
-        <button class="del-btn" title="Remove">✕</button>
+      <div class="debt-head">
+        <input class="dname" type="text" placeholder="Debt name (e.g. Credit Card)" value="${esc(d.name)}">
+        <button class="del-btn" title="Remove debt">✕</button>
       </div>
-      <div class="debt-row debt-row2">
-        <input class="dmon" type="number" min="1" max="600" step="1" placeholder="term" value="${d.months || ''}" title="Term">
-        <select class="dunit" title="Term unit">
-          <option value="months">months</option>
-          <option value="years">years</option>
-        </select>
-        <input class="dmonth" type="number" min="0" step="5" placeholder="£/mo" value="${d.monthly || ''}" title="Monthly repayment £">
-        <span class="dlabel">£/mo</span>
+      <div class="debt-grid">
+        <label class="field"><span>Balance (£)</span><input class="damt" type="number" min="1" step="50" value="${d.balance || ''}"></label>
+        <label class="field"><span>APR %</span><input class="dapr" type="number" min="0" max="100" step="0.1" value="${d.apr ?? ''}"></label>
+        <label class="field"><span>Term</span><span class="term-wrap"><input class="dmon" type="number" min="1" max="600" step="1" value="${d.months || ''}"><select class="dunit"><option value="months">months</option><option value="years">years</option></select></span></label>
+        <label class="field"><span>Monthly (£)</span><input class="dmonth" type="number" min="0" step="5" value="${d.monthly || ''}"></label>
       </div>`;
     const dmon = card.querySelector('.dmon') as HTMLInputElement;
     const dunit = card.querySelector('.dunit') as HTMLSelectElement;
