@@ -1,15 +1,15 @@
 /* ============================================================
-   Overview — the mountain range. Every debt is a peak in a
+   Overview — the range. Every debt is one white hill in a
    skyline; the ball marker sits at its current position on each
-   slope. Tap a mountain to play it. Strategy toggle is pure
+   flank. Tap a hill to roll it. Strategy toggle is pure
    guidance (highlight only, no mechanical bonus).
    ============================================================ */
 import Phaser from 'phaser';
 import {
-  store, principalLeft, pctPaid, prefs, setPrefs, combo, comboMult,
+  store, principalLeft, pctPaid, prefs, setPrefs,
   stats, money, type Strategy,
 } from '../core/state';
-import { drawMiniMountain } from '../core/mountainRender';
+import { drawMiniHill } from '../core/hillRender';
 import { sfx } from '../core/audio';
 import { bus } from '../core/bus';
 
@@ -53,7 +53,7 @@ export class OverviewScene extends Phaser.Scene {
     const x0 = W / 2 - (spacing * (debts.length - 1)) / 2;
 
     debts.forEach((d, i) => {
-      const m = drawMiniMountain(this, x0 + i * spacing, BASE_Y, 150, d, i);
+      const m = drawMiniHill(this, x0 + i * spacing, BASE_Y, 150, d, i);
       const zone = m.getAt(m.length - 1) as Phaser.GameObjects.Zone;
       zone.on('pointerdown', () => this.play(i));
       if (this.suggestFor(i)) {
@@ -71,7 +71,7 @@ export class OverviewScene extends Phaser.Scene {
     });
 
     const allPaid = debts.every((d) => pctPaid(d) >= 1);
-    this.add.text(W / 2, 92, allPaid ? '🎉 Every mountain cleared — incredible.' : 'Tap a mountain, then push your payment down its slope ❄️', {
+    this.add.text(W / 2, 92, allPaid ? '🎉 Every hill cleared — incredible.' : 'Tap a hill, roll your payment down it ❄️', {
       fontFamily: '"Baloo 2"', fontSize: '20px', color: '#F4F8FB',
     }).setOrigin(0.5).setAlpha(0.92);
   }
@@ -95,7 +95,7 @@ export class OverviewScene extends Phaser.Scene {
     const d = store.debts[i];
     if (!d || pctPaid(d) >= 1) return;
     sfx.select();
-    this.scene.start('Summit', { idx: i });
+    this.scene.start('Hill', { idx: i });
   }
 
   /* ---------- strategy toggle (guidance only) ---------- */
@@ -124,19 +124,13 @@ export class OverviewScene extends Phaser.Scene {
       });
       this.stratBtns.push(c);
     });
-    this.add.text(W / 2, 64, 'Strategy guide — shows you a path, never changes the push', {
+    this.add.text(W / 2, 64, 'Strategy guide — shows you a path, never changes the roll', {
       fontFamily: '"Manrope"', fontSize: '11px', color: '#9FB2C4',
     }).setOrigin(0.5);
   }
 
   /* ---------- badges ---------- */
   private drawBadges(): void {
-    const c = combo.count;
-    if (c > 1 && combo.debtIdx >= 0) {
-      this.add.text(24, 24, `🔥 Combo ×${comboMult().toFixed(1)}\nstreak on ${store.debts[combo.debtIdx]?.name ?? ''}`, {
-        fontFamily: '"JetBrains Mono"', fontSize: '13px', color: '#F2B84B', align: 'left',
-      }).setDepth(10);
-    }
     this.add.text(W - 24, 24, `💸 ${money(stats.interestDestroyed)} interest avoided\n(lifetime)`, {
       fontFamily: '"JetBrains Mono"', fontSize: '12px', color: '#5FC9A8', align: 'right',
     }).setOrigin(1, 0).setDepth(10);
@@ -148,8 +142,7 @@ export class OverviewScene extends Phaser.Scene {
     bus.emit('hud', {
       left: store.debts.reduce((a, d) => a + principalLeft(d), 0),
       pct: total > 0 ? paid / total : 0,
-      combo: combo.count,
-      mult: comboMult(),
+      ball: null,
       interest: stats.interestDestroyed,
     });
   }

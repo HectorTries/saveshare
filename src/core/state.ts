@@ -1,103 +1,79 @@
 /* ============================================================
-   Summit — "Snowball" v4. Each debt is a mountain: a peak in
-   the middle, a right slope down to the payoff flag, a left
-   slope down to the spiral pit. The snowball starts at the peak.
-   Horizontal position = % of the ORIGINAL balance resolved, not
-   raw £ (a £250k mortgage and a £2k card cross the same way).
-   Gravity (driven by APR) pulls left; payments push right.
+   Downhill — "Snowball" v5. Each debt is ONE hill. The ball
+   starts at the top (0% paid) and rolls down to the payoff flag
+   (100% = debt cleared). Position down the hill = % of the
+   ORIGINAL balance paid, 1:1 and honest — a £250k mortgage and
+   a £2k card cross the same hill the same way, £ for £.
 
-   Two NEW persisted values per debt:
-     progress — ball position (0 = peak, 1 = flag, negative = pit)
-     terrain  — steepness of each right-slope segment (0.05..1),
-                permanently flattened by payments ∝ interest avoided.
-   Everything else (balance, APR, months, paid) already existed.
+   Payments permanently grow the ball (same %-of-original basis
+   as distance). A bigger ball rolls faster — speed is a pure
+   function of size, light APR friction and debt length. That
+   growing speed IS the reward: no combo, no timing minigame.
+   No decay, no drift, no streak pressure: the ball simply sits
+   at its current size/position until the next payment.
+   Interest avoided is computed honestly and shown separately;
+   it never inflates distance or size.
    ============================================================ */
 
 export interface Debt {
   name: string;
   balance: number;    // original balance £
   apr: number;        // annual % rate
-  months: number;     // months remaining at start
+  months: number;     // months remaining at start (debt length)
   paid: number;       // cumulative principal paid £ (never decreases)
-  progress: number;   // ball position: 0 = peak, 1 = flag, -PIT = pit floor
-  terrain: number[];  // right-slope steepness per segment (SEGMENTS)
   celebrated: number; // bitmask of milestone flags celebrated (1=25,2=50,4=75)
 }
 
-export const SEGMENTS = 24;
-export const PIT = 0.35;             // deepest negative progress (pit floor)
-export const MILESTONES = [0.25, 0.5, 0.75, 1];
+export const MILESTONES = [0.25, 0.5, 0.75];
 
-const STORE_KEY = 'saveshare_summit_v5';
+const STORE_KEY = 'saveshare_hill_v6';
 const STATS_KEY = 'saveshare_stats_v4';
 const PREFS_KEY = 'saveshare_prefs_v4';
 
 /* ---------- derived math ---------- */
 export const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
+/** ball position down the hill — % of the ORIGINAL balance paid */
 export const pctPaid = (d: Debt): number => clamp01(d.paid / d.balance);
 export const principalLeft = (d: Debt): number => Math.max(0, d.balance - d.paid);
 /** months naturally shrink as the debt is paid down → paying earlier is worth more */
 export const monthsLeft = (d: Debt): number => Math.max(0, Math.round(d.months * (1 - pctPaid(d))));
 /** £ of future interest avoided by paying `amount` now (single source of truth —
-    drives terrain flattening, the interest-avoided readout and the combo meter) */
+    drives the interest-avoided readout and the lifetime stat) */
 export const interestDestroyed = (d: Debt, amount: number): number =>
   amount * (d.apr / 12 / 100) * monthsLeft(d);
-/** total projected future interest on the remaining principal (reference for previews) */
+/** total projected future interest on the remaining principal (reference) */
 export const interestProjected = (d: Debt): number =>
   principalLeft(d) * (d.apr / 12 / 100) * monthsLeft(d);
 
-/** fresh terrain: every segment at full steepness */
-export function freshTerrain(): number[] {
-  return new Array(SEGMENTS).fill(1);
+/* ---------- ball size — same %-of-original-balance basis as distance ---------- */
+export const BALL_MIN = 14;      // px radius, fresh ball
+export const BALL_GROWTH = 26;   // px radius added by 100% paid
+export const ballRadiusAt = (p: number): number => BALL_MIN + BALL_GROWTH * clamp01(p);
+export const ballRadius = (d: Debt): number => ballRadiusAt(pctPaid(d));
+/** how many times bigger than a fresh ball the current ball is (speed driver) */
+export const ballMult = (d: Debt): number => ballRadius(d) / BALL_MIN;
+
+export function ballLabel(d: Debt): string {
+  const p = pctPaid(d);
+  if (p < 0.25) return 'SMALL';
+  if (p < 0.5) return 'MEDIUM';
+  if (p < 0.75) return 'LARGE';
+  return 'SNOW GIANT';
 }
 
-/* ---------- debt length ---------- */
-/** Movement follows the LENGTH of the debt, not just its balance.
-    Reference term = 36 months: a 360-month mortgage crawls at 0.1×,
-    a 12-month overdraft sprints at 3×. Applied to both push distance
-    and the leftward pull so the tug-of-war stays proportionate. */
-export function termScale(d: Debt): number {
-  return Math.max(0.1, Math.min(3, 36 / Math.max(d.months, 1)));
-}
-
-/* ---------- terrain ---------- */
-export function segmentAt(progress: number): number {
-  return Math.max(0, Math.min(SEGMENTS - 1, Math.floor(progress * SEGMENTS)));
-}
-export function steepnessAt(d: Debt, progress: number): number {
-  const i = segmentAt(Math.max(0, progress));
-  return d.terrain[i] ?? 1;
-}
-/** right-slope drift: % of slope per second. Flatter terrain = less grip.
-    Scaled by debt length: a mortgage drifts slowly, a short card pulls hard. */
-export function driftPerSec(d: Debt, progress: number): number {
-  const t = termScale(d);
-  if (progress <= 0) {
-    // spiral pit side — always full pull, accelerating with depth
-    const depth = Math.min(1, -progress / PIT);
-    return 0.03 * d.apr * (1 + 0.6 * depth) * t;
-  }
-  const s = steepnessAt(d, progress);
-  return 0.008 * d.apr * (0.25 + 0.75 * s) * t;
-}
-/** flattened ground gives pushes more carry (the "easier climb" reward) */
-export function pushFactor(d: Debt, progress: number): number {
-  return 1 + 0.5 * (1 - steepnessAt(d, progress));
-}
-
-/* ---------- combo / momentum (session only) ---------- */
-export const combo = { debtIdx: -1, count: 0 };
-export function comboMult(): number {
-  return 1 + 0.1 * Math.min(combo.count - 1, 10);
-}
-/** well-timed (GOOD/PERFECT) hits build the streak; a sloppy hit resets it */
-export function registerHit(idx: number, wellTimed: boolean): { count: number; mult: number } {
-  if (wellTimed && combo.debtIdx === idx) combo.count += 1;
-  else if (wellTimed) { combo.debtIdx = idx; combo.count = 1; }
-  else { combo.debtIdx = -1; combo.count = 0; }
-  return { count: combo.count, mult: comboMult() };
-}
-export function resetCombo(): void { combo.debtIdx = -1; combo.count = 0; }
+/* ---------- roll speed — the whole reward mechanic ----------
+   Speed is a direct function of current size. Two modifiers:
+   • APR friction — very light hill resistance, so high-interest
+     debt needs a bit more ball to hit the same speed.
+   • Debt length — a mortgage (360mo) crawls at 0.25×, a short
+     overdraft (12mo) sprints at 2.5×: movement follows the
+     LENGTH of the debt, not just its balance.              */
+export const ROLL_BASE = 190;    // px/s: fresh ball, 0% APR, 36mo hill
+export const termFactor = (d: Debt): number =>
+  Math.max(0.25, Math.min(2.5, 36 / Math.max(d.months, 1)));
+export const hillFriction = (d: Debt): number => 1 + (d.apr / 100) * 0.35;
+export const rollSpeed = (d: Debt): number =>
+  (ROLL_BASE * ballMult(d)) / hillFriction(d) * termFactor(d);
 
 /* ---------- lifetime stats ---------- */
 export const stats = { interestDestroyed: 0 };
@@ -134,63 +110,33 @@ export function setPrefs(chip: number, strategy: Strategy): void {
   prefs.chip = chip; prefs.strategy = strategy; savePrefs();
 }
 
-/* ---------- push application ---------- */
+/* ---------- payment application ---------- */
 export interface PushOutcome {
-  amount: number;       // principal actually paid (capped)
+  amount: number;       // principal actually paid (capped at what's left)
   interest: number;     // £ future interest avoided by this payment
-  basePct: number;      // honest principal push as % of the slope (1:1 with £)
-  distPct: number;      // actual distance % (skill × combo × terrain)
-  skill: 'PERFECT' | 'GOOD' | 'SLOPPY';
-  skillEff: number;
-  comboCount: number;
-  comboMult: number;
-  milestone: number | null;  // 25|50|75 crossed this push
+  basePct: number;      // % of the hill covered this payment (1:1 with £)
+  milestone: number | null;  // 25|50|75 crossed this payment
   cleared: boolean;
   pctBefore: number;
   pctAfter: number;
-  flattenApplied: number;    // average steepness reduction this push
 }
 
-export const FLATTEN_DIV = 0.05;   // interest / (balance × this) → 0..1+
-export const FLATTEN_MAX = 0.35;   // max steepness removed per segment per push
-export const FLATTEN_SPAN = 6;     // segments ahead of the ball that get flattened
-
-export function applyPush(idx: number, amount: number, skillEff: number): PushOutcome {
+export function applyPush(idx: number, amount: number): PushOutcome {
   const d = store.debts[idx];
   const cap = Math.min(amount, principalLeft(d));
   const interest = interestDestroyed(d, cap);
-  const wellTimed = skillEff >= 1;
-  const cres = registerHit(idx, wellTimed);
   const before = pctPaid(d);
-  const basePct = (cap / d.balance) * 100;
-  // the ball moves in accordance with the LENGTH of the debt: a mortgage
-  // advances far slower per £ than a short card. Final payment snaps to flag.
-  const distPct = basePct * termScale(d) * skillEff * cres.mult * pushFactor(d, d.progress);
-
+  const basePct = d.balance > 0 ? (cap / d.balance) * 100 : 0;
+  // distance = % of original balance paid, 1:1 — honest, no multipliers
   d.paid = Math.min(d.balance, d.paid + cap);
   const after = pctPaid(d);
-  d.progress = Math.max(-PIT, Math.min(1, d.progress + distPct / 100));
   const cleared = after >= 1;
-  if (cleared) d.progress = 1; // reaching the payoff flag = debt cleared
 
-  // permanent flattening of the slope ahead, ∝ interest avoided
-  const strength = Math.min(FLATTEN_MAX, interest / (d.balance * FLATTEN_DIV));
-  let sum = 0;
-  const start = segmentAt(Math.max(0, d.progress));
-  for (let i = start; i < Math.min(SEGMENTS, start + FLATTEN_SPAN); i++) {
-    const beforeS = d.terrain[i];
-    d.terrain[i] = Math.max(0.05, d.terrain[i] - strength);
-    sum += beforeS - d.terrain[i];
-  }
-
-  const crossed = MILESTONES.filter((t) => before < t && after >= t);
   let milestone: number | null = null;
-  for (const t of crossed) {
-    if (t >= 1) continue;
-    const bit = t === 0.25 ? 1 : t === 0.5 ? 2 : 4;
-    if (!(d.celebrated & bit)) {
-      d.celebrated |= bit;
-      milestone = t * 100;
+  for (const t of MILESTONES) {
+    if (before < t && after >= t) {
+      const bit = t === 0.25 ? 1 : t === 0.5 ? 2 : 4;
+      if (!(d.celebrated & bit)) { d.celebrated |= bit; milestone = t * 100; }
     }
   }
 
@@ -198,29 +144,12 @@ export function applyPush(idx: number, amount: number, skillEff: number): PushOu
   saveStats();
   store.save();
 
-  return {
-    amount: cap,
-    interest,
-    basePct,
-    distPct,
-    skill: skillEff >= 1.3 ? 'PERFECT' : skillEff >= 1 ? 'GOOD' : 'SLOPPY',
-    skillEff,
-    comboCount: cres.count,
-    comboMult: cres.mult,
-    milestone,
-    cleared,
-    pctBefore: before,
-    pctAfter: after,
-    flattenApplied: sum / Math.max(1, FLATTEN_SPAN),
-  };
+  return { amount: cap, interest, basePct, milestone, cleared, pctBefore: before, pctAfter: after };
 }
 
 /* ---------- store ---------- */
 function fresh(name: string, balance: number, apr: number, months: number): Debt {
-  return {
-    name, balance, apr, months, paid: 0, progress: 0,
-    terrain: freshTerrain(), celebrated: 0,
-  };
+  return { name, balance, apr, months, paid: 0, celebrated: 0 };
 }
 
 function normalize(raw: unknown): Debt[] {
@@ -228,9 +157,6 @@ function normalize(raw: unknown): Debt[] {
   return raw
     .filter((x): x is Partial<Debt> => !!x && typeof x === 'object')
     .map((x) => {
-      const terrain = Array.isArray(x.terrain) && x.terrain.length === SEGMENTS
-        ? (x.terrain as number[]).map((v) => (typeof v === 'number' && isFinite(v) ? Math.max(0.05, Math.min(1, v)) : 1))
-        : freshTerrain();
       const bal = typeof x.balance === 'number' && isFinite(x.balance) ? x.balance : 0;
       return {
         name: typeof x.name === 'string' && x.name ? x.name : 'Debt',
@@ -238,8 +164,6 @@ function normalize(raw: unknown): Debt[] {
         apr: typeof x.apr === 'number' && isFinite(x.apr) ? Math.max(0, x.apr) : 19.9,
         months: typeof x.months === 'number' && isFinite(x.months) ? Math.max(1, Math.round(x.months)) : 36,
         paid: typeof x.paid === 'number' && isFinite(x.paid) ? Math.max(0, Math.min(x.paid, bal > 0 ? bal : Infinity)) : 0,
-        progress: typeof x.progress === 'number' && isFinite(x.progress) ? Math.max(-PIT, Math.min(1, x.progress)) : 0,
-        terrain,
         celebrated: typeof x.celebrated === 'number' ? (x.celebrated & 7) : 0,
       };
     })
@@ -261,6 +185,7 @@ export const store = {
   load(): void {
     loadStats();
     loadPrefs();
+    // v6 downhill
     try {
       const raw = localStorage.getItem(STORE_KEY);
       if (raw) {
@@ -268,7 +193,15 @@ export const store = {
         if (parsed.length) { this.debts = parsed; return; }
       }
     } catch (e) { /* ignore */ }
-    // migrate from v4 towers (paid → progress; fresh terrain)
+    // migrate from v5 summit (progress/terrain/gravity dropped — paid survives)
+    try {
+      const old = localStorage.getItem('saveshare_summit_v5');
+      if (old) {
+        const parsed = normalize(JSON.parse(old));
+        if (parsed.length) { this.debts = parsed; this.save(); return; }
+      }
+    } catch (e) { /* ignore */ }
+    // migrate from v4 towers (paid → progress)
     try {
       const old = localStorage.getItem('saveshare_debt_towers_v4');
       if (old) {
@@ -278,7 +211,7 @@ export const store = {
             const paid = typeof x.paid === 'number' ? x.paid : 0;
             const pct = balance > 0 ? Math.max(0, Math.min(1, paid / balance)) : 0;
             const celebrated = (pct >= 0.25 ? 1 : 0) | (pct >= 0.5 ? 2 : 0) | (pct >= 0.75 ? 4 : 0);
-            return { ...x, progress: pct, terrain: freshTerrain(), celebrated };
+            return { ...x, celebrated };
           }),
         );
         if (parsed.length) { this.debts = parsed; this.save(); return; }
@@ -295,11 +228,8 @@ export const store = {
   resetProgress(): void {
     this.debts.forEach((d) => {
       d.paid = 0;
-      d.progress = 0;
-      d.terrain = freshTerrain();
       d.celebrated = 0;
     });
-    resetCombo();
     stats.interestDestroyed = 0;
     saveStats();
     this.save();
