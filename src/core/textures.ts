@@ -50,6 +50,35 @@ export function ensureGameTextures(scene: Phaser.Scene): void {
     cv.refresh();
   }
 
+  /* coin — gold disc with shine (knock-off juice) */
+  {
+    const cv = t.createCanvas('coin', 32, 32)!;
+    const ctx = cv.getContext() as CanvasRenderingContext2D;
+    const g = ctx.createRadialGradient(11, 10, 2, 16, 16, 16);
+    g.addColorStop(0, '#FFF0BC');
+    g.addColorStop(0.5, '#F6C45C');
+    g.addColorStop(1, '#D6972F');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(16, 16, 13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#B8791C';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(16, 16, 12, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(184,121,28,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(16, 16, 8, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.beginPath();
+    ctx.ellipse(10, 9, 3.5, 2, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+    cv.refresh();
+  }
+
   /* pix — 1px white (particles) */
   {
     const cv = t.createCanvas('pix', 8, 8)!;

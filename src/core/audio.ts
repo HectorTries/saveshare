@@ -54,6 +54,10 @@ export const sfx = {
       setTimeout(() => beep(760 + i * 110, 0.06, 'triangle', 0.13), i * 50);
     }
   },
+  /** coin knock-off pop — short bright blip, random pitch for a coin-cascade feel */
+  coinPop(): void {
+    beep(880 + Math.random() * 260, 0.06, 'square', 0.09);
+  },
   roll(): void { noiseBurst(0.5, 0.05, 700); },
   whoosh(): void { noiseBurst(0.3, 0.12, 500); },
   jump(): void { beep(280, 0.18, 'sine', 0.1, 520); noiseBurst(0.15, 0.08, 800); },

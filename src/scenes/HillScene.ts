@@ -10,7 +10,7 @@ import {
   money, ballRadius, ballMult, ballLabel, levelValue, levelProgress,
   levelsCleared, LEVELS, levelLabel,
 } from '../core/state';
-import { drawHill, ballPosAt, setHillSize, FLAG, type HillRef } from '../core/hillRender';
+import { drawHill, ballPosAt, pointAt, setHillSize, FLAG, type HillRef } from '../core/hillRender';
 import { ensureGameTextures } from '../core/textures';
 import { sfx } from '../core/audio';
 import { bus } from '../core/bus';
@@ -31,6 +31,7 @@ export class HillScene extends Phaser.Scene {
   private eyes!: Phaser.GameObjects.Container;
   private shadow!: Phaser.GameObjects.Ellipse;
   private trail!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private coinSprites: Phaser.GameObjects.Image[] = [];
 
   private hudInfo!: Phaser.GameObjects.Text;
   private hudBall!: Phaser.GameObjects.Text;
@@ -128,6 +129,7 @@ export class HillScene extends Phaser.Scene {
     });
     this.trail.setDepth(4);
     this.setBallAt(this.fracNow());
+    this.placeCoins();
   }
 
   private setBallAt(frac: number): { x: number; y: number } {
@@ -141,8 +143,44 @@ export class HillScene extends Phaser.Scene {
     return pos;
   }
 
+  /** place gold coins along the slope, ahead of the ball's current position */
+  private placeCoins(): void {
+    this.coinSprites.forEach((c) => c.destroy());
+    this.coinSprites = [];
+    const frac = this.fracNow();
+    const n = 9;
+    for (let i = 1; i <= n; i++) {
+      const t = i / (n + 1);
+      if (t <= frac) continue;
+      const pos = pointAt(t);
+      const coin = this.add.image(pos.x, pos.y - 18, 'coin').setDepth(3).setScale(0.85);
+      coin.setData('t', t);
+      coin.setData('knocked', false);
+      this.coinSprites.push(coin);
+    }
+  }
+
+  /** a coin flies off with a spin + pop as the ball knocks it */
+  private knockCoin(coin: Phaser.GameObjects.Image): void {
+    coin.setData('knocked', true);
+    coin.setDepth(6);
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    this.tweens.add({
+      targets: coin,
+      y: coin.y - 60 - Math.random() * 50,
+      x: coin.x + dir * (35 + Math.random() * 55),
+      scaleX: 0.15, scaleY: 0.15,
+      alpha: 0,
+      angle: dir * (160 + Math.random() * 220),
+      duration: 460,
+      ease: 'Cubic.easeOut',
+      onComplete: () => coin.destroy(),
+    });
+    sfx.coinPop();
+  }
+
   sync(): void {
-    if (this.ballC) this.setBallAt(this.fracNow());
+    if (this.ballC) { this.setBallAt(this.fracNow()); this.placeCoins(); }
     this.refreshHud();
   }
 
@@ -293,9 +331,14 @@ export class HillScene extends Phaser.Scene {
         const pos = this.setBallAt(frac);
         this.trail.emitParticleAt(pos.x, pos.y + ballRadius(d) * 0.4, 1);
         this.ballImg.rotation += 0.16;
+        // knock off coins the ball passes
+        for (const c of this.coinSprites) {
+          if (!c.getData('knocked') && (c.getData('t') as number) < frac) this.knockCoin(c);
+        }
         if (lv > lastLevel) {
           for (let L = lastLevel + 1; L <= lv; L++) this.levelBeat(L);
           lastLevel = lv;
+          this.placeCoins(); // fresh coins for the next level's slope
           if (!sfxPlayed) { sfxPlayed = true; sfx.level(o.levelsCrossed); }
         }
       },
