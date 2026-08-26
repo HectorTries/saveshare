@@ -6,7 +6,9 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:#0F1A2E;color:var(--text);font-family:'Manrope',sans-serif;overflow-x:hidden}
-#sky{position:fixed;inset:0;background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 45%,var(--sky-bottom) 100%);z-index:-3}
+#sky{position:fixed;inset:0;background:linear-gradient(180deg,#33425A 0%,#495B76 34%,#6E87A3 64%,#C4DAE9 86%,#EAF4F8 100%);z-index:-3}
+#sun{position:fixed;top:5%;left:16%;width:44vw;height:44vw;max-width:500px;max-height:500px;background:radial-gradient(circle,rgba(255,226,170,.30),rgba(255,226,170,0) 62%);z-index:-2;filter:blur(6px);pointer-events:none}
+#vignette{position:fixed;inset:0;z-index:5;background:radial-gradient(130% 115% at 50% 42%,transparent 52%,rgba(8,15,28,.5) 100%);pointer-events:none}
 #mountains{position:fixed;bottom:0;left:0;right:0;width:100%;height:34vh;z-index:-2;opacity:.55}
 #snowCanvas{position:fixed;inset:0;z-index:-1;pointer-events:none}
 #aurora{position:fixed;top:0;left:0;right:0;height:42vh;z-index:-1;opacity:.28;background:linear-gradient(120deg,rgba(95,201,168,.5),rgba(62,146,204,.4),rgba(255,182,140,.35));filter:blur(42px);mix-blend-mode:screen}

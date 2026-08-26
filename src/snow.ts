@@ -32,7 +32,13 @@ function resize(): void {
   sw = innerWidth; sh = innerHeight;
   const cv = document.getElementById('snowCanvas') as HTMLCanvasElement;
   if (!cv) return;
-  cv.width = sw; cv.height = sh;
+  const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1), 2);
+  cv.width = Math.round(sw * dpr);
+  cv.height = Math.round(sh * dpr);
+  cv.style.width = sw + 'px';
+  cv.style.height = sh + 'px';
+  snowCtx = cv.getContext('2d');
+  snowCtx?.setTransform(dpr, 0, 0, dpr, 0, 0);
   flakes = Array.from({ length: 70 }, () => ({
     x: Math.random() * sw,
     y: Math.random() * -sh,

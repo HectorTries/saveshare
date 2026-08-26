@@ -19,33 +19,33 @@ export function ensureGameTextures(scene: Phaser.Scene): void {
   const t = scene.textures;
   if (t.exists('snowball')) return;
 
-  /* snowball — radial white with blue rim + craters */
+  /* snowball — radial white with blue rim + craters (128px for crisp scaling) */
   {
-    const cv = t.createCanvas('snowball', 64, 64)!;
+    const cv = t.createCanvas('snowball', 128, 128)!;
     const ctx = cv.getContext() as CanvasRenderingContext2D;
-    const g = ctx.createRadialGradient(26, 22, 4, 32, 32, 32);
+    const g = ctx.createRadialGradient(52, 44, 8, 64, 64, 64);
     g.addColorStop(0, '#FFFFFF');
-    g.addColorStop(0.7, '#F4FAFD');
-    g.addColorStop(1, '#C4E2EF');
+    g.addColorStop(0.65, '#F6FBFE');
+    g.addColorStop(1, '#BFDFEE');
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.arc(32, 32, 30, 0, Math.PI * 2);
+    ctx.arc(64, 64, 60, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = 'rgba(150,205,225,0.9)';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(32, 32, 29, 0, Math.PI * 2);
+    ctx.arc(64, 64, 58, 0, Math.PI * 2);
     ctx.stroke();
     // craters
-    ctx.fillStyle = 'rgba(170,210,228,0.8)';
-    [[22, 26], [44, 40], [30, 48], [14, 42]].forEach(([cx, cy]) => {
+    ctx.fillStyle = 'rgba(170,210,228,0.55)';
+    [[44, 52], [88, 80], [60, 96], [28, 84]].forEach(([cx, cy]) => {
       ctx.beginPath();
-      ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 8, 0, Math.PI * 2);
       ctx.fill();
     });
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
     ctx.beginPath();
-    ctx.arc(20, 20, 3, 0, Math.PI * 2);
+    ctx.arc(40, 40, 5, 0, Math.PI * 2);
     ctx.fill();
     cv.refresh();
   }

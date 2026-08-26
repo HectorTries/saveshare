@@ -112,12 +112,17 @@ export function drawHill(scene: Phaser.Scene, d: Debt): HillRef {
   const body: { x: number; y: number }[] = [
     ...PATH,
     { x: FLAG.x + W * 0.03, y: FLAG.y + H * 0.04 },
-    { x: FLAG.x + W * 0.07, y: H * 1.05 },
-    { x: -W * 0.05, y: H * 1.05 },
+    { x: FLAG.x + W * 0.07, y: gy + 2 },
+    { x: -W * 0.05, y: gy + 2 },
     { x: -W * 0.05, y: H * 0.30 },
     { x: START.x - W * 0.02, y: START.y + H * 0.02 },
   ];
   g.fillStyle(thawed ? 0xC9F0DD : 0xEDF5FB, 1);
+  if (thawed) {
+    g.fillGradientStyle(0xEAFBF0, 0xD6F2E2, 0xA8DFC2, 0x8CCFAE, 1);
+  } else {
+    g.fillGradientStyle(0xFFFFFF, 0xEDF5FB, 0xC4D8E8, 0xA8C2D8, 1);
+  }
   g.fillPoints(body, true);
 
   const shade = PATH.map((p, i) => {
@@ -127,7 +132,7 @@ export function drawHill(scene: Phaser.Scene, d: Debt): HillRef {
     return { x: p.x + (-dy / len) * (H * 0.04), y: p.y + (dx / len) * (H * 0.04) };
   });
   g.fillStyle(thawed ? 0xA8DFC2 : 0xC9DDEB, 0.55);
-  g.fillPoints([...shade, { x: FLAG.x + W * 0.03, y: FLAG.y + H * 0.04 }, { x: FLAG.x + W * 0.07, y: H * 1.05 }, { x: -W * 0.05, y: H * 1.05 }, { x: -W * 0.05, y: H * 0.30 }, { x: START.x - W * 0.02, y: START.y + H * 0.02 }], true);
+  g.fillPoints([...shade, { x: FLAG.x + W * 0.03, y: FLAG.y + H * 0.04 }, { x: FLAG.x + W * 0.07, y: gy + 2 }, { x: -W * 0.05, y: gy + 2 }, { x: -W * 0.05, y: H * 0.30 }, { x: START.x - W * 0.02, y: START.y + H * 0.02 }], true);
 
   /* bright roll line */
   g.lineStyle(Math.max(3, H * 0.008), thawed ? 0xDFF7EA : 0xFFFFFF, 0.4);
@@ -142,8 +147,6 @@ export function drawHill(scene: Phaser.Scene, d: Debt): HillRef {
   g.fillEllipse(START.x + W * 0.006, START.y - H * 0.004, W * 0.065, H * 0.045);
 
   /* finish line / gate at the base */
-  g.fillStyle(0xFFB84B, 0.30);
-  g.fillEllipse(FLAG.x, FLAG.y + H * 0.035, W * 0.13, H * 0.06);
   g.lineStyle(Math.max(3, W * 0.004), 0x22334A, 1);
   g.beginPath(); g.moveTo(FLAG.x - W * 0.02, FLAG.y - H * 0.045); g.lineTo(FLAG.x - W * 0.02, FLAG.y + H * 0.01); g.strokePath();
   g.beginPath(); g.moveTo(FLAG.x + W * 0.02, FLAG.y - H * 0.045); g.lineTo(FLAG.x + W * 0.02, FLAG.y + H * 0.01); g.strokePath();
