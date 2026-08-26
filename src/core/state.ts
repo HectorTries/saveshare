@@ -26,6 +26,7 @@ export interface Debt {
 }
 
 export const MILESTONES = [0.25, 0.5, 0.75];
+export const LEVELS = 100;   // every debt = 100 levels, each worth 1% of the original balance
 
 const STORE_KEY = 'saveshare_hill_v7';
 const STATS_KEY = 'saveshare_stats_v4';
@@ -36,6 +37,24 @@ export const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
 /** ball position down the hill — % of the ORIGINAL balance paid */
 export const pctPaid = (d: Debt): number => clamp01(d.paid / d.balance);
 export const principalLeft = (d: Debt): number => Math.max(0, d.balance - d.paid);
+
+/** £ value of a single level — 1% of the ORIGINAL balance */
+export const levelValue = (d: Debt): number => d.balance / LEVELS;
+/** level progress 0..100 (float) — how far down the 100-level hill the ball is */
+export const levelProgress = (d: Debt): number =>
+  Math.min(LEVELS, d.balance > 0 ? d.paid / levelValue(d) : 0);
+/** whole levels cleared (0..100) */
+export const levelsCleared = (d: Debt): number => Math.floor(levelProgress(d) + 1e-9);
+/** whole levels cleared for an arbitrary progress fraction (0..1) — used during the roll */
+export const levelsClearedAt = (pct: number): number =>
+  Math.floor(Math.max(0, Math.min(1, pct)) * LEVELS + 1e-9);
+/** £ per level formatted — penny-precise (levels are often fractional £, e.g. £7.50) */
+export const levelLabel = (d: Debt): string => {
+  const v = levelValue(d);
+  if (v >= 1000) return money(v);
+  const r = Math.round(v * 100) / 100;
+  return '£' + (r % 1 === 0 ? r.toFixed(0) : r.toFixed(2));
+};
 
 const MAX_TERM = 600;
 /** amortisation: months to clear the remaining principal at the monthly
@@ -142,6 +161,9 @@ export interface PushOutcome {
   cleared: boolean;
   pctBefore: number;
   pctAfter: number;
+  levelsBefore: number;  // whole levels cleared before the payment
+  levelsAfter: number;   // whole levels cleared after the payment
+  levelsCrossed: number; // whole levels newly cleared this payment
 }
 
 export function applyPush(idx: number, amount: number): PushOutcome {
@@ -154,6 +176,9 @@ export function applyPush(idx: number, amount: number): PushOutcome {
   d.paid = Math.min(d.balance, d.paid + cap);
   const after = pctPaid(d);
   const cleared = after >= 1;
+  const levelsBefore = levelsClearedAt(before);
+  const levelsAfter = levelsClearedAt(after);
+  const levelsCrossed = levelsAfter - levelsBefore;
 
   let milestone: number | null = null;
   for (const t of MILESTONES) {
@@ -167,7 +192,7 @@ export function applyPush(idx: number, amount: number): PushOutcome {
   saveStats();
   store.save();
 
-  return { amount: cap, interest, basePct, milestone, cleared, pctBefore: before, pctAfter: after };
+  return { amount: cap, interest, basePct, milestone, cleared, pctBefore: before, pctAfter: after, levelsBefore, levelsAfter, levelsCrossed };
 }
 
 /* ---------- store ---------- */

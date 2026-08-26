@@ -47,6 +47,13 @@ export const sfx = {
   select(): void { beep(660, 0.08, 'triangle', 0.12); },
   crit(): void { beep(1200, 0.12, 'square', 0.12); setTimeout(() => beep(1800, 0.15, 'square', 0.1), 80); },
   milestone(): void { this.boom(); [523, 659, 784].forEach((f, i) => setTimeout(() => beep(f, 0.16, 'triangle', 0.2), i * 90)); },
+  /** level-cleared pop — a quick ascending run, pitch/count scale with how many levels fell */
+  level(n = 1): void {
+    const steps = Math.max(1, Math.min(8, n));
+    for (let i = 0; i < steps; i++) {
+      setTimeout(() => beep(760 + i * 110, 0.06, 'triangle', 0.13), i * 50);
+    }
+  },
   roll(): void { noiseBurst(0.5, 0.05, 700); },
   whoosh(): void { noiseBurst(0.3, 0.12, 500); },
   jump(): void { beep(280, 0.18, 'sine', 0.1, 520); noiseBurst(0.15, 0.08, 800); },

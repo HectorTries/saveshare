@@ -2,7 +2,7 @@
    The game loop itself (pay → roll → readout) lives entirely in
    the Phaser scenes; DOM only handles setup and the persistent
    top bar. ---------- */
-import { store, pctPaid, money, prefs, MUTE_KEY, stats } from './core/state';
+import { store, money, prefs, MUTE_KEY, stats, levelsCleared } from './core/state';
 import { isMuted, setMuted } from './core/audio';
 import { bus } from './core/bus';
 
@@ -58,7 +58,7 @@ function renderDebtList(): void {
     if (d.paid > 0) {
       const paidRow = document.createElement('div');
       paidRow.style.cssText = 'font-size:11px;color:var(--mint-melt);margin:-4px 0 8px 4px';
-      paidRow.textContent = `✓ ${money(d.paid)} paid so far (${Math.round(pctPaid(d) * 100)}% down the hill) — progress you keep`;
+      paidRow.textContent = `✓ ${money(d.paid)} paid so far (Level ${levelsCleared(d)}/100) — progress you keep`;
       el.appendChild(paidRow);
     }
   });

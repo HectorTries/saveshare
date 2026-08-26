@@ -13,7 +13,7 @@ import Phaser from 'phaser';
 import {
   store, applyPush, prefs, setPrefs, pctPaid, principalLeft, monthsLeft,
   money, ballRadius, ballRadiusAt, ballMult, ballLabel, rollSpeed,
-  amortMonthsLeft, interestDestroyed,
+  amortMonthsLeft, interestDestroyed, levelValue, levelsCleared, levelsClearedAt, LEVELS, levelLabel,
 } from '../core/state';
 import {
   drawHill, pointAt, ballPosAt, FLAG, START, type HillRef,
@@ -42,6 +42,8 @@ export class HillScene extends Phaser.Scene {
 
   private hudInfo!: Phaser.GameObjects.Text;
   private hudBall!: Phaser.GameObjects.Text;
+  private hudLevel!: Phaser.GameObjects.Text;
+  private hudLevelSub!: Phaser.GameObjects.Text;
   private chipBtns: Phaser.GameObjects.Container[] = [];
   private payBtn!: Phaser.GameObjects.Container;
   private payLbl!: Phaser.GameObjects.Text;
@@ -49,6 +51,7 @@ export class HillScene extends Phaser.Scene {
   private hintText!: Phaser.GameObjects.Text;
 
   private busy = false;   // roll animation running
+  private levelSfxPlayed = false;
 
   constructor() { super('Hill'); }
 
@@ -69,6 +72,7 @@ export class HillScene extends Phaser.Scene {
     (window as any).__hillMath = {
       rollSpeed, ballMult, ballRadiusAt, pctPaid, pointAt, ballPosAt,
       monthsLeft, amortMonthsLeft, interestDestroyed,
+      levelValue, levelsCleared, levelsClearedAt, LEVELS,
     };
 
 
@@ -163,6 +167,14 @@ export class HillScene extends Phaser.Scene {
       fontFamily: '"JetBrains Mono"', fontSize: '13px', color: '#F2B84B',
       stroke: '#0F1A2E', strokeThickness: 4,
     }).setOrigin(1, 0).setDepth(10);
+    this.hudLevel = this.add.text(W / 2, 14, '', {
+      fontFamily: '"Baloo 2"', fontSize: '26px', color: '#F2B84B',
+      stroke: '#0F1A2E', strokeThickness: 6,
+    }).setOrigin(0.5, 0).setDepth(10);
+    this.hudLevelSub = this.add.text(W / 2, 46, '', {
+      fontFamily: '"JetBrains Mono"', fontSize: '12px', color: '#B7C7D6',
+      stroke: '#0F1A2E', strokeThickness: 3,
+    }).setOrigin(0.5, 0).setDepth(10);
     this.hintText = this.add.text(W / 2, H - 24, '', {
       fontFamily: '"Manrope"', fontSize: '12px', color: '#9FB2C4',
     }).setOrigin(0.5).setDepth(10);
@@ -172,14 +184,14 @@ export class HillScene extends Phaser.Scene {
   private refreshHud(): void {
     const d = this.debt;
     if (!d) return;
-    const pct = Math.round(pctPaid(d) * 100);
+    const lv = levelsCleared(d);
     const min = d.monthly > 0 ? ` · £${d.monthly}/mo` : '';
-    this.hudInfo.setText(
-      `${d.name} — ${money(principalLeft(d))} · APR ${d.apr}% · ${monthsLeft(d)}mo${min} · ${pct}% cleared`,
-    );
+    this.hudInfo.setText(`${d.name} — APR ${d.apr}% · ${monthsLeft(d)}mo${min}`);
     this.hudBall.setText(`❄️ ball ${ballLabel(d)} ×${ballMult(d).toFixed(1)}`);
+    this.hudLevel.setText(`LEVEL ${lv} / ${LEVELS}`);
+    this.hudLevelSub.setText(`${levelLabel(d)} per level · ${money(principalLeft(d))} left`);
     this.hintText.setText(
-      'Each payment grows your ball and rolls it down the hill — bigger ball, faster roll. APR adds a little hill drag.',
+      'Each payment rolls your ball down — every level cleared is 1% of the debt. Bigger ball, faster roll.',
     );
   }
 
@@ -262,6 +274,7 @@ export class HillScene extends Phaser.Scene {
     if (o.amount <= 0) { this.busy = false; return; }
     sfx.chip();
     sfx.roll();
+    this.levelSfxPlayed = false;
 
     // the roll: from old position to new, at a speed set by the
     // ball's (new, bigger) size — bigger ball covers ground quicker.
@@ -301,6 +314,7 @@ export class HillScene extends Phaser.Scene {
 
     let prevK = 0;
     let dustAcc = 0;
+    let lastLevel = levelsClearedAt(o.pctBefore);
     this.tweens.addCounter({
       from: 0, to: 1, duration: dur, ease: 'Quint.easeOut',
       onUpdate: (tw) => {
@@ -308,6 +322,13 @@ export class HillScene extends Phaser.Scene {
         const p = Phaser.Math.Linear(o.pctBefore, o.pctAfter, k);
         const pos = this.setBallAt(p);
         const r = ballRadiusAt(p);
+        // level cascade — cross a ledge, fire a beat
+        const lvl = levelsClearedAt(p);
+        if (lvl > lastLevel) {
+          for (let L = lastLevel + 1; L <= lvl; L++) this.levelBeat(L);
+          lastLevel = lvl;
+          if (!this.levelSfxPlayed) { this.levelSfxPlayed = true; sfx.level(o.levelsCrossed); }
+        }
         this.trail.emitParticleAt(pos.x, pos.y + r * 0.4, mult > 1.4 ? Math.min(5, 1 + Math.floor(mult)) : 1);
         // continuous dust kick-up from the contact point while rolling
         dustAcc += 1;
@@ -341,7 +362,8 @@ export class HillScene extends Phaser.Scene {
       // readout — honest numbers, kept separate. Fixed panel at top-centre,
       // never overlaps the hill or the ball. (On clear the celebration carries it.)
       const lines: { text: string; color: string; size: number }[] = [
-        { text: `${money(o.amount)} principal — +${o.basePct.toFixed(2)}% down the hill`, color: '#5FC9A8', size: 16 },
+        { text: `${money(o.amount)} principal — LEVEL ${o.levelsAfter}/${LEVELS}`, color: '#5FC9A8', size: 16 },
+        { text: o.levelsCrossed > 0 ? `+${o.levelsCrossed} level${o.levelsCrossed === 1 ? '' : 's'} cleared ❄️` : 'partial level — keep rolling', color: '#F2B84B', size: 14 },
         { text: `💸 ${money(o.interest)} interest avoided`, color: '#5FC9A8', size: 14 },
       ];
       const panelY = 108;
@@ -367,18 +389,33 @@ export class HillScene extends Phaser.Scene {
       });
     }
 
+    // refresh the hill so the melted trail + cleared ledges track the new progress
+    this.redrawHill();
+
     // milestone / clear celebrations
     if (o.milestone) this.milestoneBeat(o.milestone);
-    if (o.cleared) {
-      this.redrawHill();   // flags out, payoff flag green
-      this.clearCelebration();
-    }
+    if (o.cleared) this.clearCelebration();
 
     if (o.milestone || o.cleared) {
       this.time.timeScale = 0.35;
       window.setTimeout(() => { this.time.timeScale = 1; }, 550);
     }
     this.emitHud();
+  }
+
+  /** one small pop at a crossed level ledge + a counter bump (the "level cleared" beat) */
+  private levelBeat(level: number): void {
+    const pos = pointAt(level / LEVELS);
+    const flash = this.add.ellipse(pos.x, pos.y - 6, 16, 16, 0xF2B84B, 0.95).setDepth(6);
+    this.tweens.add({
+      targets: flash, scale: 2.2, alpha: 0, duration: 240, ease: 'Cubic.easeOut',
+      onComplete: () => flash.destroy(),
+    });
+    if (this.hudLevel) {
+      this.hudLevel.setScale(1.16);
+      this.tweens.add({ targets: this.hudLevel, scale: 1, duration: 170, ease: 'Back.easeOut' });
+      this.refreshHud();
+    }
   }
 
   private milestoneBeat(milestone: number): void {

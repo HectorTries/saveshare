@@ -10,7 +10,7 @@
    ============================================================ */
 import Phaser from 'phaser';
 import { ensureGameTextures } from './textures';
-import { type Debt, pctPaid, principalLeft, MILESTONES } from './state';
+import { type Debt, pctPaid, principalLeft, MILESTONES, LEVELS, levelsCleared } from './state';
 
 export const START = { x: 265, y: 150 };   // crest — 0% paid
 // FLAG lives at the bottom-right; path compacted so the whole roll
@@ -171,6 +171,39 @@ function bandPolygon(off: number): { x: number; y: number }[] {
   return out;
 }
 
+/* ---------- level segmentation: melted trail + 100 ledges ---------- */
+function offsetPoint(
+  p: { x: number; y: number }, prev: { x: number; y: number }, next: { x: number; y: number }, off: number,
+): { x: number; y: number } {
+  const dx = next.x - prev.x, dy = next.y - prev.y;
+  const len = Math.hypot(dx, dy) || 1;
+  return { x: p.x + (-dy / len) * off, y: p.y + (dx / len) * off };
+}
+
+/** filled band over the cleared portion of the hill (crest → current ball),
+    so the debt "melts" green behind the ball as levels fall */
+function clearedBand(p: number): { x: number; y: number }[] {
+  const f = Math.max(0, Math.min(1, p)) * (PATH.length - 1);
+  const endIdx = Math.min(PATH.length - 1, Math.floor(f));
+  const endPt = pointAt(Math.max(0, Math.min(1, p)));
+  const top: { x: number; y: number }[] = [];
+  for (let i = 0; i <= endIdx; i++) {
+    const a = PATH[Math.max(0, i - 1)];
+    const b = PATH[Math.min(PATH.length - 1, i + 1)];
+    top.push(offsetPoint(PATH[i], a, b, 10));
+  }
+  const ea = PATH[endIdx];
+  const eb = PATH[Math.min(PATH.length - 1, endIdx + 1)];
+  top.push(offsetPoint(endPt, ea, eb, 10));
+  const deep: { x: number; y: number }[] = [];
+  for (let i = endIdx; i >= 0; i--) {
+    const a = PATH[Math.max(0, i - 1)];
+    const b = PATH[Math.min(PATH.length - 1, i + 1)];
+    deep.push(offsetPoint(PATH[i], a, b, 70));
+  }
+  return [...top, ...deep];
+}
+
 /* ---------- the hill ---------- */
 export function drawHill(scene: Phaser.Scene, d: Debt): HillRef {
   ensureGameTextures(scene);
@@ -256,6 +289,14 @@ export function drawHill(scene: Phaser.Scene, d: Debt): HillRef {
   g.fillCircle(START.x - 6, START.y + 6, 2);
   g.fillCircle(START.x + 60, START.y + 16, 1.6);
 
+  /* ----- melted trail — the cleared levels turn to green grass behind the ball ----- */
+  if (paid > 0 && !thawed) {
+    g.fillStyle(0x5BBF8C, 0.95);
+    g.fillPoints(clearedBand(paid), true);
+    g.fillStyle(0x9BE4C2, 0.45);
+    g.fillPoints(clearedBand(paid), true);
+  }
+
   /* ----- bright ribbon along the top edge (the roll line) ----- */
   g.lineStyle(7, thawed ? 0xDFF7EA : 0xFFFFFF, 0.35);
   g.beginPath();
@@ -267,6 +308,27 @@ export function drawHill(scene: Phaser.Scene, d: Debt): HillRef {
   g.moveTo(PATH[0].x, PATH[0].y);
   for (const p of PATH) g.lineTo(p.x, p.y);
   g.strokePath();
+
+  /* ----- 100 level ledges — small rungs marking each 1% step ----- */
+  const lv = levelsCleared(d);
+  for (let i = 1; i < LEVELS; i++) {
+    const t = i / LEVELS;
+    const pos = pointAt(t);
+    const pi = Math.floor(t * (PATH.length - 1));
+    const a = PATH[Math.max(0, pi - 1)];
+    const b = PATH[Math.min(PATH.length - 1, pi + 1)];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    const cleared = i <= lv;
+    const isNext = !thawed && i === lv + 1;
+    const half = isNext ? 6 : 4.5;
+    g.lineStyle(isNext ? 3 : 1.8, isNext ? 0xF2B84B : cleared ? 0x69C49A : 0x8AA7C2, isNext ? 0.95 : cleared ? 0.9 : 0.6);
+    g.beginPath();
+    g.moveTo(pos.x - nx * half, pos.y - ny * half);
+    g.lineTo(pos.x + nx * half, pos.y + ny * half);
+    g.strokePath();
+  }
 
   /* ----- snowy pines tucked onto the upper-mid flank ----- */
   for (let i = 0; i < 4; i++) {
@@ -379,7 +441,7 @@ export function drawMiniHill(
     stroke: '#0F1A2E', strokeThickness: 4,
   }).setOrigin(0.5, 0);
   c.add(name);
-  const sub = scene.add.text(0, 36, thawed ? 'PAID OFF 🎉' : `${principalLeft(d) >= 1000 ? '£' + (principalLeft(d) / 1000).toFixed(1) + 'k' : '£' + Math.round(principalLeft(d))} · APR ${d.apr}%`, {
+  const sub = scene.add.text(0, 36, thawed ? 'PAID OFF 🎉' : `L${levelsCleared(d)}/100 · £${principalLeft(d) >= 1000 ? (principalLeft(d) / 1000).toFixed(1) + 'k' : Math.round(principalLeft(d))}`, {
     fontFamily: '"JetBrains Mono"', fontSize: '10.5px', color: '#B7C7D6',
     stroke: '#0F1A2E', strokeThickness: 3,
   }).setOrigin(0.5, 0);
