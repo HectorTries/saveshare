@@ -1,36 +1,76 @@
 /* ============================================================
-   Staircase hill — v7. Each debt is a 100-step staircase down a
-   snowy slope. Every step = 1% of the original balance (a discrete
-   LEVEL). The snowball rolls down the steps; each step it passes
-   turns to green grass behind it. 100 steps, 100 win-moments.
+   Level-screen slope — v8. Each LEVEL is its own screen: a single
+   short downhill slope the snowball rolls down. Clear it and the
+   loop flows straight into the next level's slope. A £500 payment
+   (5 levels) rolls the ball through 5 slopes back-to-back.
    ============================================================ */
 import Phaser from 'phaser';
 import { ensureGameTextures } from './textures';
-import { type Debt, pctPaid, principalLeft, MILESTONES, LEVELS, levelsCleared } from './state';
+import { type Debt, pctPaid, principalLeft, LEVELS, levelsCleared } from './state';
 
-export const START = { x: 258, y: 176 };   // summit — level 1 begins here
-export const FLAG = { x: 1012, y: 534 };   // base — level 100 / payoff
-
-const STEPS = LEVELS;                       // 100
-const stepW = (FLAG.x - START.x) / STEPS;   // tread width
-const stepH = (FLAG.y - START.y) / STEPS;   // riser height
+export const START = { x: 250, y: 158 };   // crest — top of this level's slope
+export const FLAG = { x: 1030, y: 500 };   // base — bottom / finish line
 
 export interface HillRef { container: Phaser.GameObjects.Container; }
 
+/* ---------- one smooth downhill curve ---------- */
+const CTRL = [
+  { x: 250, y: 158 },
+  { x: 470, y: 244 },
+  { x: 760, y: 372 },
+  { x: 1030, y: 500 },
+];
+
+function catmull(
+  p0: { x: number; y: number }, p1: { x: number; y: number },
+  p2: { x: number; y: number }, p3: { x: number; y: number }, t: number,
+): { x: number; y: number } {
+  const t2 = t * t, t3 = t2 * t;
+  return {
+    x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+    y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
+  };
+}
+
+const K = 12;
+const PATH: { x: number; y: number }[] = (() => {
+  const out: { x: number; y: number }[] = [];
+  for (let i = 0; i < CTRL.length - 1; i++) {
+    const p0 = CTRL[Math.max(0, i - 1)], p1 = CTRL[i], p2 = CTRL[i + 1], p3 = CTRL[Math.min(CTRL.length - 1, i + 2)];
+    for (let k = 0; k < K; k++) out.push(catmull(p0, p1, p2, p3, k / K));
+  }
+  out.push(CTRL[CTRL.length - 1]);
+  return out;
+})();
+
 const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
 
-/** ball/flags ride a smooth line just above the staircase centre */
+/** surface point at within-level fraction p (0 = crest, 1 = base) */
 export function pointAt(p: number): { x: number; y: number } {
-  const f = clamp01(p);
-  return { x: START.x + f * (FLAG.x - START.x), y: START.y + f * (FLAG.y - START.y) };
+  const f = clamp01(p) * (PATH.length - 1);
+  const i = Math.min(PATH.length - 2, Math.floor(f));
+  const k = f - i;
+  return {
+    x: Phaser.Math.Linear(PATH[i].x, PATH[i + 1].x, k),
+    y: Phaser.Math.Linear(PATH[i].y, PATH[i + 1].y, k),
+  };
 }
 
+/** ball centre: pushed into the snow so it sits ON the slope */
 export function ballPosAt(p: number, r: number): { x: number; y: number } {
-  const s = pointAt(p);
-  return { x: s.x, y: s.y - r * 0.52 };
+  const f = clamp01(p) * (PATH.length - 1);
+  const i = Math.min(PATH.length - 2, Math.floor(f));
+  const k = f - i;
+  const a = PATH[i], b = PATH[i + 1];
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len = Math.hypot(dx, dy) || 1;
+  return {
+    x: Phaser.Math.Linear(a.x, b.x, k) + (-dy / len) * r * 0.6,
+    y: Phaser.Math.Linear(a.y, b.y, k) + (dx / len) * r * 0.6,
+  };
 }
 
-/* ---------- shared drawing bits ---------- */
+/* ---------- helpers ---------- */
 function pine(g: Phaser.GameObjects.Graphics, x: number, y: number, s: number): void {
   g.fillStyle(0xFFFFFF, 0.9);
   g.fillEllipse(x, y + 3, 16 * s, 6 * s);
@@ -41,30 +81,7 @@ function pine(g: Phaser.GameObjects.Graphics, x: number, y: number, s: number): 
   g.fillRect(x - 1.5, y, 3, 6 * s);
 }
 
-function flagPole(
-  scene: Phaser.Scene, c: Phaser.GameObjects.Container, x: number, y: number,
-  color: number, label?: string, scale = 1,
-): void {
-  const g = scene.add.graphics();
-  g.fillStyle(0x0B1524, 0.18);
-  g.fillEllipse(x, y + 4, 18 * scale, 7 * scale);
-  g.lineStyle(3 * scale, 0x22334A, 1);
-  g.beginPath(); g.moveTo(x, y - 6); g.lineTo(x, y - 44 * scale); g.strokePath();
-  g.fillStyle(0x22334A, 1);
-  g.fillCircle(x, y - 6, 4 * scale);
-  g.fillStyle(color, 1);
-  g.fillTriangle(x, y - 44 * scale, x + 22 * scale, y - 37 * scale, x, y - 30 * scale);
-  c.add(g);
-  if (label) {
-    const t = scene.add.text(x, y - 56 * scale, label, {
-      fontFamily: '"Baloo 2"', fontSize: `${12 * scale}px`, color: '#F4F8FB',
-      stroke: '#16283D', strokeThickness: 4,
-    }).setOrigin(0.5);
-    c.add(t);
-  }
-}
-
-/* ---------- the staircase slope ---------- */
+/* ---------- the single slope (one screen per level) ---------- */
 export function drawHill(scene: Phaser.Scene, d: Debt): HillRef {
   ensureGameTextures(scene);
   const c = scene.add.container(0, 0);
@@ -73,89 +90,59 @@ export function drawHill(scene: Phaser.Scene, d: Debt): HillRef {
 
   const paid = pctPaid(d);
   const thawed = paid >= 1;
-  const lv = levelsCleared(d);
 
-  /* ----- soft ground with a warm horizon ----- */
+  /* ground */
   g.fillStyle(0x1B3049, 1); g.fillRect(-40, 566, 1360, 84);
   g.fillStyle(0x233A5B, 1); g.fillRect(-40, 576, 1360, 74);
   g.fillStyle(0xFFE2A8, 0.07); g.fillEllipse(640, 620, 1150, 72);
 
-  /* ----- big smooth snow slope (rounded silhouette, follows the descent) ----- */
-  const slope: { x: number; y: number }[] = [
-    { x: 130, y: 640 }, { x: 92, y: 470 }, { x: 122, y: 300 },
-    { x: 204, y: 168 }, { x: 306, y: 116 }, { x: 424, y: 116 },
-    { x: 560, y: 182 }, { x: 720, y: 300 }, { x: 900, y: 440 },
-    { x: 1060, y: 560 }, { x: 1224, y: 640 },
-  ];
-  g.fillStyle(thawed ? 0xD6F2E2 : 0xEDF5FB, 1);
-  g.fillPoints(slope, true);
+  /* rounded snow mound following the slope */
+  const body = [...PATH, { x: FLAG.x + 40, y: FLAG.y + 30 }, { x: FLAG.x + 90, y: 646 }, { x: -40, y: 646 }, { x: -40, y: 190 }, { x: START.x - 20, y: START.y + 10 }];
+  g.fillStyle(thawed ? 0xC9F0DD : 0xEDF5FB, 1);
+  g.fillPoints(body, true);
+
   // lower-face shade
+  const shade = PATH.map((p, i) => {
+    const a = PATH[Math.max(0, i - 1)], b = PATH[Math.min(PATH.length - 1, i + 1)];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    return { x: p.x + (-dy / len) * 26, y: p.y + (dx / len) * 26 };
+  });
   g.fillStyle(thawed ? 0xA8DFC2 : 0xC9DDEB, 0.55);
-  g.fillPoints([
-    { x: 424, y: 116 }, { x: 560, y: 182 }, { x: 720, y: 300 }, { x: 900, y: 440 },
-    { x: 1060, y: 560 }, { x: 1224, y: 640 }, { x: 130, y: 640 }, { x: 92, y: 470 },
-    { x: 122, y: 300 }, { x: 204, y: 168 }, { x: 306, y: 116 },
-  ], true);
+  g.fillPoints([...shade, { x: FLAG.x + 40, y: FLAG.y + 30 }, { x: FLAG.x + 90, y: 646 }, { x: -40, y: 646 }, { x: -40, y: 190 }, { x: START.x - 20, y: START.y + 10 }], true);
 
-  /* ----- the 100 bold steps ----- */
-  for (let i = 0; i < STEPS; i++) {
-    const x0 = START.x + i * stepW;
-    const y0 = START.y + i * stepH;
-    const cleared = i < lv;
-    // riser (dark front face)
-    g.fillStyle(cleared ? 0x2E8F66 : 0x66809A);
-    g.fillRect(x0 + stepW - 1, y0, 2.4, stepH + 1);
-    // tread (bright top face)
-    g.fillStyle(cleared ? 0x54C48F : 0xFDFEFF);
-    g.fillRect(x0, y0 - 1.5, stepW + 0.4, 4);
-  }
+  /* bright roll line */
+  g.lineStyle(5, thawed ? 0xDFF7EA : 0xFFFFFF, 0.4);
+  g.beginPath(); g.moveTo(PATH[0].x, PATH[0].y);
+  for (const p of PATH) g.lineTo(p.x, p.y);
+  g.strokePath();
 
-  /* ----- cleared "melted" wash (more visible) ----- */
-  if (paid > 0 && !thawed) {
-    const px = START.x + paid * (FLAG.x - START.x);
-    const py = START.y + paid * (FLAG.y - START.y);
-    g.fillStyle(0x5FC9A8, 0.12);
-    g.fillTriangle(START.x - 12, START.y - 22, px, py, START.x - 170, py);
-  }
-
-  /* ----- gold tread on the step you're currently clearing ----- */
-  if (!thawed && lv < STEPS) {
-    const x0 = START.x + lv * stepW;
-    const y0 = START.y + lv * stepH;
-    g.fillStyle(0xF2B84B, 0.95);
-    g.fillRect(x0, y0 - 1.5, stepW + 0.4, 4);
-    g.fillStyle(0xFFE29A, 0.7);
-    g.fillRect(x0, y0 - 1.5, stepW + 0.4, 1.4);
-  }
-
-  /* ----- summit snowcap + payoff warm glow ----- */
+  /* summit snowcap */
   g.fillStyle(thawed ? 0xDFF7EA : 0xFFFFFF, 1);
-  g.fillEllipse(START.x - 8, START.y - 24, 62, 26);
+  g.fillEllipse(START.x + 4, START.y - 6, 130, 44);
   g.fillStyle(thawed ? 0xBFE5D0 : 0xEAF3FA, 1);
-  g.fillEllipse(START.x - 10, START.y - 18, 42, 16);
-  g.fillStyle(0xFFB84B, 0.28);
-  g.fillEllipse(FLAG.x, FLAG.y + 22, 170, 40);
-  g.fillStyle(0xFF8A5C, 0.16);
-  g.fillEllipse(FLAG.x, FLAG.y + 22, 120, 30);
+  g.fillEllipse(START.x + 8, START.y - 2, 84, 30);
 
-  /* ----- pines at the base ----- */
-  pine(g, 120, 600, 1.2); pine(g, 160, 618, 0.9);
-  pine(g, 1140, 604, 1.25); pine(g, 1180, 620, 0.9);
+  /* finish line / gate at the base */
+  g.fillStyle(0xFFB84B, 0.30);
+  g.fillEllipse(FLAG.x, FLAG.y + 24, 170, 40);
+  g.fillStyle(0xFF6B4A, 0.16);
+  g.fillEllipse(FLAG.x, FLAG.y + 24, 120, 30);
+  // finish gate posts
+  g.lineStyle(4, 0x22334A, 1);
+  g.beginPath(); g.moveTo(FLAG.x - 26, FLAG.y - 30); g.lineTo(FLAG.x - 26, FLAG.y + 6); g.strokePath();
+  g.beginPath(); g.moveTo(FLAG.x + 26, FLAG.y - 30); g.lineTo(FLAG.x + 26, FLAG.y + 6); g.strokePath();
+  g.lineStyle(3, thawed ? 0x5FC9A8 : 0xFF6B4A, 1);
+  g.beginPath(); g.moveTo(FLAG.x - 26, FLAG.y - 26); g.lineTo(FLAG.x + 26, FLAG.y - 26); g.strokePath();
 
-  /* ----- flags ----- */
-  if (!thawed) {
-    flagPole(scene, c, START.x - 6, START.y - 30, 0x3E92CC, 'START', 0.85);
-    MILESTONES.forEach((t) => {
-      const pos = pointAt(t);
-      flagPole(scene, c, pos.x, pos.y - 14, paid >= t ? 0x5FC9A8 : 0xF2B84B, `${Math.round(t * 100)}%`, 0.8);
-    });
-  }
-  flagPole(scene, c, FLAG.x, FLAG.y - 14, thawed ? 0x5FC9A8 : 0xFF6B4A, 'PAYOFF', 1.15);
+  /* pines */
+  pine(g, 140, 610, 1.2); pine(g, 178, 626, 0.9);
+  pine(g, 1140, 612, 1.25); pine(g, 1180, 628, 0.9);
 
   return { container: c };
 }
 
-/* ---------- overview mini-hill: small staircase + level count ---------- */
+/* ---------- overview mini-slope + level count ---------- */
 export function drawMiniHill(
   scene: Phaser.Scene, x: number, baseY: number, w: number, d: Debt, idx: number,
 ): Phaser.GameObjects.Container {
@@ -180,22 +167,17 @@ export function drawMiniHill(
     { x: w * 0.5, y: 0 }, { x: -w * 0.5, y: 0 },
   ], true);
 
-  for (let i = 0; i < 6; i++) {
-    const t = (i + 1) / 7;
-    const px = -w * 0.34 + t * (w * 0.84);
-    const py = -h + t * (h * 0.62);
-    g.fillStyle(t <= paid ? 0x54BE8B : 0x7E96AE);
-    g.fillRect(px, py, w * 0.08, 2.4);
-  }
+  // progress fill (cleared portion tinted green)
+  const px = -w * 0.34 + paid * (w * 0.84);
+  g.fillStyle(0x5FC9A8, 0.35);
+  g.fillPoints([{ x: -w * 0.34, y: -h }, { x: px, y: -h + paid * (h * 0.62) }, { x: px, y: 0 }, { x: -w * 0.34, y: 0 }], true);
 
-  const p = Math.max(0, Math.min(1, paid));
-  const bx = -w * 0.34 + p * (w * 0.84);
-  const by = -h + p * (h * 0.62);
+  // ball marker
   const r = 3 + 3.2 * paid;
   g.fillStyle(0xFFFFFF, 1);
-  g.fillCircle(bx, by, r);
+  g.fillCircle(px, -h + paid * (h * 0.62), r);
   g.lineStyle(1.5, 0x3E92CC, 1);
-  g.beginPath(); g.arc(bx, by, r, 0, Math.PI * 2); g.strokePath();
+  g.beginPath(); g.arc(px, -h + paid * (h * 0.62), r, 0, Math.PI * 2); g.strokePath();
 
   if (thawed) {
     g.fillStyle(0xFFE29A, 1);

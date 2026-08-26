@@ -1,23 +1,17 @@
 /* ============================================================
-   Hill — the rolling scene. ONE hill per debt: the snowball
-   starts at the crest (0% paid) and rolls down the flank to the
-   payoff flag (100% = debt cleared). Position = % of the
-   original balance paid, 1:1 and honest. Payments permanently
-   grow the ball; a bigger ball rolls faster — speed is a pure
-   function of size, light APR friction and debt length. That
-   growing speed is the whole reward: no combo, no timing
-   minigame. The ball simply sits between payments — no decay,
-   no drift, no streak pressure.
+   Level Runner — v8. Each debt = 100 levels. Each LEVEL is its
+   own screen: a single short downhill slope the snowball rolls
+   down. Clear it and the loop flows straight into the next
+   level's slope. A £500 payment (5 levels) rolls the ball through
+   5 slopes back-to-back in one continuous cascade.
    ============================================================ */
 import Phaser from 'phaser';
 import {
   store, applyPush, prefs, setPrefs, pctPaid, principalLeft, monthsLeft,
-  money, ballRadius, ballRadiusAt, ballMult, ballLabel, rollSpeed,
-  amortMonthsLeft, interestDestroyed, levelValue, levelsCleared, levelsClearedAt, LEVELS, levelLabel,
+  money, ballRadius, ballMult, ballLabel, levelValue, levelProgress,
+  levelsCleared, LEVELS, levelLabel,
 } from '../core/state';
-import {
-  drawHill, pointAt, ballPosAt, FLAG, START, type HillRef,
-} from '../core/hillRender';
+import { drawHill, ballPosAt, FLAG, type HillRef } from '../core/hillRender';
 import { ensureGameTextures } from '../core/textures';
 import { sfx } from '../core/audio';
 import { bus } from '../core/bus';
@@ -30,7 +24,6 @@ export class HillScene extends Phaser.Scene {
   private debtIdx = 0;
   private chip = 100;
 
-  /** public accessor for tests/debug */
   get debt() { return store.debts[this.debtIdx]; }
 
   private hill!: HillRef;
@@ -50,15 +43,14 @@ export class HillScene extends Phaser.Scene {
   private backBtn!: Phaser.GameObjects.Container;
   private hintText!: Phaser.GameObjects.Text;
 
-  private busy = false;   // roll animation running
+  private busy = false;
   private levelSfxPlayed = false;
 
   constructor() { super('Hill'); }
 
   init(data: { idx: number }): void {
     this.debtIdx = data.idx;
-    // respect the user's persisted chip choice — never force-reset to monthly
-    this.chip = prefs.chip;
+    this.chip = prefs.chip;   // respect the user's persisted chip choice
     this.busy = false;
   }
 
@@ -69,11 +61,8 @@ export class HillScene extends Phaser.Scene {
     ensureGameTextures(this);
     (window as any).__hill = this;
     (window as any).__hillMath = {
-      rollSpeed, ballMult, ballRadiusAt, pctPaid, pointAt, ballPosAt,
-      monthsLeft, amortMonthsLeft, interestDestroyed,
-      levelValue, levelsCleared, levelsClearedAt, LEVELS,
+      levelValue, levelProgress, levelsCleared, LEVELS, pctPaid, ballRadius, ballPosAt,
     };
-
 
     this.drawHillAndBall();
     this.drawHud();
@@ -83,7 +72,6 @@ export class HillScene extends Phaser.Scene {
     this.refreshHud();
     this.emitHud();
 
-    // Space = pay (desktop), ESC = back
     this.input.keyboard!.on('keydown-SPACE', () => this.pay());
     this.input.keyboard!.on('keydown-ESC', () => { if (!this.busy) this.toOverview(); });
   }
@@ -93,15 +81,20 @@ export class HillScene extends Phaser.Scene {
     this.input.keyboard!.off('keydown-ESC');
   }
 
+  /* ---------- within-level fraction (0 = crest, 1 = finish line) ---------- */
+  private fracNow(): number {
+    const prog = levelProgress(this.debt);
+    const lv = Math.floor(prog + 1e-9);
+    return Math.max(0, Math.min(1, prog - lv));
+  }
+
   /* ---------- scene drawing ---------- */
   private drawHillAndBall(): void {
     const d = this.debt;
     this.hill = drawHill(this, d);
     this.hill.container.setDepth(0);
 
-    // ball — starts at the crest (base geometry drawn at 14px, scaled to actual size)
     const r = ballRadius(d);
-    const pos = pointAt(pctPaid(d));
     this.ballImg = this.add.image(0, 0, 'snowball').setDisplaySize(r * 2.2, r * 2.2);
     this.eyes = this.add.container(0, 0);
     const eyeG = this.add.graphics();
@@ -112,7 +105,7 @@ export class HillScene extends Phaser.Scene {
     eyeG.fillCircle(-14 * 0.34, -14 * 0.09, 14 * 0.035);
     eyeG.fillCircle(14 * 0.26, -14 * 0.09, 14 * 0.035);
     this.eyes.add(eyeG);
-    this.ballC = this.add.container(pos.x, pos.y, [this.ballImg, this.eyes]);
+    this.ballC = this.add.container(0, 0, [this.ballImg, this.eyes]);
     this.ballC.setDepth(4);
     this.shadow = this.add.ellipse(0, 0, 14 * 1.8, 14 * 0.45, 0x0B1524, 0.3);
     this.shadow.setDepth(3);
@@ -126,13 +119,13 @@ export class HillScene extends Phaser.Scene {
       tint: 0xFFFFFF,
     });
     this.trail.setDepth(4);
-    this.setBallAt(pctPaid(d));
+    this.setBallAt(this.fracNow());
   }
 
-  /** set ball visuals for a given progress value (size grows with % paid) */
-  private setBallAt(p: number): { x: number; y: number } {
-    const r = ballRadiusAt(p);
-    const pos = ballPosAt(p, r);
+  /** set ball visuals for a within-level fraction (0 crest → 1 finish) */
+  private setBallAt(frac: number): { x: number; y: number } {
+    const r = ballRadius(this.debt);
+    const pos = ballPosAt(frac, r);
     this.ballC.setPosition(pos.x, pos.y);
     this.ballImg.setDisplaySize(r * 2.2, r * 2.2);
     this.eyes.setScale(r / 14);
@@ -141,22 +134,24 @@ export class HillScene extends Phaser.Scene {
     return pos;
   }
 
-  /** public for tests/debug: re-render ball + HUD from current store state */
   sync(): void {
-    if (this.ballC) this.setBallAt(pctPaid(this.debt));
+    if (this.ballC) this.setBallAt(this.fracNow());
     this.refreshHud();
   }
 
-  /** redraw the whole hill (used when a debt clears — flags out, payoff turns green) */
   private redrawHill(): void {
-    if (this.hill) {
-      this.hill.container.destroy();
-      this.hill = drawHill(this, this.debt);
-      this.hill.container.setDepth(0);
-    }
-    this.setBallAt(pctPaid(this.debt));
+    if (this.hill) { this.hill.container.destroy(); }
+    this.hill = drawHill(this, this.debt);
+    this.hill.container.setDepth(0);
+    this.setBallAt(this.fracNow());
   }
 
+  private levelText(cleared: number): string {
+    if (pctPaid(this.debt) >= 1 && cleared >= LEVELS) return 'DEBT CLEARED 🎉';
+    return `LEVEL ${Math.min(cleared + 1, LEVELS)} / ${LEVELS}`;
+  }
+
+  /* ---------- HUD ---------- */
   private drawHud(): void {
     this.hudInfo = this.add.text(20, 16, '', {
       fontFamily: '"Baloo 2"', fontSize: '16px', color: '#F4F8FB',
@@ -166,15 +161,15 @@ export class HillScene extends Phaser.Scene {
       fontFamily: '"JetBrains Mono"', fontSize: '13px', color: '#F2B84B',
       stroke: '#0F1A2E', strokeThickness: 4,
     }).setOrigin(1, 0).setDepth(10);
-    this.hudLevel = this.add.text(W / 2, 14, '', {
-      fontFamily: '"Baloo 2"', fontSize: '26px', color: '#F2B84B',
+    this.hudLevel = this.add.text(W / 2, 16, '', {
+      fontFamily: '"Baloo 2"', fontSize: '30px', color: '#F2B84B',
       stroke: '#0F1A2E', strokeThickness: 6,
     }).setOrigin(0.5, 0).setDepth(10);
-    this.hudLevelSub = this.add.text(W / 2, 46, '', {
+    this.hudLevelSub = this.add.text(W / 2, 52, '', {
       fontFamily: '"JetBrains Mono"', fontSize: '12px', color: '#B7C7D6',
       stroke: '#0F1A2E', strokeThickness: 3,
     }).setOrigin(0.5, 0).setDepth(10);
-    this.hintText = this.add.text(W / 2, H - 24, '', {
+    this.hintText = this.add.text(W / 2, H - 26, '', {
       fontFamily: '"Manrope"', fontSize: '12px', color: '#9FB2C4',
     }).setOrigin(0.5).setDepth(10);
     this.refreshHud();
@@ -186,11 +181,11 @@ export class HillScene extends Phaser.Scene {
     const lv = levelsCleared(d);
     const min = d.monthly > 0 ? ` · £${d.monthly}/mo` : '';
     this.hudInfo.setText(`${d.name} — APR ${d.apr}% · ${monthsLeft(d)}mo${min}`);
-    this.hudBall.setText(`❄️ ball ${ballLabel(d)} ×${ballMult(d).toFixed(1)}`);
-    this.hudLevel.setText(`LEVEL ${lv} / ${LEVELS}`);
-    this.hudLevelSub.setText(`${levelLabel(d)} per level · ${money(principalLeft(d))} left`);
+    this.hudBall.setText(`❄️ ${ballLabel(d)} ×${ballMult(d).toFixed(1)}`);
+    this.hudLevel.setText(this.levelText(lv));
+    this.hudLevelSub.setText(`${levelLabel(d)} per level · ${money(principalLeft(d))} left · ${lv}/100 done`);
     this.hintText.setText(
-      'Each payment rolls your snowball down — every step cleared is 1% of the debt.',
+      'Every level is 1% of the debt — roll the slope, clear the level, next screen. Big payment = multiple screens.',
     );
   }
 
@@ -202,7 +197,7 @@ export class HillScene extends Phaser.Scene {
       stroke: '#0F1A2E', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(10);
     if (d && d.monthly > 0) {
-      this.add.text(W / 2, H - 140, `your monthly payment ≈ £${d.monthly} — pay any amount you like`, {
+      this.add.text(W / 2, H - 140, `your monthly ≈ £${d.monthly} — pay any amount you like`, {
         fontFamily: '"Manrope"', fontSize: '11px', color: '#B7C7D6',
       }).setOrigin(0.5).setDepth(10);
     }
@@ -235,10 +230,8 @@ export class HillScene extends Phaser.Scene {
     });
   }
 
-  /* ---------- pay button ---------- */
   private drawPayButton(): void {
-    const x = W / 2;
-    const y = H - 52;
+    const x = W / 2, y = H - 52;
     const g = this.add.graphics();
     g.fillStyle(0x5FC9A8, 1);
     g.fillRoundedRect(-92, -24, 184, 48, 24);
@@ -267,7 +260,6 @@ export class HillScene extends Phaser.Scene {
   }
 
   /* ---------- payment ---------- */
-  /** public for E2E: pay the selected chip immediately */
   pay(): void {
     const d = this.debt;
     if (!d || this.busy || pctPaid(d) >= 1) return;
@@ -276,80 +268,32 @@ export class HillScene extends Phaser.Scene {
     if (o.amount <= 0) { this.busy = false; return; }
     sfx.chip();
     sfx.roll();
-    this.levelSfxPlayed = false;
 
-    // the roll: from old position to new, at a speed set by the
-    // ball's (new, bigger) size — bigger ball covers ground quicker.
-    const p0 = ballPosAt(o.pctBefore, ballRadiusAt(o.pctBefore));
-    const p1 = ballPosAt(o.pctAfter, ballRadiusAt(o.pctAfter));
-    const distPx = Math.hypot(p1.x - p0.x, p1.y - p0.y);
-    const speed = rollSpeed(d);
-    const dur = Phaser.Math.Clamp((distPx / speed) * 1000, 250, 2400);
-    const mult = ballMult(d);
-    const r0 = ballRadiusAt(o.pctBefore);
-    this.setBallAt(o.pctBefore);
-    this.ballC.setScale(1, 1);
+    const before = o.pctBefore * LEVELS;   // level progress 0..100
+    const after = o.pctAfter * LEVELS;
+    const dist = after - before;            // levels traversed
+    const dur = Phaser.Math.Clamp(dist * 820, 500, 7000);
 
-    // juice: the ball squashes as it accelerates (repeat-until-roll-ends)
-    const wobble = this.tweens.add({
-      targets: this.ballC, scaleY: 0.88, scaleX: 1.14,
-      duration: Math.min(220, dur * 0.5), ease: 'Sine.easeInOut', yoyo: true, repeat: -1,
-    });
-    // dust puff kicked up at the start point (destroyed after it settles)
-    const puff = this.add.particles(p0.x, p0.y + r0 * 0.4, 'pix', {
-      speed: { min: 40, max: 120 },
-      angle: { min: -170, max: -10 },
-      scale: { start: 1, end: 0 },
-      alpha: { start: 0.8, end: 0 },
-      lifespan: 420,
-      quantity: 10 + Math.floor(mult * 5),
-      tint: 0xFFFFFF,
-      emitting: false,
-    }).setDepth(4);
-    puff.explode(10 + Math.floor(mult * 5));
-    window.setTimeout(() => { try { puff.destroy(); } catch (e) { /* ignore */ } }, 800);
+    let lastLevel = o.levelsBefore;
+    let sfxPlayed = false;
 
-    // camera nudge on meaningful rolls
-    if (distPx > 90 || mult > 1.6) {
-      this.cameras.main.shake(Math.min(160, 80 + dur * 0.15), Math.min(0.008, 0.002 + mult * 0.0015));
-    }
-
-    let prevK = 0;
-    let dustAcc = 0;
-    let lastLevel = levelsClearedAt(o.pctBefore);
     this.tweens.addCounter({
-      from: 0, to: 1, duration: dur, ease: 'Quint.easeOut',
+      from: before, to: after, duration: dur, ease: 'Sine.easeInOut',
       onUpdate: (tw) => {
-        const k = tw.getValue() ?? 0;
-        const p = Phaser.Math.Linear(o.pctBefore, o.pctAfter, k);
-        const pos = this.setBallAt(p);
-        const r = ballRadiusAt(p);
-        // level cascade — cross a ledge, fire a beat
-        const lvl = levelsClearedAt(p);
-        if (lvl > lastLevel) {
-          for (let L = lastLevel + 1; L <= lvl; L++) this.levelBeat(L);
-          lastLevel = lvl;
-          if (!this.levelSfxPlayed) { this.levelSfxPlayed = true; sfx.level(o.levelsCrossed); }
+        const prog = tw.getValue() ?? before;
+        const lv = Math.floor(prog + 1e-9);
+        const frac = prog - lv;
+        const pos = this.setBallAt(frac);
+        // dust trail + rolling spin
+        this.trail.emitParticleAt(pos.x, pos.y + ballRadius(d) * 0.4, 1);
+        this.ballImg.rotation += 0.16;
+        if (lv > lastLevel) {
+          for (let L = lastLevel + 1; L <= lv; L++) this.levelBeat(L);
+          lastLevel = lv;
+          if (!sfxPlayed) { sfxPlayed = true; sfx.level(o.levelsCrossed); }
         }
-        this.trail.emitParticleAt(pos.x, pos.y + r * 0.4, mult > 1.4 ? Math.min(5, 1 + Math.floor(mult)) : 1);
-        // continuous dust kick-up from the contact point while rolling
-        dustAcc += 1;
-        if (dustAcc >= 4) {
-          dustAcc = 0;
-          this.trail.emitParticleAt(pos.x - r * 0.3, pos.y + r * 0.6, 1);
-        }
-        // real rolling spin: surface distance ÷ circumference, per frame
-        this.ballImg.rotation += (distPx / Math.max(6, r)) * (k - prevK) * 2.2;
-        prevK = k;
       },
       onComplete: () => {
-        wobble.stop();
-        // landing pop — squash, then spring back to the new, bigger size
-        this.ballC.setScale(1.18, 0.86);
-        this.tweens.add({
-          targets: this.ballC, scaleX: 1, scaleY: 1,
-          duration: 300, ease: 'Back.easeOut',
-        });
         this.busy = false;
         this.afterPush(o);
       },
@@ -361,15 +305,12 @@ export class HillScene extends Phaser.Scene {
     this.refreshHud();
 
     if (!o.cleared) {
-      // readout — honest numbers, kept separate. Fixed panel at top-centre,
-      // never overlaps the hill or the ball. (On clear the celebration carries it.)
       const lines: { text: string; color: string; size: number }[] = [
-        { text: `${money(o.amount)} principal — LEVEL ${o.levelsAfter}/${LEVELS}`, color: '#5FC9A8', size: 16 },
-        { text: o.levelsCrossed > 0 ? `+${o.levelsCrossed} level${o.levelsCrossed === 1 ? '' : 's'} cleared ❄️` : 'partial level — keep rolling', color: '#F2B84B', size: 14 },
+        { text: `${money(o.amount)} principal — ${o.levelsCrossed > 0 ? `+${o.levelsCrossed} level${o.levelsCrossed === 1 ? '' : 's'}` : 'partial level'}`, color: '#5FC9A8', size: 16 },
         { text: `💸 ${money(o.interest)} interest avoided`, color: '#5FC9A8', size: 14 },
       ];
-      const panelY = 108;
-      const panelW = 440;
+      const panelY = 100;
+      const panelW = 460;
       const panelH = 18 + lines.length * 26;
       const bg = this.add.graphics();
       bg.fillStyle(0x0F1A2E, 0.78);
@@ -386,69 +327,58 @@ export class HillScene extends Phaser.Scene {
         group.add(t);
       });
       this.tweens.add({
-        targets: group, alpha: 0, y: -18, duration: 1400, delay: 1800,
+        targets: group, alpha: 0, y: -18, duration: 1300, delay: 1700,
         onComplete: () => group.destroy(),
       });
     }
 
-    // refresh the hill so the melted trail + cleared ledges track the new progress
-    this.redrawHill();
-
-    // milestone / clear celebrations
-    if (o.milestone) this.milestoneBeat(o.milestone);
-    if (o.cleared) this.clearCelebration();
-
-    if (o.milestone || o.cleared) {
-      this.time.timeScale = 0.35;
-      window.setTimeout(() => { this.time.timeScale = 1; }, 550);
+    if (o.cleared) {
+      this.redrawHill();
+      this.clearCelebration();
     }
     this.emitHud();
   }
 
-  /** one small pop at a crossed level ledge + a counter bump (the "level cleared" beat) */
-  private levelBeat(level: number): void {
-    const pos = pointAt(level / LEVELS);
-    const flash = this.add.ellipse(pos.x, pos.y - 6, 16, 16, 0xF2B84B, 0.95).setDepth(6);
-    this.tweens.add({
-      targets: flash, scale: 2.2, alpha: 0, duration: 240, ease: 'Cubic.easeOut',
-      onComplete: () => flash.destroy(),
-    });
-    if (this.hudLevel) {
-      this.hudLevel.setScale(1.16);
-      this.tweens.add({ targets: this.hudLevel, scale: 1, duration: 170, ease: 'Back.easeOut' });
-      this.refreshHud();
-    }
+  /** one level completed (1-indexed) — the "next screen" beat */
+  private levelBeat(clearedLevel: number): void {
+    this.hudLevel.setText(this.levelText(clearedLevel));
+    this.hudLevel.setScale(1.18);
+    this.tweens.add({ targets: this.hudLevel, scale: 1, duration: 160, ease: 'Back.easeOut' });
+
+    const t = this.add.text(W / 2, H * 0.30, `LEVEL ${clearedLevel}`, {
+      fontFamily: '"Baloo 2"', fontSize: '30px', color: '#F2B84B',
+      stroke: '#0F1A2E', strokeThickness: 7,
+    }).setOrigin(0.5).setDepth(12);
+    this.tweens.add({ targets: t, y: H * 0.30 - 28, alpha: 0, duration: 600, ease: 'Cubic.easeOut', onComplete: () => t.destroy() });
+
+    if (clearedLevel % 25 === 0 && clearedLevel < LEVELS) this.milestoneBeat(clearedLevel);
   }
 
-  private milestoneBeat(milestone: number): void {
-    const pos = pointAt(milestone / 100);
+  private milestoneBeat(level: number): void {
     this.cameras.main.shake(300, 0.012);
     this.cameras.main.flash(90, 255, 226, 154);
     sfx.milestone();
-    this.add.particles(pos.x, pos.y - 10, 'pix', {
+    this.add.particles(W / 2, H * 0.4, 'pix', {
       speed: { min: 80, max: 320 },
       angle: { min: 0, max: 360 },
       scale: { start: 1.4, end: 0 },
       lifespan: { min: 400, max: 900 },
-      quantity: 42,
+      quantity: 40,
       tint: [0xF2B84B, 0xFFE29A, 0xFFFFFF],
       emitting: false,
-    }).explode(42);
-    const banner = this.add.text(W / 2, 496, `${milestone}% MILESTONE`, {
-      fontFamily: '"Baloo 2"', fontSize: '26px', color: '#F2B84B',
+    }).explode(40);
+    const banner = this.add.text(W / 2, H * 0.42, `${level}% MILESTONE`, {
+      fontFamily: '"Baloo 2"', fontSize: '24px', color: '#F2B84B',
       stroke: '#0F1A2E', strokeThickness: 7,
     }).setOrigin(0.5).setDepth(12);
-    this.tweens.add({ targets: banner, scale: 1.15, alpha: 0, duration: 1400, delay: 700, onComplete: () => banner.destroy() });
+    this.tweens.add({ targets: banner, scale: 1.15, alpha: 0, duration: 1300, delay: 500, onComplete: () => banner.destroy() });
   }
 
   private clearCelebration(): void {
     this.cameras.main.shake(600, 0.02);
     sfx.win();
     const aurora = document.getElementById('aurora');
-    if (aurora) {
-      aurora.classList.add('strong');
-      window.setTimeout(() => aurora.classList.remove('strong'), 2600);
-    }
+    if (aurora) { aurora.classList.add('strong'); window.setTimeout(() => aurora.classList.remove('strong'), 2600); }
     this.add.particles(FLAG.x, FLAG.y - 20, 'pix', {
       speed: { min: 120, max: 460 },
       angle: { min: -100, max: 80 },
@@ -459,22 +389,17 @@ export class HillScene extends Phaser.Scene {
       tint: [0x5FC9A8, 0xF2B84B, 0xFFFFFF, 0xFFE29A],
       emitting: false,
     }).explode(90);
-    this.add.text(W / 2, 180, '💸 DEBT CLEARED — NO MORE INTEREST!', {
+    this.add.text(W / 2, 170, '💸 DEBT CLEARED — NO MORE INTEREST!', {
       fontFamily: '"Baloo 2"', fontSize: '30px', color: '#F4F8FB',
       stroke: '#0F1A2E', strokeThickness: 8,
     }).setOrigin(0.5).setDepth(12);
-    // wall-clock timeout: slow-mo scales game time, so use real time for the return
-    window.setTimeout(() => {
-      if (this.scene.isActive()) this.toOverview();
-    }, 2600);
+    window.setTimeout(() => { if (this.scene.isActive()) this.toOverview(); }, 2600);
   }
 
   /* ---------- per-frame ---------- */
   update(_time: number, delta: number): void {
     const d = this.debt;
     if (!d || !this.ballImg) return;
-    // the ball is ALWAYS rolling — it spins in place while idle so it
-    // never looks frozen; bigger balls roll a touch faster.
     if (!this.busy) {
       this.ballImg.rotation += (0.9 + ballMult(d) * 0.45) * (delta / 1000);
     }
@@ -492,7 +417,7 @@ export class HillScene extends Phaser.Scene {
       left: store.debts.reduce((a, x) => a + principalLeft(x), 0),
       pct: total > 0 ? paid / total : 0,
       ball: d ? { mult: ballMult(d), label: ballLabel(d) } : null,
-      interest: 0, // handled by stats below
+      interest: 0,
     });
   }
 }
