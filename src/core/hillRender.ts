@@ -1,26 +1,45 @@
 /* ============================================================
-   Level-screen slope — v8. Each LEVEL is its own screen: a single
-   short downhill slope the snowball rolls down. Clear it and the
-   loop flows straight into the next level's slope. A £500 payment
-   (5 levels) rolls the ball through 5 slopes back-to-back.
+   Level-screen slope — responsive. Each LEVEL is its own screen:
+   a single downhill slope the snowball rolls down. The slope path
+   is computed from the current game size, so it flows top→bottom
+   on portrait phones and across on landscape.
    ============================================================ */
 import Phaser from 'phaser';
 import { ensureGameTextures } from './textures';
 import { type Debt, pctPaid, principalLeft, LEVELS, levelsCleared } from './state';
 
-export const START = { x: 250, y: 158 };   // crest — top of this level's slope
-export const FLAG = { x: 1030, y: 500 };   // base — bottom / finish line
+let W = 1280;
+let H = 720;
+
+export let START = { x: 230, y: 158 };
+export let FLAG = { x: 1050, y: 504 };
 
 export interface HillRef { container: Phaser.GameObjects.Container; }
 
-/* ---------- one smooth downhill curve ---------- */
-const CTRL = [
-  { x: 250, y: 158 },
-  { x: 470, y: 244 },
-  { x: 760, y: 372 },
-  { x: 1030, y: 500 },
-];
+const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
 
+/* ---------- one smooth downhill curve, sized to W×H ---------- */
+let CTRL: { x: number; y: number }[] = [];
+let PATH: { x: number; y: number }[] = [];
+
+function buildPath(): void {
+  CTRL = [
+    { x: 0.18 * W, y: 0.22 * H },
+    { x: 0.36 * W, y: 0.38 * H },
+    { x: 0.58 * W, y: 0.50 * H },
+    { x: 0.82 * W, y: 0.70 * H },
+  ];
+  START = { x: CTRL[0].x, y: CTRL[0].y };
+  FLAG = { x: CTRL[3].x, y: CTRL[3].y };
+  const K = 12;
+  const out: { x: number; y: number }[] = [];
+  for (let i = 0; i < CTRL.length - 1; i++) {
+    const p0 = CTRL[Math.max(0, i - 1)], p1 = CTRL[i], p2 = CTRL[i + 1], p3 = CTRL[Math.min(CTRL.length - 1, i + 2)];
+    for (let k = 0; k < K; k++) out.push(catmull(p0, p1, p2, p3, k / K));
+  }
+  out.push(CTRL[CTRL.length - 1]);
+  PATH = out;
+}
 function catmull(
   p0: { x: number; y: number }, p1: { x: number; y: number },
   p2: { x: number; y: number }, p3: { x: number; y: number }, t: number,
@@ -32,28 +51,21 @@ function catmull(
   };
 }
 
-const K = 12;
-const PATH: { x: number; y: number }[] = (() => {
-  const out: { x: number; y: number }[] = [];
-  for (let i = 0; i < CTRL.length - 1; i++) {
-    const p0 = CTRL[Math.max(0, i - 1)], p1 = CTRL[i], p2 = CTRL[i + 1], p3 = CTRL[Math.min(CTRL.length - 1, i + 2)];
-    for (let k = 0; k < K; k++) out.push(catmull(p0, p1, p2, p3, k / K));
-  }
-  out.push(CTRL[CTRL.length - 1]);
-  return out;
-})();
+buildPath();
 
-const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
+/** recompute the slope for a new game size (called on resize) */
+export function setHillSize(w: number, h: number): void {
+  if (w <= 0 || h <= 0 || (w === W && h === H)) return;
+  W = w; H = h;
+  buildPath();
+}
 
 /** surface point at within-level fraction p (0 = crest, 1 = base) */
 export function pointAt(p: number): { x: number; y: number } {
   const f = clamp01(p) * (PATH.length - 1);
   const i = Math.min(PATH.length - 2, Math.floor(f));
   const k = f - i;
-  return {
-    x: Phaser.Math.Linear(PATH[i].x, PATH[i + 1].x, k),
-    y: Phaser.Math.Linear(PATH[i].y, PATH[i + 1].y, k),
-  };
+  return { x: Phaser.Math.Linear(PATH[i].x, PATH[i + 1].x, k), y: Phaser.Math.Linear(PATH[i].y, PATH[i + 1].y, k) };
 }
 
 /** ball centre: pushed into the snow so it sits ON the slope */
@@ -70,7 +82,6 @@ export function ballPosAt(p: number, r: number): { x: number; y: number } {
   };
 }
 
-/* ---------- helpers ---------- */
 function pine(g: Phaser.GameObjects.Graphics, x: number, y: number, s: number): void {
   g.fillStyle(0xFFFFFF, 0.9);
   g.fillEllipse(x, y + 3, 16 * s, 6 * s);
@@ -90,54 +101,60 @@ export function drawHill(scene: Phaser.Scene, d: Debt): HillRef {
 
   const paid = pctPaid(d);
   const thawed = paid >= 1;
+  const gy = H * 0.88;
 
   /* ground */
-  g.fillStyle(0x1B3049, 1); g.fillRect(-40, 566, 1360, 84);
-  g.fillStyle(0x233A5B, 1); g.fillRect(-40, 576, 1360, 74);
-  g.fillStyle(0xFFE2A8, 0.07); g.fillEllipse(640, 620, 1150, 72);
+  g.fillStyle(0x1B3049, 1); g.fillRect(-W * 0.05, gy, W * 1.1, H - gy);
+  g.fillStyle(0x233A5B, 1); g.fillRect(-W * 0.05, gy + 10, W * 1.1, H - gy - 10);
+  g.fillStyle(0xFFE2A8, 0.07); g.fillEllipse(W * 0.5, gy + 50, W * 0.9, H * 0.1);
 
   /* rounded snow mound following the slope */
-  const body = [...PATH, { x: FLAG.x + 40, y: FLAG.y + 30 }, { x: FLAG.x + 90, y: 646 }, { x: -40, y: 646 }, { x: -40, y: 190 }, { x: START.x - 20, y: START.y + 10 }];
+  const body: { x: number; y: number }[] = [
+    ...PATH,
+    { x: FLAG.x + W * 0.03, y: FLAG.y + H * 0.04 },
+    { x: FLAG.x + W * 0.07, y: H * 1.05 },
+    { x: -W * 0.05, y: H * 1.05 },
+    { x: -W * 0.05, y: H * 0.30 },
+    { x: START.x - W * 0.02, y: START.y + H * 0.02 },
+  ];
   g.fillStyle(thawed ? 0xC9F0DD : 0xEDF5FB, 1);
   g.fillPoints(body, true);
 
-  // lower-face shade
   const shade = PATH.map((p, i) => {
     const a = PATH[Math.max(0, i - 1)], b = PATH[Math.min(PATH.length - 1, i + 1)];
     const dx = b.x - a.x, dy = b.y - a.y;
     const len = Math.hypot(dx, dy) || 1;
-    return { x: p.x + (-dy / len) * 26, y: p.y + (dx / len) * 26 };
+    return { x: p.x + (-dy / len) * (H * 0.04), y: p.y + (dx / len) * (H * 0.04) };
   });
   g.fillStyle(thawed ? 0xA8DFC2 : 0xC9DDEB, 0.55);
-  g.fillPoints([...shade, { x: FLAG.x + 40, y: FLAG.y + 30 }, { x: FLAG.x + 90, y: 646 }, { x: -40, y: 646 }, { x: -40, y: 190 }, { x: START.x - 20, y: START.y + 10 }], true);
+  g.fillPoints([...shade, { x: FLAG.x + W * 0.03, y: FLAG.y + H * 0.04 }, { x: FLAG.x + W * 0.07, y: H * 1.05 }, { x: -W * 0.05, y: H * 1.05 }, { x: -W * 0.05, y: H * 0.30 }, { x: START.x - W * 0.02, y: START.y + H * 0.02 }], true);
 
   /* bright roll line */
-  g.lineStyle(5, thawed ? 0xDFF7EA : 0xFFFFFF, 0.4);
+  g.lineStyle(Math.max(3, H * 0.008), thawed ? 0xDFF7EA : 0xFFFFFF, 0.4);
   g.beginPath(); g.moveTo(PATH[0].x, PATH[0].y);
   for (const p of PATH) g.lineTo(p.x, p.y);
   g.strokePath();
 
   /* summit snowcap */
   g.fillStyle(thawed ? 0xDFF7EA : 0xFFFFFF, 1);
-  g.fillEllipse(START.x + 4, START.y - 6, 130, 44);
+  g.fillEllipse(START.x + W * 0.003, START.y - H * 0.01, W * 0.10, H * 0.07);
   g.fillStyle(thawed ? 0xBFE5D0 : 0xEAF3FA, 1);
-  g.fillEllipse(START.x + 8, START.y - 2, 84, 30);
+  g.fillEllipse(START.x + W * 0.006, START.y - H * 0.004, W * 0.065, H * 0.045);
 
   /* finish line / gate at the base */
   g.fillStyle(0xFFB84B, 0.30);
-  g.fillEllipse(FLAG.x, FLAG.y + 24, 170, 40);
-  g.fillStyle(0xFF6B4A, 0.16);
-  g.fillEllipse(FLAG.x, FLAG.y + 24, 120, 30);
-  // finish gate posts
-  g.lineStyle(4, 0x22334A, 1);
-  g.beginPath(); g.moveTo(FLAG.x - 26, FLAG.y - 30); g.lineTo(FLAG.x - 26, FLAG.y + 6); g.strokePath();
-  g.beginPath(); g.moveTo(FLAG.x + 26, FLAG.y - 30); g.lineTo(FLAG.x + 26, FLAG.y + 6); g.strokePath();
-  g.lineStyle(3, thawed ? 0x5FC9A8 : 0xFF6B4A, 1);
-  g.beginPath(); g.moveTo(FLAG.x - 26, FLAG.y - 26); g.lineTo(FLAG.x + 26, FLAG.y - 26); g.strokePath();
+  g.fillEllipse(FLAG.x, FLAG.y + H * 0.035, W * 0.13, H * 0.06);
+  g.lineStyle(Math.max(3, W * 0.004), 0x22334A, 1);
+  g.beginPath(); g.moveTo(FLAG.x - W * 0.02, FLAG.y - H * 0.045); g.lineTo(FLAG.x - W * 0.02, FLAG.y + H * 0.01); g.strokePath();
+  g.beginPath(); g.moveTo(FLAG.x + W * 0.02, FLAG.y - H * 0.045); g.lineTo(FLAG.x + W * 0.02, FLAG.y + H * 0.01); g.strokePath();
+  g.lineStyle(Math.max(2, W * 0.003), thawed ? 0x5FC9A8 : 0xFF6B4A, 1);
+  g.beginPath(); g.moveTo(FLAG.x - W * 0.02, FLAG.y - H * 0.04); g.lineTo(FLAG.x + W * 0.02, FLAG.y - H * 0.04); g.strokePath();
 
   /* pines */
-  pine(g, 140, 610, 1.2); pine(g, 178, 626, 0.9);
-  pine(g, 1140, 612, 1.25); pine(g, 1180, 628, 0.9);
+  pine(g, W * 0.11, H * 0.95, 1.2);
+  pine(g, W * 0.14, H * 0.98, 0.9);
+  pine(g, W * 0.89, H * 0.96, 1.25);
+  pine(g, W * 0.92, H * 0.98, 0.9);
 
   return { container: c };
 }
@@ -167,12 +184,10 @@ export function drawMiniHill(
     { x: w * 0.5, y: 0 }, { x: -w * 0.5, y: 0 },
   ], true);
 
-  // progress fill (cleared portion tinted green)
   const px = -w * 0.34 + paid * (w * 0.84);
   g.fillStyle(0x5FC9A8, 0.35);
   g.fillPoints([{ x: -w * 0.34, y: -h }, { x: px, y: -h + paid * (h * 0.62) }, { x: px, y: 0 }, { x: -w * 0.34, y: 0 }], true);
 
-  // ball marker
   const r = 3 + 3.2 * paid;
   g.fillStyle(0xFFFFFF, 1);
   g.fillCircle(px, -h + paid * (h * 0.62), r);

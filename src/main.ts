@@ -14,14 +14,14 @@ const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game-host',
   width: 1280,
-  height: 640,
+  height: 720,
   transparent: true, // CSS sky/mountains/snow show through
   input: {
     // don't let clicks on DOM overlays/buttons leak into game hit-testing
     windowEvents: false,
   },
   scale: {
-    mode: Phaser.Scale.FIT,
+    mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   scene: [OverviewScene, HillScene],

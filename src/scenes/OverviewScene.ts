@@ -1,31 +1,31 @@
 /* ============================================================
-   Overview — the range. Every debt is one white hill in a
-   skyline; the ball marker sits at its current position on each
-   flank. Tap a hill to roll it. Strategy toggle is pure
-   guidance (highlight only, no mechanical bonus).
+   Overview — the range. Every debt is one mini-slope in a skyline
+   (horizontal on landscape, stacked on portrait). Tap one to roll.
+   Strategy toggle is pure guidance (highlight only).
    ============================================================ */
 import Phaser from 'phaser';
 import {
   store, principalLeft, pctPaid, prefs, setPrefs,
   stats, money, type Strategy,
 } from '../core/state';
-import { drawMiniHill } from '../core/hillRender';
+import { drawMiniHill, setHillSize } from '../core/hillRender';
 import { sfx } from '../core/audio';
 import { bus } from '../core/bus';
-
-const W = 1280;
-const H = 640;
-const BASE_Y = 505;
 
 export class OverviewScene extends Phaser.Scene {
   private busy = false;
   private stratBtns: Phaser.GameObjects.Container[] = [];
+  private W = 1280;
+  private H = 640;
 
   constructor() { super('Overview'); }
 
   create(): void {
     this.busy = false;
     this.stratBtns = [];
+    this.W = this.scale.width;
+    this.H = this.scale.height;
+    setHillSize(this.W, this.H);
     this.input.enabled = true;
     this.scene.bringToTop();
     bus.on('start', this.onStart, this);
@@ -35,45 +35,70 @@ export class OverviewScene extends Phaser.Scene {
     this.drawBadges();
     this.emitHud();
     (window as any).__overview = this;
+    this.scale.on('resize', this.onResize, this);
   }
 
   shutdown(): void {
     bus.off('start', this.onStart, this);
+    this.scale.off('resize', this.onResize, this);
   }
 
-  private onStart(): void {
+  private onStart(): void { this.scene.restart(); }
+
+  private onResize(): void {
+    const w = this.scale.width, h = this.scale.height;
+    if (Math.abs(w - this.W) < 2 && Math.abs(h - this.H) < 2) return;
     this.scene.restart();
   }
 
-  /* ---------- skyline ---------- */
   private drawSkyline(): void {
     const debts = store.debts;
     if (!debts.length) return;
-    const spacing = Math.min(290, 1050 / Math.max(debts.length, 1));
-    const x0 = W / 2 - (spacing * (debts.length - 1)) / 2;
+    const n = debts.length;
+    const portrait = this.H > this.W;
 
-    debts.forEach((d, i) => {
-      const m = drawMiniHill(this, x0 + i * spacing, BASE_Y, 150, d, i);
-      const zone = m.getAt(m.length - 1) as Phaser.GameObjects.Zone;
-      zone.on('pointerdown', () => this.play(i));
-      if (this.suggestFor(i)) {
-        const g = this.add.graphics();
-        g.lineStyle(4, 0xF2B84B, 0.9);
-        g.strokeRoundedRect(x0 + i * spacing - 78, BASE_Y - 175, 156, 200, 18);
-        g.lineStyle(2, 0xFFE29A, 0.4);
-        g.strokeRoundedRect(x0 + i * spacing - 82, BASE_Y - 179, 164, 208, 20);
-        const arrow = this.add.text(x0 + i * spacing, BASE_Y - 190, '▼', {
-          fontFamily: '"Baloo 2"', fontSize: '18px', color: '#F2B84B',
-        }).setOrigin(0.5);
-        this.tweens.add({ targets: arrow, y: BASE_Y - 196, duration: 500, yoyo: true, repeat: -1 });
-        arrow.setDepth(5);
-      }
-    });
+    if (portrait) {
+      // stacked vertically — one row per debt
+      const rowH = Math.min(150, (this.H * 0.62) / Math.max(n, 1));
+      const startY = this.H * 0.26;
+      const w = Math.min(240, this.W * 0.56);
+      debts.forEach((d, i) => {
+        const y = startY + i * rowH;
+        const m = drawMiniHill(this, this.W / 2, y, w, d, i);
+        const zone = m.getAt(m.length - 1) as Phaser.GameObjects.Zone;
+        zone.on('pointerdown', () => this.play(i));
+        if (this.suggestFor(i)) this.drawSuggest(this.W / 2, y - 60, w + 60, 100);
+      });
+    } else {
+      const spacing = Math.min(290, (this.W - 60) / Math.max(n, 1));
+      const x0 = this.W / 2 - (spacing * (n - 1)) / 2;
+      const baseY = this.H * 0.80;
+      const w = Math.min(150, spacing - 30);
+      debts.forEach((d, i) => {
+        const m = drawMiniHill(this, x0 + i * spacing, baseY, w, d, i);
+        const zone = m.getAt(m.length - 1) as Phaser.GameObjects.Zone;
+        zone.on('pointerdown', () => this.play(i));
+        if (this.suggestFor(i)) this.drawSuggest(x0 + i * spacing, baseY - 150, w + 40, 180);
+      });
+    }
 
     const allPaid = debts.every((d) => pctPaid(d) >= 1);
-    this.add.text(W / 2, 92, allPaid ? '🎉 Every hill cleared — incredible.' : 'Tap a hill, roll your payment down it ❄️', {
-      fontFamily: '"Baloo 2"', fontSize: '20px', color: '#F4F8FB',
+    this.add.text(this.W / 2, 84, allPaid ? '🎉 Every hill cleared — incredible.' : 'Tap a hill, roll your payment down it ❄️', {
+      fontFamily: '"Baloo 2"', fontSize: this.W < 600 ? '17px' : '20px', color: '#F4F8FB',
     }).setOrigin(0.5).setAlpha(0.92);
+  }
+
+  private drawSuggest(x: number, y: number, w: number, h: number): void {
+    const g = this.add.graphics();
+    g.lineStyle(4, 0xF2B84B, 0.9);
+    g.strokeRoundedRect(x - w / 2, y, w, h, 18);
+    g.lineStyle(2, 0xFFE29A, 0.4);
+    g.strokeRoundedRect(x - w / 2 - 4, y - 4, w + 8, h + 8, 20);
+    const arrow = this.add.text(x, y - 8, '▼', {
+      fontFamily: '"Baloo 2"', fontSize: '18px', color: '#F2B84B',
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: arrow, y: y - 14, duration: 500, yoyo: true, repeat: -1 });
+    arrow.setDepth(5);
   }
 
   private suggestFor(i: number): boolean {
@@ -98,25 +123,25 @@ export class OverviewScene extends Phaser.Scene {
     this.scene.start('Hill', { idx: i });
   }
 
-  /* ---------- strategy toggle (guidance only) ---------- */
   private drawStrategyToggle(): void {
     const strategies: { key: Strategy; label: string; tip: string }[] = [
-      { key: 'none', label: '🎯 Free choice', tip: 'no suggestion' },
+      { key: 'none', label: '🎯 Free', tip: 'no suggestion' },
       { key: 'snowball', label: '❄️ Snowball', tip: 'smallest balance' },
       { key: 'avalanche', label: '⛰ Avalanche', tip: 'highest APR' },
     ];
+    const span = Math.min(190, (this.W - 40) / 3);
     strategies.forEach((s, i) => {
-      const x = W / 2 - 190 + i * 190;
+      const x = this.W / 2 - span + i * span;
       const active = prefs.strategy === s.key;
       const bg = this.add.graphics();
       bg.fillStyle(active ? 0xF2B84B : 0xFFFFFF, active ? 1 : 0.1);
-      bg.fillRoundedRect(-85, -16, 170, 32, 16);
+      bg.fillRoundedRect(-span / 2 + 8, -16, span - 16, 32, 16);
       const label = this.add.text(0, 0, s.label, {
-        fontFamily: '"Baloo 2"', fontSize: '14px',
+        fontFamily: '"Baloo 2"', fontSize: this.W < 600 ? '12px' : '14px',
         color: active ? '#16283D' : '#F4F8FB',
       }).setOrigin(0.5);
       const c = this.add.container(x, 38, [bg, label]);
-      c.setSize(170, 32).setInteractive({ useHandCursor: true });
+      c.setSize(span - 16, 32).setInteractive({ useHandCursor: true });
       c.on('pointerdown', () => {
         sfx.select();
         setPrefs(prefs.chip, s.key);
@@ -124,15 +149,11 @@ export class OverviewScene extends Phaser.Scene {
       });
       this.stratBtns.push(c);
     });
-    this.add.text(W / 2, 64, 'Strategy guide — shows you a path, never changes the roll', {
-      fontFamily: '"Manrope"', fontSize: '11px', color: '#9FB2C4',
-    }).setOrigin(0.5);
   }
 
-  /* ---------- badges ---------- */
   private drawBadges(): void {
-    this.add.text(W - 24, 24, `💸 ${money(stats.interestDestroyed)} interest avoided\n(lifetime)`, {
-      fontFamily: '"JetBrains Mono"', fontSize: '12px', color: '#5FC9A8', align: 'right',
+    this.add.text(this.W - 16, 18, `💸 ${money(stats.interestDestroyed)} avoided\n(lifetime)`, {
+      fontFamily: '"JetBrains Mono"', fontSize: '11px', color: '#5FC9A8', align: 'right',
     }).setOrigin(1, 0).setDepth(10);
   }
 

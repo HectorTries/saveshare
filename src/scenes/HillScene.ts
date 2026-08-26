@@ -1,9 +1,8 @@
 /* ============================================================
-   Level Runner — v8. Each debt = 100 levels. Each LEVEL is its
-   own screen: a single short downhill slope the snowball rolls
-   down. Clear it and the loop flows straight into the next
-   level's slope. A £500 payment (5 levels) rolls the ball through
-   5 slopes back-to-back in one continuous cascade.
+   Level Runner — responsive. Each debt = 100 levels. Each LEVEL
+   is its own screen: a single downhill slope. Clear it and the
+   loop flows into the next level's slope. Layout adapts to the
+   game size (portrait or landscape).
    ============================================================ */
 import Phaser from 'phaser';
 import {
@@ -11,18 +10,18 @@ import {
   money, ballRadius, ballMult, ballLabel, levelValue, levelProgress,
   levelsCleared, LEVELS, levelLabel,
 } from '../core/state';
-import { drawHill, ballPosAt, FLAG, type HillRef } from '../core/hillRender';
+import { drawHill, ballPosAt, setHillSize, FLAG, type HillRef } from '../core/hillRender';
 import { ensureGameTextures } from '../core/textures';
 import { sfx } from '../core/audio';
 import { bus } from '../core/bus';
 
-const W = 1280;
-const H = 640;
 const CHIPS = [15, 50, 100, 250, 500, 1000, 2500, 5000];
 
 export class HillScene extends Phaser.Scene {
   private debtIdx = 0;
   private chip = 100;
+  private W = 1280;
+  private H = 640;
 
   get debt() { return store.debts[this.debtIdx]; }
 
@@ -50,13 +49,16 @@ export class HillScene extends Phaser.Scene {
 
   init(data: { idx: number }): void {
     this.debtIdx = data.idx;
-    this.chip = prefs.chip;   // respect the user's persisted chip choice
+    this.chip = prefs.chip;
     this.busy = false;
   }
 
   create(): void {
     const d = store.debts[this.debtIdx];
     if (!d) { this.scene.start('Overview'); return; }
+    this.W = this.scale.width;
+    this.H = this.scale.height;
+    setHillSize(this.W, this.H);
     this.input.enabled = true;
     ensureGameTextures(this);
     (window as any).__hill = this;
@@ -74,21 +76,27 @@ export class HillScene extends Phaser.Scene {
 
     this.input.keyboard!.on('keydown-SPACE', () => this.pay());
     this.input.keyboard!.on('keydown-ESC', () => { if (!this.busy) this.toOverview(); });
+    this.scale.on('resize', this.onResize, this);
   }
 
   shutdown(): void {
     this.input.keyboard!.off('keydown-SPACE');
     this.input.keyboard!.off('keydown-ESC');
+    this.scale.off('resize', this.onResize, this);
   }
 
-  /* ---------- within-level fraction (0 = crest, 1 = finish line) ---------- */
+  private onResize(): void {
+    const w = this.scale.width, h = this.scale.height;
+    if (Math.abs(w - this.W) < 2 && Math.abs(h - this.H) < 2) return;
+    this.scene.restart({ idx: this.debtIdx });
+  }
+
   private fracNow(): number {
     const prog = levelProgress(this.debt);
     const lv = Math.floor(prog + 1e-9);
     return Math.max(0, Math.min(1, prog - lv));
   }
 
-  /* ---------- scene drawing ---------- */
   private drawHillAndBall(): void {
     const d = this.debt;
     this.hill = drawHill(this, d);
@@ -122,7 +130,6 @@ export class HillScene extends Phaser.Scene {
     this.setBallAt(this.fracNow());
   }
 
-  /** set ball visuals for a within-level fraction (0 crest → 1 finish) */
   private setBallAt(frac: number): { x: number; y: number } {
     const r = ballRadius(this.debt);
     const pos = ballPosAt(frac, r);
@@ -151,25 +158,26 @@ export class HillScene extends Phaser.Scene {
     return `LEVEL ${Math.min(cleared + 1, LEVELS)} / ${LEVELS}`;
   }
 
-  /* ---------- HUD ---------- */
   private drawHud(): void {
-    this.hudInfo = this.add.text(20, 16, '', {
-      fontFamily: '"Baloo 2"', fontSize: '16px', color: '#F4F8FB',
+    const topY = 14;
+    const small = this.W < 600;
+    this.hudInfo = this.add.text(16, topY, '', {
+      fontFamily: '"Baloo 2"', fontSize: small ? '14px' : '16px', color: '#F4F8FB',
       stroke: '#0F1A2E', strokeThickness: 5,
     }).setDepth(10);
-    this.hudBall = this.add.text(W - 20, 16, '', {
-      fontFamily: '"JetBrains Mono"', fontSize: '13px', color: '#F2B84B',
+    this.hudBall = this.add.text(this.W - 16, topY, '', {
+      fontFamily: '"JetBrains Mono"', fontSize: small ? '11px' : '13px', color: '#F2B84B',
       stroke: '#0F1A2E', strokeThickness: 4,
     }).setOrigin(1, 0).setDepth(10);
-    this.hudLevel = this.add.text(W / 2, 16, '', {
-      fontFamily: '"Baloo 2"', fontSize: '30px', color: '#F2B84B',
+    this.hudLevel = this.add.text(this.W / 2, topY, '', {
+      fontFamily: '"Baloo 2"', fontSize: small ? '24px' : '30px', color: '#F2B84B',
       stroke: '#0F1A2E', strokeThickness: 6,
     }).setOrigin(0.5, 0).setDepth(10);
-    this.hudLevelSub = this.add.text(W / 2, 52, '', {
-      fontFamily: '"JetBrains Mono"', fontSize: '12px', color: '#B7C7D6',
+    this.hudLevelSub = this.add.text(this.W / 2, topY + (small ? 34 : 44), '', {
+      fontFamily: '"JetBrains Mono"', fontSize: small ? '10px' : '12px', color: '#B7C7D6',
       stroke: '#0F1A2E', strokeThickness: 3,
     }).setOrigin(0.5, 0).setDepth(10);
-    this.hintText = this.add.text(W / 2, H - 26, '', {
+    this.hintText = this.add.text(this.W / 2, this.H - 26, '', {
       fontFamily: '"Manrope"', fontSize: '12px', color: '#9FB2C4',
     }).setOrigin(0.5).setDepth(10);
     this.refreshHud();
@@ -179,46 +187,46 @@ export class HillScene extends Phaser.Scene {
     const d = this.debt;
     if (!d) return;
     const lv = levelsCleared(d);
-    const min = d.monthly > 0 ? ` · £${d.monthly}/mo` : '';
-    this.hudInfo.setText(`${d.name} — APR ${d.apr}% · ${monthsLeft(d)}mo${min}`);
+    this.hudInfo.setText(d.name);
     this.hudBall.setText(`❄️ ${ballLabel(d)} ×${ballMult(d).toFixed(1)}`);
     this.hudLevel.setText(this.levelText(lv));
-    this.hudLevelSub.setText(`${levelLabel(d)} per level · ${money(principalLeft(d))} left · ${lv}/100 done`);
-    this.hintText.setText(
-      'Every level is 1% of the debt — roll the slope, clear the level, next screen. Big payment = multiple screens.',
+    this.hudLevelSub.setText(
+      `${levelLabel(d)}/level · APR ${d.apr}% · ${money(principalLeft(d))} left · ${lv}/100 done`,
     );
+    this.hintText.setText('Every level is 1% of the debt — roll the slope, clear it, next screen.');
   }
 
-  /* ---------- chip selector ---------- */
   private drawChips(): void {
     const d = this.debt;
-    this.add.text(W / 2, H - 156, 'PAYMENT PER ROLL', {
+    this.add.text(this.W / 2, this.H - 154, 'PAYMENT PER ROLL', {
       fontFamily: '"JetBrains Mono"', fontSize: '10px', color: '#9FB2C4',
       stroke: '#0F1A2E', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(10);
     if (d && d.monthly > 0) {
-      this.add.text(W / 2, H - 140, `your monthly ≈ £${d.monthly} — pay any amount you like`, {
+      this.add.text(this.W / 2, this.H - 138, `your monthly ≈ £${d.monthly} — pay any amount`, {
         fontFamily: '"Manrope"', fontSize: '11px', color: '#B7C7D6',
       }).setOrigin(0.5).setDepth(10);
     }
     const chips = CHIPS;
     const n = chips.length;
+    const spacing = Math.min(98, (this.W - 40) / n);
+    const cw = Math.min(88, spacing - 8);
     chips.forEach((v, i) => {
       const active = this.chip === v;
-      const x = W / 2 - (n - 1) * 49 + i * 98;
+      const x = this.W / 2 - (n - 1) * spacing / 2 + i * spacing;
       const bg = this.add.graphics();
       bg.fillStyle(active ? 0x5FC9A8 : 0x1E3350, active ? 1 : 0.92);
-      bg.fillRoundedRect(-44, -17, 88, 34, 17);
+      bg.fillRoundedRect(-cw / 2, -17, cw, 34, 17);
       if (!active) {
         bg.lineStyle(1.5, 0xFFFFFF, 0.22);
-        bg.strokeRoundedRect(-44, -17, 88, 34, 17);
+        bg.strokeRoundedRect(-cw / 2, -17, cw, 34, 17);
       }
       const label = this.add.text(0, 0, '£' + v, {
-        fontFamily: '"Baloo 2"', fontSize: '15px',
+        fontFamily: '"Baloo 2"', fontSize: cw < 60 ? '13px' : '15px',
         color: active ? '#10241C' : '#F4F8FB',
       }).setOrigin(0.5);
-      const c = this.add.container(x, H - 108, [bg, label]);
-      c.setSize(88, 34).setInteractive({ useHandCursor: true });
+      const c = this.add.container(x, this.H - 108, [bg, label]);
+      c.setSize(cw, 34).setInteractive({ useHandCursor: true });
       c.on('pointerdown', () => {
         if (this.busy) return;
         this.chip = v;
@@ -231,7 +239,7 @@ export class HillScene extends Phaser.Scene {
   }
 
   private drawPayButton(): void {
-    const x = W / 2, y = H - 52;
+    const x = this.W / 2, y = this.H - 52;
     const g = this.add.graphics();
     g.fillStyle(0x5FC9A8, 1);
     g.fillRoundedRect(-92, -24, 184, 48, 24);
@@ -259,7 +267,6 @@ export class HillScene extends Phaser.Scene {
     this.backBtn.setDepth(10);
   }
 
-  /* ---------- payment ---------- */
   pay(): void {
     const d = this.debt;
     if (!d || this.busy || pctPaid(d) >= 1) return;
@@ -269,9 +276,9 @@ export class HillScene extends Phaser.Scene {
     sfx.chip();
     sfx.roll();
 
-    const before = o.pctBefore * LEVELS;   // level progress 0..100
+    const before = o.pctBefore * LEVELS;
     const after = o.pctAfter * LEVELS;
-    const dist = after - before;            // levels traversed
+    const dist = after - before;
     const dur = Phaser.Math.Clamp(dist * 820, 500, 7000);
 
     let lastLevel = o.levelsBefore;
@@ -284,7 +291,6 @@ export class HillScene extends Phaser.Scene {
         const lv = Math.floor(prog + 1e-9);
         const frac = prog - lv;
         const pos = this.setBallAt(frac);
-        // dust trail + rolling spin
         this.trail.emitParticleAt(pos.x, pos.y + ballRadius(d) * 0.4, 1);
         this.ballImg.rotation += 0.16;
         if (lv > lastLevel) {
@@ -310,17 +316,17 @@ export class HillScene extends Phaser.Scene {
         { text: `💸 ${money(o.interest)} interest avoided`, color: '#5FC9A8', size: 14 },
       ];
       const panelY = 100;
-      const panelW = 460;
+      const panelW = Math.min(460, this.W - 40);
       const panelH = 18 + lines.length * 26;
       const bg = this.add.graphics();
       bg.fillStyle(0x0F1A2E, 0.78);
-      bg.fillRoundedRect(W / 2 - panelW / 2, panelY - 12, panelW, panelH, 14);
+      bg.fillRoundedRect(this.W / 2 - panelW / 2, panelY - 12, panelW, panelH, 14);
       bg.lineStyle(1.5, 0xFFFFFF, 0.14);
-      bg.strokeRoundedRect(W / 2 - panelW / 2, panelY - 12, panelW, panelH, 14);
+      bg.strokeRoundedRect(this.W / 2 - panelW / 2, panelY - 12, panelW, panelH, 14);
       const group = this.add.container(0, 0, [bg]);
       group.setDepth(9);
       lines.forEach((l, i) => {
-        const t = this.add.text(W / 2, panelY + i * 26, l.text, {
+        const t = this.add.text(this.W / 2, panelY + i * 26, l.text, {
           fontFamily: '"Baloo 2"', fontSize: `${l.size}px`, color: l.color,
           stroke: '#0F1A2E', strokeThickness: 4,
         }).setOrigin(0.5, 0).setDepth(10);
@@ -339,17 +345,16 @@ export class HillScene extends Phaser.Scene {
     this.emitHud();
   }
 
-  /** one level completed (1-indexed) — the "next screen" beat */
   private levelBeat(clearedLevel: number): void {
     this.hudLevel.setText(this.levelText(clearedLevel));
     this.hudLevel.setScale(1.18);
     this.tweens.add({ targets: this.hudLevel, scale: 1, duration: 160, ease: 'Back.easeOut' });
 
-    const t = this.add.text(W / 2, H * 0.30, `LEVEL ${clearedLevel}`, {
+    const t = this.add.text(this.W / 2, this.H * 0.30, `LEVEL ${clearedLevel}`, {
       fontFamily: '"Baloo 2"', fontSize: '30px', color: '#F2B84B',
       stroke: '#0F1A2E', strokeThickness: 7,
     }).setOrigin(0.5).setDepth(12);
-    this.tweens.add({ targets: t, y: H * 0.30 - 28, alpha: 0, duration: 600, ease: 'Cubic.easeOut', onComplete: () => t.destroy() });
+    this.tweens.add({ targets: t, y: this.H * 0.30 - 28, alpha: 0, duration: 600, ease: 'Cubic.easeOut', onComplete: () => t.destroy() });
 
     if (clearedLevel % 25 === 0 && clearedLevel < LEVELS) this.milestoneBeat(clearedLevel);
   }
@@ -358,7 +363,7 @@ export class HillScene extends Phaser.Scene {
     this.cameras.main.shake(300, 0.012);
     this.cameras.main.flash(90, 255, 226, 154);
     sfx.milestone();
-    this.add.particles(W / 2, H * 0.4, 'pix', {
+    this.add.particles(this.W / 2, this.H * 0.4, 'pix', {
       speed: { min: 80, max: 320 },
       angle: { min: 0, max: 360 },
       scale: { start: 1.4, end: 0 },
@@ -367,7 +372,7 @@ export class HillScene extends Phaser.Scene {
       tint: [0xF2B84B, 0xFFE29A, 0xFFFFFF],
       emitting: false,
     }).explode(40);
-    const banner = this.add.text(W / 2, H * 0.42, `${level}% MILESTONE`, {
+    const banner = this.add.text(this.W / 2, this.H * 0.42, `${level}% MILESTONE`, {
       fontFamily: '"Baloo 2"', fontSize: '24px', color: '#F2B84B',
       stroke: '#0F1A2E', strokeThickness: 7,
     }).setOrigin(0.5).setDepth(12);
@@ -389,14 +394,13 @@ export class HillScene extends Phaser.Scene {
       tint: [0x5FC9A8, 0xF2B84B, 0xFFFFFF, 0xFFE29A],
       emitting: false,
     }).explode(90);
-    this.add.text(W / 2, 170, '💸 DEBT CLEARED — NO MORE INTEREST!', {
-      fontFamily: '"Baloo 2"', fontSize: '30px', color: '#F4F8FB',
+    this.add.text(this.W / 2, 170, '💸 DEBT CLEARED — NO MORE INTEREST!', {
+      fontFamily: '"Baloo 2"', fontSize: this.W < 600 ? '22px' : '30px', color: '#F4F8FB',
       stroke: '#0F1A2E', strokeThickness: 8,
     }).setOrigin(0.5).setDepth(12);
     window.setTimeout(() => { if (this.scene.isActive()) this.toOverview(); }, 2600);
   }
 
-  /* ---------- per-frame ---------- */
   update(_time: number, delta: number): void {
     const d = this.debt;
     if (!d || !this.ballImg) return;
