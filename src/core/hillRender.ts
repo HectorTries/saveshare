@@ -170,7 +170,7 @@ export function drawMiniHill(
   const paid = pctPaid(d);
   const thawed = paid >= 1;
   const lv = levelsCleared(d);
-  const h = Math.max(70, 150 - Math.min(120, d.balance / 220));
+  const h = Math.max(42, 56 - Math.min(42, d.balance / 500));
 
   const body: { x: number; y: number }[] = [
     { x: -w * 0.5, y: 0 }, { x: -w * 0.34, y: -h }, { x: -w * 0.05, y: -h * 0.86 },

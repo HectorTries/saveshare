@@ -30,7 +30,7 @@ html,body{background:#0F1A2E;color:var(--text);font-family:'Manrope',sans-serif;
 
 .overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(11,20,34,.72);backdrop-filter:blur(5px);z-index:20;padding:18px}
 .overlay.show{display:flex}
-.modal{background:var(--navy2);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:30px 34px;max-width:520px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 30px 90px rgba(0,0,0,.65)}
+.modal{background:var(--navy2);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:26px 30px;max-width:520px;width:100%;max-height:100%;overflow-y:auto;box-shadow:0 30px 90px rgba(0,0,0,.65)}
 .modal h2{font-family:'Baloo 2';font-size:26px;margin-bottom:4px}
 .modal .sub{color:var(--muted);font-size:13.5px;margin-bottom:18px}
 .debt-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}

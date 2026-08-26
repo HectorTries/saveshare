@@ -59,15 +59,15 @@ export class OverviewScene extends Phaser.Scene {
 
     if (portrait) {
       // stacked vertically — one row per debt
-      const rowH = Math.min(150, (this.H * 0.62) / Math.max(n, 1));
-      const startY = this.H * 0.26;
-      const w = Math.min(240, this.W * 0.56);
+      const rowH = 120;
+      const startY = this.H * 0.20;
+      const w = Math.min(200, this.W * 0.55);
       debts.forEach((d, i) => {
         const y = startY + i * rowH;
         const m = drawMiniHill(this, this.W / 2, y, w, d, i);
         const zone = m.getAt(m.length - 1) as Phaser.GameObjects.Zone;
         zone.on('pointerdown', () => this.play(i));
-        if (this.suggestFor(i)) this.drawSuggest(this.W / 2, y - 60, w + 60, 100);
+        if (this.suggestFor(i)) this.drawSuggest(this.W / 2, y - 40, w + 50, 80);
       });
     } else {
       const spacing = Math.min(290, (this.W - 60) / Math.max(n, 1));
@@ -83,8 +83,8 @@ export class OverviewScene extends Phaser.Scene {
     }
 
     const allPaid = debts.every((d) => pctPaid(d) >= 1);
-    this.add.text(this.W / 2, 84, allPaid ? '🎉 Every hill cleared — incredible.' : 'Tap a hill, roll your payment down it ❄️', {
-      fontFamily: '"Baloo 2"', fontSize: this.W < 600 ? '17px' : '20px', color: '#F4F8FB',
+    this.add.text(this.W / 2, 60, allPaid ? '🎉 Every hill cleared — incredible.' : 'Tap a hill to roll ❄️', {
+      fontFamily: '"Baloo 2"', fontSize: this.W < 600 ? '14px' : '18px', color: '#F4F8FB',
     }).setOrigin(0.5).setAlpha(0.92);
   }
 
@@ -152,9 +152,10 @@ export class OverviewScene extends Phaser.Scene {
   }
 
   private drawBadges(): void {
-    this.add.text(this.W - 16, 18, `💸 ${money(stats.interestDestroyed)} avoided\n(lifetime)`, {
-      fontFamily: '"JetBrains Mono"', fontSize: '11px', color: '#5FC9A8', align: 'right',
-    }).setOrigin(1, 0).setDepth(10);
+    this.add.text(16, this.H - 12, `💸 ${money(stats.interestDestroyed)} interest avoided (lifetime)`, {
+      fontFamily: '"JetBrains Mono"', fontSize: '11px', color: '#5FC9A8',
+      stroke: '#0F1A2E', strokeThickness: 3,
+    }).setOrigin(0, 1).setDepth(10);
   }
 
   private emitHud(): void {
