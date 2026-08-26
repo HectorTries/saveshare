@@ -19,14 +19,15 @@ export interface Debt {
   name: string;
   balance: number;    // original balance £
   apr: number;        // annual % rate
-  months: number;     // months remaining at start (debt length)
+  months: number;     // total term at start, in months (debt length)
+  monthly: number;    // monthly repayment £ (0 = not set → linear fallback)
   paid: number;       // cumulative principal paid £ (never decreases)
   celebrated: number; // bitmask of milestone flags celebrated (1=25,2=50,4=75)
 }
 
 export const MILESTONES = [0.25, 0.5, 0.75];
 
-const STORE_KEY = 'saveshare_hill_v6';
+const STORE_KEY = 'saveshare_hill_v7';
 const STATS_KEY = 'saveshare_stats_v4';
 const PREFS_KEY = 'saveshare_prefs_v4';
 
@@ -35,8 +36,30 @@ export const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
 /** ball position down the hill — % of the ORIGINAL balance paid */
 export const pctPaid = (d: Debt): number => clamp01(d.paid / d.balance);
 export const principalLeft = (d: Debt): number => Math.max(0, d.balance - d.paid);
-/** months naturally shrink as the debt is paid down → paying earlier is worth more */
-export const monthsLeft = (d: Debt): number => Math.max(0, Math.round(d.months * (1 - pctPaid(d))));
+
+const MAX_TERM = 600;
+/** amortisation: months to clear the remaining principal at the monthly
+    repayment — real mortgage-style math. Returns -1 when no monthly
+    repayment is set (callers fall back to the linear term). */
+export function amortMonthsLeft(d: Debt): number {
+  const P = principalLeft(d);
+  if (P <= 0) return 0;
+  const M = d.monthly;
+  if (M <= 0) return -1;
+  const r = d.apr / 12 / 100;
+  if (r <= 0) return Math.ceil(P / M);
+  const minPay = r * P;
+  if (M <= minPay) return MAX_TERM; // payment doesn't even cover the interest
+  return Math.max(1, Math.ceil(-Math.log(1 - minPay / M) / Math.log(1 + r)));
+}
+/** months naturally shrink as the debt is paid down → paying earlier is worth more.
+    With a monthly repayment set, this is the REAL amortised term — a payment on a
+    24.9% card avoids interest over far more months than on a short loan. */
+export const monthsLeft = (d: Debt): number => {
+  const amort = amortMonthsLeft(d);
+  if (amort >= 0) return Math.min(MAX_TERM, amort);
+  return Math.max(0, Math.round(d.months * (1 - pctPaid(d))));
+};
 /** £ of future interest avoided by paying `amount` now (single source of truth —
     drives the interest-avoided readout and the lifetime stat) */
 export const interestDestroyed = (d: Debt, amount: number): number =>
@@ -148,8 +171,8 @@ export function applyPush(idx: number, amount: number): PushOutcome {
 }
 
 /* ---------- store ---------- */
-function fresh(name: string, balance: number, apr: number, months: number): Debt {
-  return { name, balance, apr, months, paid: 0, celebrated: 0 };
+function fresh(name: string, balance: number, apr: number, months: number, monthly = 0): Debt {
+  return { name, balance, apr, months, monthly, paid: 0, celebrated: 0 };
 }
 
 function normalize(raw: unknown): Debt[] {
@@ -163,6 +186,7 @@ function normalize(raw: unknown): Debt[] {
         balance: bal > 0 ? bal : 0,
         apr: typeof x.apr === 'number' && isFinite(x.apr) ? Math.max(0, x.apr) : 19.9,
         months: typeof x.months === 'number' && isFinite(x.months) ? Math.max(1, Math.round(x.months)) : 36,
+        monthly: typeof x.monthly === 'number' && isFinite(x.monthly) ? Math.max(0, x.monthly) : 0,
         paid: typeof x.paid === 'number' && isFinite(x.paid) ? Math.max(0, Math.min(x.paid, bal > 0 ? bal : Infinity)) : 0,
         celebrated: typeof x.celebrated === 'number' ? (x.celebrated & 7) : 0,
       };
@@ -171,11 +195,12 @@ function normalize(raw: unknown): Debt[] {
 }
 
 function demoDebts(): Debt[] {
+  // monthly repayments are the amortised payments for the declared term
   return [
-    fresh('Credit Card', 4250, 24.9, 36),
-    fresh('Car Loan', 9800, 7.9, 48),
-    fresh('Student Loan', 14200, 5.5, 120),
-    fresh('Overdraft', 750, 19.9, 12),
+    fresh('Credit Card', 4250, 24.9, 36, 169),
+    fresh('Car Loan', 9800, 7.9, 48, 239),
+    fresh('Student Loan', 14200, 5.5, 120, 154),
+    fresh('Overdraft', 750, 19.9, 12, 69),
   ];
 }
 
@@ -191,6 +216,14 @@ export const store = {
       if (raw) {
         const parsed = normalize(JSON.parse(raw));
         if (parsed.length) { this.debts = parsed; return; }
+      }
+    } catch (e) { /* ignore */ }
+    // migrate from v6 downhill (paid survives; monthly defaults to 0 → linear fallback)
+    try {
+      const old = localStorage.getItem('saveshare_hill_v6');
+      if (old) {
+        const parsed = normalize(JSON.parse(old));
+        if (parsed.length) { this.debts = parsed; this.save(); return; }
       }
     } catch (e) { /* ignore */ }
     // migrate from v5 summit (progress/terrain/gravity dropped — paid survives)

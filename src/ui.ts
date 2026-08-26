@@ -23,20 +23,38 @@ function renderDebtList(): void {
   const el = $('debtList');
   el.innerHTML = '';
   store.debts.forEach((d, i) => {
-    const row = document.createElement('div');
-    row.className = 'debt-row';
-    row.innerHTML = `
-      <input class="dname" type="text" placeholder="e.g. Credit Card" value="${esc(d.name)}" title="Name">
-      <input class="damt" type="number" min="1" step="50" placeholder="£" value="${d.balance || ''}" title="Balance £">
-      <input class="dapr" type="number" min="0" max="100" step="0.1" placeholder="APR %" value="${d.apr ?? ''}" title="APR %">
-      <input class="dmon" type="number" min="1" max="600" step="1" placeholder="months" value="${d.months ?? ''}" title="Months left">
-      <button class="del-btn" title="Remove">✕</button>`;
-    (row.querySelector('.dname') as HTMLInputElement).addEventListener('input', (e) => { d.name = (e.target as HTMLInputElement).value; });
-    (row.querySelector('.damt') as HTMLInputElement).addEventListener('input', (e) => { d.balance = Math.max(0, parseFloat((e.target as HTMLInputElement).value) || 0); });
-    (row.querySelector('.dapr') as HTMLInputElement).addEventListener('input', (e) => { d.apr = Math.max(0, parseFloat((e.target as HTMLInputElement).value) || 0); });
-    (row.querySelector('.dmon') as HTMLInputElement).addEventListener('input', (e) => { d.months = Math.max(1, Math.round(parseFloat((e.target as HTMLInputElement).value) || 1)); });
-    (row.querySelector('.del-btn') as HTMLButtonElement).addEventListener('click', () => { store.debts.splice(i, 1); renderDebtList(); });
-    el.appendChild(row);
+    const card = document.createElement('div');
+    card.className = 'debt-card';
+    card.innerHTML = `
+      <div class="debt-row">
+        <input class="dname" type="text" placeholder="e.g. Credit Card" value="${esc(d.name)}" title="Name">
+        <input class="damt" type="number" min="1" step="50" placeholder="£" value="${d.balance || ''}" title="Balance £">
+        <input class="dapr" type="number" min="0" max="100" step="0.1" placeholder="APR %" value="${d.apr ?? ''}" title="APR %">
+        <button class="del-btn" title="Remove">✕</button>
+      </div>
+      <div class="debt-row debt-row2">
+        <input class="dmon" type="number" min="1" max="600" step="1" placeholder="term" value="${d.months || ''}" title="Term">
+        <select class="dunit" title="Term unit">
+          <option value="months">months</option>
+          <option value="years">years</option>
+        </select>
+        <input class="dmonth" type="number" min="0" step="5" placeholder="£/mo" value="${d.monthly || ''}" title="Monthly repayment £">
+        <span class="dlabel">£/mo</span>
+      </div>`;
+    const dmon = card.querySelector('.dmon') as HTMLInputElement;
+    const dunit = card.querySelector('.dunit') as HTMLSelectElement;
+    const dmonth = card.querySelector('.dmonth') as HTMLInputElement;
+    (card.querySelector('.dname') as HTMLInputElement).addEventListener('input', (e) => { d.name = (e.target as HTMLInputElement).value; });
+    (card.querySelector('.damt') as HTMLInputElement).addEventListener('input', (e) => { d.balance = Math.max(0, parseFloat((e.target as HTMLInputElement).value) || 0); });
+    (card.querySelector('.dapr') as HTMLInputElement).addEventListener('input', (e) => { d.apr = Math.max(0, parseFloat((e.target as HTMLInputElement).value) || 0); });
+    dmon.addEventListener('input', () => { d.months = Math.max(1, Math.round(parseFloat(dmon.value) || 1) * (dunit.value === 'years' ? 12 : 1)); });
+    dunit.addEventListener('change', () => {
+      // convert the displayed number between units, keep stored months intact
+      dmon.value = String(dunit.value === 'years' ? Math.max(1, Math.round(d.months / 12)) : d.months);
+    });
+    dmonth.addEventListener('input', () => { d.monthly = Math.max(0, parseFloat(dmonth.value) || 0); });
+    (card.querySelector('.del-btn') as HTMLButtonElement).addEventListener('click', () => { store.debts.splice(i, 1); renderDebtList(); });
+    el.appendChild(card);
     if (d.paid > 0) {
       const paidRow = document.createElement('div');
       paidRow.style.cssText = 'font-size:11px;color:var(--mint-melt);margin:-4px 0 8px 4px';
@@ -47,7 +65,7 @@ function renderDebtList(): void {
 }
 
 function addDebtRow(): void {
-  store.debts.push({ name: '', balance: 0, apr: 19.9, months: 36, paid: 0, celebrated: 0 });
+  store.debts.push({ name: '', balance: 0, apr: 19.9, months: 36, monthly: 0, paid: 0, celebrated: 0 });
   renderDebtList();
   const rows = document.querySelectorAll('#debtList .dname');
   (rows[rows.length - 1] as HTMLInputElement).focus();

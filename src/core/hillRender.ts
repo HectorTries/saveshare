@@ -12,8 +12,10 @@ import Phaser from 'phaser';
 import { ensureGameTextures } from './textures';
 import { type Debt, pctPaid, principalLeft, MILESTONES } from './state';
 
-export const START = { x: 205, y: 138 };   // crest — 0% paid
-export const FLAG = { x: 1120, y: 548 };   // base — 100% paid
+export const START = { x: 265, y: 150 };   // crest — 0% paid
+// FLAG lives at the bottom-right; path compacted so the whole roll
+// fits comfortably on screen (the "zoomed out" view).
+export const FLAG = { x: 1005, y: 498 };   // base — 100% paid
 
 export interface HillRef {
   container: Phaser.GameObjects.Container;
@@ -21,10 +23,10 @@ export interface HillRef {
 
 /* ---------- geometry: one fixed path, shared by every debt ---------- */
 const CTRL = [
-  { x: 205, y: 138 },
-  { x: 470, y: 212 },
-  { x: 800, y: 340 },
-  { x: 1120, y: 548 },
+  { x: 265, y: 150 },
+  { x: 480, y: 208 },
+  { x: 740, y: 315 },
+  { x: 1005, y: 498 },
 ];
 
 function catmull(

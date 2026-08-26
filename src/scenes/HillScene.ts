@@ -13,6 +13,7 @@ import Phaser from 'phaser';
 import {
   store, applyPush, prefs, setPrefs, pctPaid, principalLeft, monthsLeft,
   money, ballRadius, ballRadiusAt, ballMult, ballLabel, rollSpeed,
+  amortMonthsLeft, interestDestroyed,
 } from '../core/state';
 import {
   drawHill, pointAt, ballPosAt, FLAG, START, type HillRef,
@@ -53,7 +54,9 @@ export class HillScene extends Phaser.Scene {
 
   init(data: { idx: number }): void {
     this.debtIdx = data.idx;
-    this.chip = prefs.chip;
+    // default chip = the debt's monthly repayment when one is set
+    const d = store.debts[this.debtIdx];
+    this.chip = d && d.monthly > 0 ? d.monthly : prefs.chip;
     this.busy = false;
   }
 
@@ -63,7 +66,10 @@ export class HillScene extends Phaser.Scene {
     this.input.enabled = true;
     ensureGameTextures(this);
     (window as any).__hill = this;
-    (window as any).__hillMath = { rollSpeed, ballMult, ballRadiusAt, pctPaid, pointAt, ballPosAt };
+    (window as any).__hillMath = {
+      rollSpeed, ballMult, ballRadiusAt, pctPaid, pointAt, ballPosAt,
+      monthsLeft, amortMonthsLeft, interestDestroyed,
+    };
 
 
     this.drawHillAndBall();
@@ -167,8 +173,9 @@ export class HillScene extends Phaser.Scene {
     const d = this.debt;
     if (!d) return;
     const pct = Math.round(pctPaid(d) * 100);
+    const min = d.monthly > 0 ? ` · £${d.monthly}/mo` : '';
     this.hudInfo.setText(
-      `${d.name} — ${money(principalLeft(d))} left · APR ${d.apr}% · ${monthsLeft(d)}mo · ${pct}% cleared`,
+      `${d.name} — ${money(principalLeft(d))} · APR ${d.apr}% · ${monthsLeft(d)}mo${min} · ${pct}% cleared`,
     );
     this.hudBall.setText(`❄️ ball ${ballLabel(d)} ×${ballMult(d).toFixed(1)}`);
     this.hintText.setText(
@@ -182,19 +189,24 @@ export class HillScene extends Phaser.Scene {
       fontFamily: '"JetBrains Mono"', fontSize: '10px', color: '#9FB2C4',
       stroke: '#0F1A2E', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(10);
-    CHIPS.forEach((v, i) => {
+    const d = this.debt;
+    // prepend the debt's monthly repayment as a MIN chip when one is set
+    const chips = d && d.monthly > 0 && !CHIPS.includes(d.monthly) ? [d.monthly, ...CHIPS] : CHIPS;
+    const n = chips.length;
+    chips.forEach((v, i) => {
       const active = this.chip === v;
-      const x = W / 2 - 343 + i * 98;
+      const isMin = d && d.monthly > 0 && v === d.monthly;
+      const x = W / 2 - (n - 1) * 49 + i * 98;
       const bg = this.add.graphics();
-      bg.fillStyle(active ? 0x5FC9A8 : 0x1E3350, active ? 1 : 0.92);
+      bg.fillStyle(active ? 0x5FC9A8 : isMin ? 0xF2B84B : 0x1E3350, active ? 1 : isMin ? 0.25 : 0.92);
       bg.fillRoundedRect(-44, -17, 88, 34, 17);
       if (!active) {
-        bg.lineStyle(1.5, 0xFFFFFF, 0.22);
+        bg.lineStyle(1.5, isMin ? 0xF2B84B : 0xFFFFFF, isMin ? 0.7 : 0.22);
         bg.strokeRoundedRect(-44, -17, 88, 34, 17);
       }
-      const label = this.add.text(0, 0, '£' + v, {
-        fontFamily: '"Baloo 2"', fontSize: '15px',
-        color: active ? '#10241C' : '#F4F8FB',
+      const label = this.add.text(0, 0, isMin ? `£${v} MIN` : '£' + v, {
+        fontFamily: '"Baloo 2"', fontSize: isMin ? '13px' : '15px',
+        color: active ? '#10241C' : isMin ? '#F2B84B' : '#F4F8FB',
       }).setOrigin(0.5);
       const c = this.add.container(x, H - 108, [bg, label]);
       c.setSize(88, 34).setInteractive({ useHandCursor: true });
@@ -416,6 +428,17 @@ export class HillScene extends Phaser.Scene {
     window.setTimeout(() => {
       if (this.scene.isActive()) this.toOverview();
     }, 2600);
+  }
+
+  /* ---------- per-frame ---------- */
+  update(_time: number, delta: number): void {
+    const d = this.debt;
+    if (!d || !this.ballImg) return;
+    // the ball is ALWAYS rolling — it spins in place while idle so it
+    // never looks frozen; bigger balls roll a touch faster.
+    if (!this.busy) {
+      this.ballImg.rotation += (0.9 + ballMult(d) * 0.45) * (delta / 1000);
+    }
   }
 
   private toOverview(): void {

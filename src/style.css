@@ -50,12 +50,18 @@ html,body{background:#0F1A2E;color:var(--text);font-family:'Manrope',sans-serif;
 .modal h2{font-family:'Baloo 2';font-size:26px;margin-bottom:4px}
 .modal .sub{color:var(--muted);font-size:13.5px;margin-bottom:18px}
 .debt-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.debt-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 10px 6px;margin-bottom:12px}
+.debt-card .debt-row{margin-bottom:6px}
+.debt-row2{font-size:11px;color:var(--muted)}
+.debt-row2 .dmon{max-width:70px}
+.debt-row2 .dunit{max-width:86px;padding:8px 8px;font-size:12px}
+.debt-row2 .dmonth{max-width:80px}
+.debt-row2 .dlabel{font-size:11px;color:var(--muted);margin-left:-4px}
 .debt-row input{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:var(--text);border-radius:10px;padding:10px 12px;font-size:14px;font-family:'Manrope';outline:none;min-width:0}
 .debt-row input:focus{border-color:var(--mint-melt)}
 .debt-row .dname{flex:2;min-width:0}
 .debt-row .damt{flex:1;max-width:90px}
 .debt-row .dapr{flex:.7;max-width:74px}
-.debt-row .dmon{flex:.8;max-width:80px}
 .debt-row input::placeholder{color:#6E85A0}
 .del-btn{background:rgba(255,70,70,.14);border:1px solid rgba(255,90,90,.3);color:#FF8A8A;border-radius:10px;width:38px;height:40px;cursor:pointer;font-size:16px;flex-shrink:0}
 .del-btn:hover{background:rgba(255,70,70,.28)}
