@@ -258,17 +258,63 @@ export class HillScene extends Phaser.Scene {
     const distPx = Math.hypot(p1.x - p0.x, p1.y - p0.y);
     const speed = rollSpeed(d);
     const dur = Phaser.Math.Clamp((distPx / speed) * 1000, 250, 2400);
+    const mult = ballMult(d);
+    const r0 = ballRadiusAt(o.pctBefore);
     this.setBallAt(o.pctBefore);
+    this.ballC.setScale(1, 1);
+
+    // juice: the ball squashes as it accelerates (repeat-until-roll-ends)
+    const wobble = this.tweens.add({
+      targets: this.ballC, scaleY: 0.88, scaleX: 1.14,
+      duration: Math.min(220, dur * 0.5), ease: 'Sine.easeInOut', yoyo: true, repeat: -1,
+    });
+    // dust puff kicked up at the start point (destroyed after it settles)
+    const puff = this.add.particles(p0.x, p0.y + r0 * 0.4, 'pix', {
+      speed: { min: 40, max: 120 },
+      angle: { min: -170, max: -10 },
+      scale: { start: 1, end: 0 },
+      alpha: { start: 0.8, end: 0 },
+      lifespan: 420,
+      quantity: 10 + Math.floor(mult * 5),
+      tint: 0xFFFFFF,
+      emitting: false,
+    }).setDepth(4);
+    puff.explode(10 + Math.floor(mult * 5));
+    window.setTimeout(() => { try { puff.destroy(); } catch (e) { /* ignore */ } }, 800);
+
+    // camera nudge on meaningful rolls
+    if (distPx > 90 || mult > 1.6) {
+      this.cameras.main.shake(Math.min(160, 80 + dur * 0.15), Math.min(0.008, 0.002 + mult * 0.0015));
+    }
+
+    let prevK = 0;
+    let dustAcc = 0;
     this.tweens.addCounter({
-      from: 0, to: 1, duration: dur, ease: 'Cubic.easeOut',
+      from: 0, to: 1, duration: dur, ease: 'Quint.easeOut',
       onUpdate: (tw) => {
         const k = tw.getValue() ?? 0;
         const p = Phaser.Math.Linear(o.pctBefore, o.pctAfter, k);
         const pos = this.setBallAt(p);
-        this.trail.emitParticleAt(pos.x, pos.y + ballRadiusAt(p) * 0.4, ballMult(d) > 1.4 ? 3 : 1);
-        this.ballImg.rotation += (distPx / Math.max(5, ballRadiusAt(p))) * 0.16 * k;
+        const r = ballRadiusAt(p);
+        this.trail.emitParticleAt(pos.x, pos.y + r * 0.4, mult > 1.4 ? Math.min(5, 1 + Math.floor(mult)) : 1);
+        // continuous dust kick-up from the contact point while rolling
+        dustAcc += 1;
+        if (dustAcc >= 4) {
+          dustAcc = 0;
+          this.trail.emitParticleAt(pos.x - r * 0.3, pos.y + r * 0.6, 1);
+        }
+        // real rolling spin: surface distance ÷ circumference, per frame
+        this.ballImg.rotation += (distPx / Math.max(6, r)) * (k - prevK) * 2.2;
+        prevK = k;
       },
       onComplete: () => {
+        wobble.stop();
+        // landing pop — squash, then spring back to the new, bigger size
+        this.ballC.setScale(1.18, 0.86);
+        this.tweens.add({
+          targets: this.ballC, scaleX: 1, scaleY: 1,
+          duration: 300, ease: 'Back.easeOut',
+        });
         this.busy = false;
         this.afterPush(o);
       },

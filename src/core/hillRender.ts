@@ -144,6 +144,31 @@ function moundBody(): { x: number; y: number }[] {
   return body;
 }
 
+/** polygon for a shading band: the surface curve offset along its inward
+    normal, then closed along the mound's own base silhouette so the band
+    always stays inside the hill body */
+function bandPolygon(off: number): { x: number; y: number }[] {
+  const out = PATH.map((p, i) => {
+    const a = PATH[Math.max(0, i - 1)];
+    const b = PATH[Math.min(PATH.length - 1, i + 1)];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    return { x: p.x + (-dy / len) * off, y: p.y + (dx / len) * off };
+  });
+  // close along the mound base (right corner → bottom → left flank → crest)
+  out.push({ x: FLAG.x + 34, y: FLAG.y + 32 });
+  out.push({ x: FLAG.x + 80, y: 600 });
+  out.push({ x: FLAG.x + 96, y: 640 });
+  out.push({ x: 92, y: 640 });
+  out.push({ x: 110, y: 560 });
+  out.push({ x: 138, y: 450 });
+  out.push({ x: 166, y: 330 });
+  out.push({ x: 190, y: 232 });
+  out.push({ x: START.x - 8, y: START.y + 30 });
+  return out;
+}
+
 /* ---------- the hill ---------- */
 export function drawHill(scene: Phaser.Scene, d: Debt): HillRef {
   ensureGameTextures(scene);
@@ -166,7 +191,7 @@ export function drawHill(scene: Phaser.Scene, d: Debt): HillRef {
   g.fillEllipse(220, 620, 500, 60);
   g.fillEllipse(900, 630, 600, 70);
 
-  /* ----- hill body — snow white with soft depth shading ----- */
+  /* ----- hill body — snow white with depth shading that follows the slope ----- */
   // soft drop shadow under the whole mound
   g.fillStyle(0x0B1524, 0.18);
   g.fillPoints(body.map((p) => ({ x: p.x, y: p.y + 9 })), true);
@@ -175,21 +200,44 @@ export function drawHill(scene: Phaser.Scene, d: Debt): HillRef {
   g.fillStyle(thawed ? 0xC9F0DD : 0xEDF5FB, 1);
   g.fillPoints(body, true);
 
-  // depth band 1 — gentle icy shade just under the surface line
-  g.fillStyle(thawed ? 0xA8DFC2 : 0xD8E8F2, 0.45);
-  g.fillPoints(body.map((p) => ({ x: p.x + 6, y: p.y + 26 })), true);
+  // depth bands — sunlit top edge, deeper blue toward the base
+  const bands: [number, number, number][] = thawed
+    ? [[16, 0xB2E3CC, 0.5], [42, 0x9AD5B8, 0.5], [78, 0x82C6A4, 0.55]]
+    : [[16, 0xDCEAF4, 0.5], [42, 0xC9DAE8, 0.5], [78, 0xB2CDE0, 0.55]];
+  for (const [off, col, alpha] of bands) {
+    g.fillStyle(col, alpha);
+    g.fillPoints(bandPolygon(off), true);
+  }
 
-  // depth band 2 — deeper blue toward the base
-  g.fillStyle(thawed ? 0x8FCFB0 : 0xC4DAE8, 0.5);
-  g.fillPoints(body.map((p) => ({ x: p.x + 10, y: p.y + 62 })), true);
+  // sunlit rim just under the surface line (gives the mound its rounded 3D top)
+  g.lineStyle(5, thawed ? 0xDFF7EA : 0xFFFFFF, 0.45);
+  g.beginPath();
+  const rim = PATH.map((p, i) => {
+    const a = PATH[Math.max(0, i - 1)];
+    const b = PATH[Math.min(PATH.length - 1, i + 1)];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    return { x: p.x + (-dy / len) * 4, y: p.y + (dx / len) * 4 };
+  });
+  g.moveTo(rim[0].x, rim[0].y);
+  for (const p of rim) g.lineTo(p.x, p.y);
+  g.strokePath();
 
   // rounded corner bulges so the mound reads as a solid heap, not a slice
-  g.fillStyle(thawed ? 0x9AD5B8 : 0xC9DAE8, 0.55);
-  g.fillEllipse(120, 620, 210, 80);
-  g.fillEllipse(1130, 612, 250, 96);
+  // (kept strictly INSIDE the silhouette — they round the base, never extend past it)
+  const baseCol = thawed ? 0x82C6A4 : 0xB2CDE0;
+  g.fillStyle(baseCol, 0.55);
+  g.fillEllipse(150, 626, 120, 44);
+  g.fillEllipse(1125, 622, 140, 50);
   g.fillStyle(thawed ? 0xC9F0DD : 0xEDF5FB, 1);
-  g.fillEllipse(120, 622, 170, 52);
-  g.fillEllipse(1120, 616, 190, 58);
+  g.fillEllipse(155, 628, 96, 32);
+  g.fillEllipse(1122, 624, 110, 36);
+  // soft occlusion shadow right at the base line — grounds the mound
+  g.fillStyle(0x0B1524, 0.22);
+  g.fillEllipse(330, 634, 900, 26);
+  g.fillEllipse(180, 636, 300, 18);
+  g.fillEllipse(1080, 636, 340, 20);
 
   /* ----- soft drifts breaking up the flank (icy-tinted so they read as snow shade) ----- */
   g.fillStyle(thawed ? 0xBFE5D0 : 0xDEEAF3, 0.65);
@@ -283,8 +331,15 @@ export function drawMiniHill(
   const body = [...pts, { x: w * 0.52, y: 0 }, { x: -w * 0.52, y: 0 }];
   g.fillStyle(thawed ? 0xC9F0DD : 0xF7FBFF, 1);
   g.fillPoints(body, true);
-  // lower flank shade
-  const shade = pts.map((p) => ({ x: p.x + 4, y: p.y + 11 }));
+  // lower flank shade — follows the slope's inward normal
+  const shade = pts.map((p, i) => {
+    const a = pts[Math.max(0, i - 1)];
+    const b = pts[Math.min(pts.length - 1, i + 1)];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    return { x: p.x + (-dy / len) * 10, y: p.y + (dx / len) * 10 };
+  });
   g.fillStyle(thawed ? 0xA8DFC2 : 0xE2EDF6, 0.85);
   g.fillPoints([...shade, { x: w * 0.52, y: 0 }, { x: -w * 0.52, y: 0 }], true);
   // crest highlight (overlaps the body — no floating cap)
